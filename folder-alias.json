@@ -22,5 +22,8 @@
     },
     "blockchain/fabric-config/channel-artifacts": {
         "description": "通道配置"
+    },
+    "blockchain/fabric-config/crypto-config.yaml": {
+        "description": "配置文件"
     }
 }
