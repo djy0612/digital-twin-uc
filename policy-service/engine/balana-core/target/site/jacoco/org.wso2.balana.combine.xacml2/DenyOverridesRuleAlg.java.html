@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DenyOverridesRuleAlg.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.combine.xacml2</a> &gt; <span class="el_source">DenyOverridesRuleAlg.java</span></div><h1>DenyOverridesRuleAlg.java</h1><pre class="source lang-java linenums">/*
+ * @(#)DenyOverridesRuleAlg.java
+ *
+ * Copyright 2003-2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ *
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.combine.xacml2;
+
+import org.wso2.balana.combine.RuleCombinerElement;
+import org.wso2.balana.combine.RuleCombiningAlgorithm;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ObligationResult;
+import org.wso2.balana.ctx.ResultFactory;
+import org.wso2.balana.Rule;
+
+import org.wso2.balana.ctx.AbstractResult;
+import org.wso2.balana.xacml3.Advice;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import java.util.*;
+
+/**
+ * This is the standard Deny Overrides rule combining algorithm. It allows a single evaluation of
+ * Deny to take precedence over any number of permit, not applicable or indeterminate results. Note
+ * that since this implementation does an ordered evaluation, this class also supports the Ordered
+ * Deny Overrides algorithm.
+ *
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class DenyOverridesRuleAlg extends RuleCombiningAlgorithm {
+
+    /**
+     * The standard URN used to identify this algorithm
+     */
+    public static final String algId = &quot;urn:oasis:names:tc:xacml:1.0:rule-combining-algorithm:&quot;
+            + &quot;deny-overrides&quot;;
+
+    // a URI form of the identifier
+    private static URI identifierURI;
+    // exception if the URI was invalid, which should never be a problem
+    private static RuntimeException earlyException;
+
+    static {
+        try {
+<span class="fc" id="L77">            identifierURI = new URI(algId);</span>
+<span class="nc" id="L78">        } catch (URISyntaxException se) {</span>
+<span class="nc" id="L79">            earlyException = new IllegalArgumentException();</span>
+<span class="nc" id="L80">            earlyException.initCause(se);</span>
+<span class="fc" id="L81">        }</span>
+<span class="fc" id="L82">    }</span>
+
+    /**
+     * Standard constructor.
+     */
+    public DenyOverridesRuleAlg() {
+<span class="fc" id="L88">        super(identifierURI);</span>
+
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (earlyException != null)</span>
+<span class="nc" id="L91">            throw earlyException;</span>
+<span class="fc" id="L92">    }</span>
+
+    /**
+     * Protected constructor used by the ordered version of this algorithm.
+     *
+     * @param identifier the algorithm's identifier
+     */
+    protected DenyOverridesRuleAlg(URI identifier) {
+<span class="fc" id="L100">        super(identifier);</span>
+<span class="fc" id="L101">    }</span>
+
+    /**
+     * Applies the combining rule to the set of rules based on the evaluation context.
+     *
+     * @param context the context from the request
+     * @param parameters a (possibly empty) non-null &lt;code&gt;List&lt;/code&gt; of
+     *            &lt;code&gt;CombinerParameter&lt;code&gt;s
+     * @param ruleElements the rules to combine
+     *
+     * @return the result of running the combining algorithm
+     */
+    public AbstractResult combine(EvaluationCtx context, List parameters, List ruleElements) {
+        
+<span class="fc" id="L115">        boolean atLeastOneError = false;</span>
+<span class="fc" id="L116">        boolean potentialDeny = false;</span>
+<span class="fc" id="L117">        boolean atLeastOnePermit = false;</span>
+<span class="fc" id="L118">        AbstractResult firstIndeterminateResult = null;</span>
+<span class="fc" id="L119">        List&lt;ObligationResult&gt; permitObligations = new ArrayList&lt;ObligationResult&gt;();</span>
+<span class="fc" id="L120">        List&lt;Advice&gt; permitAdvices = new ArrayList&lt;Advice&gt;();</span>
+<span class="fc" id="L121">        Iterator it = ruleElements.iterator();</span>
+
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+<span class="fc" id="L124">            Rule rule = ((RuleCombinerElement) (it.next())).getRule();</span>
+<span class="fc" id="L125">            AbstractResult result = rule.evaluate(context);</span>
+<span class="fc" id="L126">            int value = result.getDecision();</span>
+
+            // if there was a value of DENY, then regardless of what else
+            // we've seen, we always return DENY
+<span class="fc bfc" id="L130" title="All 2 branches covered.">            if (value == AbstractResult.DECISION_DENY){     // TODO  -- i changed</span>
+<span class="fc" id="L131">                return result;</span>
+            }
+            // if it was INDETERMINATE, then we couldn't figure something
+            // out, so we keep track of these cases...
+<span class="pc bpc" id="L135" title="2 of 8 branches missed.">            if (value == AbstractResult.DECISION_INDETERMINATE ||</span>
+                    value == AbstractResult.DECISION_INDETERMINATE_DENY ||
+                    value == AbstractResult.DECISION_INDETERMINATE_PERMIT ||
+                    value == AbstractResult.DECISION_INDETERMINATE_DENY_OR_PERMIT) {
+                
+<span class="fc" id="L140">                atLeastOneError = true;</span>
+
+                // there are no rules about what to do if multiple cases
+                // cause errors, so we'll just return the first one
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">                if (firstIndeterminateResult == null){</span>
+<span class="fc" id="L145">                    firstIndeterminateResult = result;</span>
+                }
+                // if the Rule's effect is DENY, then we can't let this
+                // alg return PERMIT, since this Rule might have denied
+                // if it could do its stuff
+<span class="fc bfc" id="L150" title="All 2 branches covered.">                if (rule.getEffect() == AbstractResult.DECISION_DENY){</span>
+<span class="fc" id="L151">                    potentialDeny = true;</span>
+                }
+            } else {
+                // keep track of whether we had at least one rule that
+                // actually pertained to the request
+<span class="fc bfc" id="L156" title="All 2 branches covered.">                if (value == AbstractResult.DECISION_PERMIT){</span>
+<span class="fc" id="L157">                    atLeastOnePermit = true;</span>
+<span class="fc" id="L158">                    permitAdvices.addAll(result.getAdvices());</span>
+<span class="fc" id="L159">                    permitObligations.addAll(result.getObligations());</span>
+                }
+
+            }
+<span class="fc" id="L163">        }</span>
+
+        // we didn't explicitly DENY, but we might have had some Rule
+        // been evaluated, so we have to return INDETERMINATE
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        if (potentialDeny){</span>
+<span class="fc" id="L168">            return firstIndeterminateResult;</span>
+        }
+        // some Rule said PERMIT, so since nothing could have denied,
+        // we return PERMIT
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        if (atLeastOnePermit) {</span>
+<span class="fc" id="L173">            return ResultFactory.getFactory().getResult(AbstractResult.DECISION_PERMIT,</span>
+                                                        permitObligations, permitAdvices, context);            
+        }
+
+
+        // we didn't find anything that said PERMIT, but if we had a
+        // problem with one of the Rules, then we're INDETERMINATE
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        if (atLeastOneError){</span>
+<span class="fc" id="L181">            return firstIndeterminateResult;</span>
+        }
+        // if we hit this point, then none of the rules actually applied
+        // to us, so we return NOT_APPLICABLE
+        //return new Result(Result.DECISION_NOT_APPLICABLE, context.getResourceId().encode());
+<span class="fc" id="L186">        return ResultFactory.getFactory().getResult(AbstractResult.DECISION_NOT_APPLICABLE, context);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

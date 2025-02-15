@@ -1,0 +1,25 @@
+// ------------------------------------------------------------------
+// Transitive dependencies of this project determined from the
+// maven pom organized by organization.
+// ------------------------------------------------------------------
+
+WSO2 Balana Sample Online Trading
+
+
+From: 'an unknown organization'
+  - xerces.wso2 (http://wso2.org) xerces.wso2:xercesImpl:bundle:2.8.1.wso2v2
+
+
+From: 'OPS4J - Open Participation Software for Java' (http://www.ops4j.org/)
+  - OPS4J Pax Logging - API (http://www.ops4j.org/projects/pax/logging/pax-logging-api) org.ops4j.pax.logging:pax-logging-api:bundle:1.10.1
+    License: ALv2  (http://www.apache.org/licenses/LICENSE-2.0.html)
+
+From: 'WSO2' (http://www.wso2.org/)
+  - WSO2 Balana Core (http://wso2.org) org.wso2.balana:org.wso2.balana:bundle:1.2.27-SNAPSHOT
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - WSO2 Balana Utils (http://wso2.org) org.wso2.balana:org.wso2.balana.utils:bundle:1.2.27-SNAPSHOT
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+
+
+

@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Result.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.ctx.xacml3</a> &gt; <span class="el_source">Result.java</span></div><h1>Result.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+package org.wso2.balana.ctx.xacml3;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.*;
+import org.wso2.balana.ctx.Attribute;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.AbstractResult;
+import org.wso2.balana.ctx.Status;
+import org.wso2.balana.xacml3.Advice;
+import org.wso2.balana.xacml3.Attributes;
+import org.wso2.balana.xacml3.Obligation;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.*;
+
+/**
+ * XACML 3 implementation of  &lt;code&gt;AbstractResult&lt;/code&gt;
+ */
+public class Result extends AbstractResult{
+
+    /**
+     * Set of applicable policy references
+     */
+    Set&lt;PolicyReference&gt; policyReferences;
+
+    /**
+     * Set of attributes that returns to PEP. mainly used in multiple decision profile 
+     */
+    Set&lt;Attributes&gt; attributes;
+    
+    public Result(int decision, Status status){
+<span class="fc" id="L52">        super(decision, status, XACMLConstants.XACML_VERSION_3_0);</span>
+<span class="fc" id="L53">    }</span>
+
+    /**
+     *
+     * @param decision
+     * @param status
+     * @param obligationResults
+     * @param advices
+     * @param evaluationCtx
+     * @throws IllegalArgumentException
+     */
+    public Result(int decision, Status status, List&lt;ObligationResult&gt; obligationResults,
+                  List&lt;Advice&gt; advices, EvaluationCtx evaluationCtx) throws IllegalArgumentException {
+<span class="fc" id="L66">        super(decision, status, obligationResults, advices, XACMLConstants.XACML_VERSION_3_0);</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if(evaluationCtx != null){</span>
+<span class="fc" id="L68">            XACML3EvaluationCtx ctx = (XACML3EvaluationCtx) evaluationCtx;</span>
+<span class="fc" id="L69">            this.policyReferences = ctx.getPolicyReferences();</span>
+<span class="fc" id="L70">            processAttributes(ctx.getAttributesSet());</span>
+        }
+<span class="fc" id="L72">    }</span>
+
+    /**
+     *
+     * @param decision
+     * @param status
+     * @param obligationResults
+     * @param advices
+     * @param policyReferences
+     * @param attributes
+     * @throws IllegalArgumentException
+     */
+    public Result(int decision, Status status, List&lt;ObligationResult&gt; obligationResults,
+                  List&lt;Advice&gt; advices, Set&lt;PolicyReference&gt; policyReferences, Set&lt;Attributes&gt; attributes)
+                                                                throws IllegalArgumentException {
+<span class="fc" id="L87">        super(decision, status, obligationResults, advices, XACMLConstants.XACML_VERSION_3_0);</span>
+<span class="fc" id="L88">        this.policyReferences = policyReferences;</span>
+<span class="fc" id="L89">        processAttributes(attributes);</span>
+<span class="fc" id="L90">    }</span>
+    /**
+     * Creates a new instance of a &lt;code&gt;Result&lt;/code&gt; based on the given
+     * DOM root node. A &lt;code&gt;ParsingException&lt;/code&gt; is thrown if the DOM
+     * root doesn't represent a valid ResultType.
+     *
+     * @param root the DOM root of a ResultType
+     *
+     * @return a new &lt;code&gt;Result&lt;/code&gt;
+     *
+     * @throws ParsingException if the node is invalid
+     */
+    public static AbstractResult getInstance(Node root) throws ParsingException {
+
+<span class="fc" id="L104">        int decision = -1;</span>
+<span class="fc" id="L105">        Status status = null;</span>
+<span class="fc" id="L106">        List&lt;ObligationResult&gt; obligations = null;</span>
+<span class="fc" id="L107">        List&lt;Advice&gt; advices = null;</span>
+<span class="fc" id="L108">        Set&lt;PolicyReference&gt; policyReferences = null;</span>
+<span class="fc" id="L109">        Set&lt;Attributes&gt;  attributes = null;</span>
+
+<span class="fc" id="L111">        NodeList nodes = root.getChildNodes();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L113">            Node node = nodes.item(i);</span>
+<span class="fc" id="L114">            String name = DOMHelper.getLocalName(node);</span>
+
+<span class="fc bfc" id="L116" title="All 2 branches covered.">            if (name.equals(&quot;Decision&quot;)) {</span>
+<span class="fc" id="L117">                String type = node.getFirstChild().getNodeValue();</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">                for (int j = 0; j &lt; DECISIONS.length; j++) {</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">                    if (DECISIONS[j].equals(type)) {</span>
+<span class="fc" id="L120">                        decision = j;</span>
+<span class="fc" id="L121">                        break;</span>
+                    }
+                }
+
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">                if (decision == -1){</span>
+<span class="nc" id="L126">                    throw new ParsingException(&quot;Unknown Decision: &quot; + type);</span>
+                }
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            } else if (name.equals(&quot;Status&quot;)) {</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">                if(status == null){</span>
+<span class="fc" id="L130">                    status = Status.getInstance(node);</span>
+                } else {
+<span class="nc" id="L132">                    throw new ParsingException(&quot;More than one StatusType defined&quot;);</span>
+                }
+<span class="fc bfc" id="L134" title="All 2 branches covered.">            } else if (name.equals(&quot;Obligations&quot;)) {</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">                if(obligations == null){</span>
+<span class="fc" id="L136">                    obligations = parseObligations(node);</span>
+                } else {
+<span class="nc" id="L138">                    throw new ParsingException(&quot;More than one ObligationsType defined&quot;);</span>
+                }
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            } else if (name.equals(&quot;AssociatedAdvice&quot;)) {</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">                if(advices == null){</span>
+<span class="fc" id="L142">                    advices = parseAdvices(node);</span>
+                } else {
+<span class="nc" id="L144">                    throw new ParsingException(&quot;More than one AssociatedAdviceType defined&quot;); </span>
+                }
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">            } else if (name.equals(&quot;PolicyIdentifierList&quot;)){</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">                if(policyReferences == null){</span>
+<span class="nc" id="L148">                    policyReferences = parsePolicyReferences(node);</span>
+                } else {
+<span class="nc" id="L150">                    throw new ParsingException(&quot;More than one PolicyIdentifierListType defined&quot;); </span>
+                }
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            } else if(name.equals(&quot;Attributes&quot;)){</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">                if(attributes == null){</span>
+<span class="fc" id="L154">                    attributes = new HashSet&lt;Attributes&gt;();</span>
+                }
+<span class="fc" id="L156">                attributes.add(Attributes.getInstance(node));    </span>
+            }
+        }
+
+<span class="fc" id="L160">        return new Result(decision, status, obligations, advices, policyReferences, attributes);</span>
+    }
+
+    /**
+     * Helper method that handles the obligations
+     *
+     * @param root the DOM root of the ObligationsType XML type
+     * @return a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;ObligationResult&lt;/code&gt;
+     * @throws ParsingException  if any issues in parsing DOM
+     */
+    private static List&lt;ObligationResult&gt; parseObligations(Node root) throws ParsingException {
+
+<span class="fc" id="L172">        List&lt;ObligationResult&gt; list = new ArrayList&lt;ObligationResult&gt;();</span>
+
+<span class="fc" id="L174">        NodeList nodes = root.getChildNodes();</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L176">            Node node = nodes.item(i);</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">            if (DOMHelper.getLocalName(node).equals(&quot;Obligation&quot;)){</span>
+<span class="fc" id="L178">                list.add(Obligation.getInstance(node));</span>
+            }
+        }
+
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (list.size() == 0) {</span>
+<span class="nc" id="L183">            throw new ParsingException(&quot;ObligationsType must not be empty&quot;);</span>
+        }
+<span class="fc" id="L185">        return list;</span>
+    }
+
+    /**
+     * Helper method that handles the Advices
+     * 
+     * @param root the DOM root of the AssociatedAdviceType XML type
+     * @return a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Advice&lt;/code&gt;
+     * @throws ParsingException  if any issues in parsing DOM
+     */
+    private static List&lt;Advice&gt; parseAdvices(Node root) throws ParsingException {
+
+<span class="fc" id="L197">        List&lt;Advice&gt; list = new ArrayList&lt;Advice&gt;();</span>
+
+<span class="fc" id="L199">        NodeList nodes = root.getChildNodes();</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L201">            Node node = nodes.item(i);</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">            if (DOMHelper.getLocalName(node).equals(&quot;Advice&quot;)){</span>
+<span class="fc" id="L203">                list.add(Advice.getInstance(node));</span>
+            }
+        }
+
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">        if (list.size() == 0) {</span>
+<span class="nc" id="L208">            throw new ParsingException(&quot;AssociatedAdviceType must not be empty&quot;);</span>
+        }
+<span class="fc" id="L210">        return list;</span>
+    }
+
+    /**
+     * Helper method that handles the Advices
+     *
+     * @param root the DOM root of the PolicyIdentifierListType XML type
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;PolicyReference&lt;/code&gt;
+     * @throws ParsingException  if any issues in parsing DOM
+     */
+    private static Set&lt;PolicyReference&gt; parsePolicyReferences(Node root) throws ParsingException {
+
+<span class="nc" id="L222">        Set&lt;PolicyReference&gt; set = new HashSet&lt;PolicyReference&gt;();</span>
+
+<span class="nc" id="L224">        NodeList nodes = root.getChildNodes();</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="nc" id="L226">            Node node = nodes.item(i);</span>
+<span class="nc" id="L227">            set.add(PolicyReference.getInstance(node, null, null));</span>
+        }
+        
+<span class="nc" id="L230">        return set;</span>
+    }
+
+    /**
+     * Return set of attributes that is sent to PEP
+     *
+     * @return set of attributes
+     */
+    public Set&lt;Attributes&gt; getAttributes() {
+<span class="fc" id="L239">        return attributes;</span>
+    }
+
+    /**
+     * Extract the attributes that must be included in the response
+     *
+     * @param attributesSet  a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;Attributes&lt;/code&gt;
+     */
+    public void processAttributes(Set&lt;Attributes&gt; attributesSet){
+
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        if(attributesSet == null){</span>
+<span class="fc" id="L250">            return;</span>
+        }
+
+<span class="fc" id="L253">        Set&lt;Attributes&gt; newSet = new HashSet&lt;Attributes&gt;();</span>
+
+<span class="fc bfc" id="L255" title="All 2 branches covered.">        for(Attributes attributes : attributesSet){</span>
+<span class="fc" id="L256">            Set&lt;Attribute&gt; attributeSet = attributes.getAttributes();</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">            if(attributeSet == null){</span>
+<span class="nc" id="L258">                continue;</span>
+            }
+<span class="fc" id="L260">            Set&lt;Attribute&gt; newAttributeSet = new HashSet&lt;Attribute&gt;();</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">            for(Attribute attribute : attributeSet){</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">                if(attribute.isIncludeInResult()){</span>
+<span class="fc" id="L263">                    newAttributeSet.add(attribute);</span>
+                }
+<span class="fc" id="L265">            }</span>
+
+<span class="fc bfc" id="L267" title="All 2 branches covered.">            if(newAttributeSet.size() &gt; 0){</span>
+<span class="fc" id="L268">                Attributes newAttributes = new Attributes(attributes.getCategory(),</span>
+<span class="fc" id="L269">                                    attributes.getContent(), newAttributeSet, attributes.getId());</span>
+<span class="fc" id="L270">                newSet.add(newAttributes);</span>
+            }
+<span class="fc" id="L272">        }</span>
+
+<span class="fc" id="L274">        this.attributes = newSet;</span>
+<span class="fc" id="L275">    }</span>
+
+    /**
+     * Encodes this &lt;code&gt;Result&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="fc" id="L285">        builder.append(&quot;&lt;Result&gt;&quot;);</span>
+        // encode the decision
+        //check whether decision is extended indeterminate values
+<span class="pc bpc" id="L288" title="1 of 6 branches missed.">        if(decision == 4 || decision == 5 || decision == 6){</span>
+            // if this is extended indeterminate values, we just return the &quot;Indeterminate&quot;
+<span class="fc" id="L290">            builder.append(&quot;&lt;Decision&gt;&quot;).append(DECISIONS[2]).append(&quot;&lt;/Decision&gt;&quot;);</span>
+        } else {
+<span class="fc" id="L292">            builder.append(&quot;&lt;Decision&gt;&quot;).append(DECISIONS[decision]).append(&quot;&lt;/Decision&gt;&quot;);</span>
+        }
+        // encode the status
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">        if (status != null){</span>
+<span class="fc" id="L296">            status.encode(builder);</span>
+        }
+        // encode the obligations
+<span class="fc bfc" id="L299" title="All 4 branches covered.">        if (obligations != null  &amp;&amp; obligations.size() != 0) {</span>
+
+<span class="fc" id="L301">            builder.append(&quot;&lt;Obligations&gt;&quot;);</span>
+
+<span class="fc" id="L303">            Iterator it = obligations.iterator();</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">            while (it.hasNext()) {</span>
+<span class="fc" id="L305">                Obligation obligation = (Obligation) (it.next());</span>
+<span class="fc" id="L306">                obligation.encode(builder);</span>
+<span class="fc" id="L307">            }</span>
+<span class="fc" id="L308">            builder.append(&quot;&lt;/Obligations&gt;&quot;);</span>
+        }
+
+        // encode the advices
+<span class="fc bfc" id="L312" title="All 4 branches covered.">        if (advices != null  &amp;&amp; advices.size() != 0) {</span>
+
+<span class="fc" id="L314">            builder.append(&quot;&lt;AssociatedAdvice&gt;&quot;);</span>
+
+<span class="fc" id="L316">            Iterator it = advices.iterator();</span>
+
+<span class="fc bfc" id="L318" title="All 2 branches covered.">            while (it.hasNext()) {</span>
+<span class="fc" id="L319">                Advice advice = (Advice) (it.next());</span>
+<span class="fc" id="L320">                advice.encode(builder);</span>
+<span class="fc" id="L321">            }</span>
+<span class="fc" id="L322">            builder.append(&quot;&lt;/AssociatedAdvice&gt;&quot;);</span>
+        }
+
+        // encode the policy, policySet references
+<span class="pc bpc" id="L326" title="3 of 4 branches missed.">        if (policyReferences != null  &amp;&amp; policyReferences.size() != 0) {</span>
+<span class="nc" id="L327">            builder.append(&quot;&lt;PolicyIdentifierList&gt;&quot;);</span>
+
+<span class="nc bnc" id="L329" title="All 2 branches missed.">            for(PolicyReference reference : policyReferences){</span>
+<span class="nc" id="L330">                reference.encode(builder);</span>
+<span class="nc" id="L331">            }</span>
+
+<span class="nc" id="L333">            builder.append(&quot;&lt;/PolicyIdentifierList&gt;&quot;);</span>
+        }
+
+        // encode the attributes
+<span class="fc bfc" id="L337" title="All 4 branches covered.">        if (attributes != null  &amp;&amp; attributes.size() != 0) {</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">            for(Attributes attribute : attributes){</span>
+<span class="fc" id="L339">                attribute.encode(builder);</span>
+<span class="fc" id="L340">            }</span>
+        }
+
+        // finish it off
+<span class="fc" id="L344">        builder.append(&quot;&lt;/Result&gt;&quot;);</span>
+<span class="fc" id="L345">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

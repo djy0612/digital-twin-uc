@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AttributeValue.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.attr</a> &gt; <span class="el_source">AttributeValue.java</span></div><h1>AttributeValue.java</h1><pre class="source lang-java linenums">/*
+ * @(#)AttributeValue.java
+ *
+ * Copyright 2003-2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.attr;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.Indenter;
+
+import org.wso2.balana.cond.Evaluatable;
+import org.wso2.balana.cond.EvaluationResult;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import java.net.URI;
+
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * The base type for all datatypes used in a policy or request/response, this abstract class
+ * represents a value for a given attribute type. All the required types defined in the XACML
+ * specification are provided as instances of &lt;code&gt;AttributeValue&lt;code&gt;s. If you want to
+ * provide a new type, extend this class and implement the
+ * &lt;code&gt;equals(Object)&lt;/code&gt; and &lt;code&gt;hashCode&lt;/code&gt; methods from &lt;code&gt;Object&lt;/code&gt;, which are
+ * used for equality checking.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public abstract class AttributeValue implements Evaluatable {
+
+    // the type of this attribute
+    private URI type;
+
+    /**
+     * Constructor that takes the specific attribute type.
+     * 
+     * @param type the attribute's type
+     */
+<span class="fc" id="L73">    protected AttributeValue(URI type) {</span>
+<span class="fc" id="L74">        this.type = type;</span>
+<span class="fc" id="L75">    }</span>
+
+    /**
+     * Returns the type of this attribute value. By default this always returns the type passed to
+     * the constructor.
+     * 
+     * @return the attribute's type
+     */
+    public URI getType() {
+<span class="fc" id="L84">        return type;</span>
+    }
+
+    /**
+     * Returns whether or not this value is actually a bag of values. This is a required interface
+     * from &lt;code&gt;Expression&lt;/code&gt;, but the more meaningful &lt;code&gt;isBag&lt;/code&gt; method is used by
+     * &lt;code&gt;AttributeValue&lt;/code&gt;s, so this method is declared as final and calls the
+     * &lt;code&gt;isBag&lt;/code&gt; method for this value.
+     * 
+     * @return true if this is a bag of values, false otherwise
+     */
+    public final boolean returnsBag() {
+<span class="fc" id="L96">        return isBag();</span>
+    }
+
+    /**
+     * Returns whether or not this value is actually a bag of values. This is a required interface
+     * from &lt;code&gt;Evaluatable&lt;/code&gt;, but the more meaningful &lt;code&gt;isBag&lt;/code&gt; method is used by
+     * &lt;code&gt;AttributeValue&lt;/code&gt;s, so this method is declared as final and calls the
+     * &lt;code&gt;isBag&lt;/code&gt; method for this value.
+     * 
+     * 
+     * @deprecated As of 2.0, you should use the &lt;code&gt;returnsBag&lt;/code&gt; method from the
+     *             super-interface &lt;code&gt;Expression&lt;/code&gt;.
+     * 
+     * @return true if this is a bag of values, false otherwise
+     */
+    public final boolean evaluatesToBag() {
+<span class="nc" id="L112">        return isBag();</span>
+    }
+
+    /**
+     * Always returns an empty list since values never have children.
+     * 
+     * @return an empty &lt;code&gt;List&lt;/code&gt;
+     */
+    public List getChildren() {
+<span class="nc" id="L121">        return Collections.EMPTY_LIST;</span>
+    }
+
+    /**
+     * Returns whether or not this value is actually a bag of values. By default this returns
+     * &lt;code&gt;false&lt;/code&gt;. Typically, only the &lt;code&gt;BagAttribute&lt;/code&gt; should ever override this
+     * to return &lt;code&gt;true&lt;/code&gt;.
+     * 
+     * @return true if this is a bag of values, false otherwise
+     */
+    public boolean isBag() {
+<span class="fc" id="L132">        return false;</span>
+    }
+
+    /**
+     * Implements the required interface from &lt;code&gt;Evaluatable&lt;/code&gt;. Since there is nothing to
+     * evaluate in an attribute value, the default result is just this instance. Override this
+     * method if you want special behavior, like a dynamic value.
+     * 
+     * @param context the representation of the request
+     * 
+     * @return a successful evaluation containing this value
+     */
+    public EvaluationResult evaluate(EvaluationCtx context) {
+<span class="fc" id="L145">        return new EvaluationResult(this);</span>
+    }
+
+    /**
+     * Encodes the value in a form suitable for including in XML data like a request or an
+     * obligation. This must return a value that could in turn be used by the factory to create a
+     * new instance with the same value.
+     * 
+     * @return a &lt;code&gt;String&lt;/code&gt; form of the value
+     */
+    public abstract String encode();
+
+    /**
+     * Encodes this &lt;code&gt;AttributeValue&lt;/code&gt; into its XML representation and writes this encoding
+     * to the given &lt;code&gt;StringBuilder&lt;/code&gt; This will always produce the version
+     * used in a policy rather than that used in a request, so this is equivalent to calling
+     * &lt;code&gt;encodeWithTags(true)&lt;/code&gt; and then stuffing that into a stream.
+     * 
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+<span class="fc" id="L166">        builder.append(encodeWithTags(true));</span>
+<span class="fc" id="L167">    }</span>
+
+    /**
+     * Encodes the value and includes the AttributeValue XML tags so that the resulting string can
+     * be included in a valid XACML policy or Request/Response. The &lt;code&gt;boolean&lt;/code&gt; parameter
+     * lets you include the DataType attribute, which is required in a policy but not allowed in a
+     * Request or Response.
+     * 
+     * @param includeType include the DataType XML attribute if &lt;code&gt;true&lt;/code&gt;, exclude if
+     *            &lt;code&gt;false&lt;/code&gt;
+     * 
+     * @return a &lt;code&gt;String&lt;/code&gt; encoding including the XML tags
+     */
+    public String encodeWithTags(boolean includeType) {
+        
+<span class="pc bpc" id="L182" title="2 of 4 branches missed.">        if (includeType &amp;&amp; type != null) {</span>
+<span class="fc" id="L183">            return &quot;&lt;AttributeValue DataType=\&quot;&quot; + type.toString() + &quot;\&quot;&gt;&quot; + encode()</span>
+                    + &quot;&lt;/AttributeValue&gt;&quot;;
+        } else {
+<span class="nc" id="L186">            return &quot;&lt;AttributeValue&gt;&quot; + encode() + &quot;&lt;/AttributeValue&gt;&quot;;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

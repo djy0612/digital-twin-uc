@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CombiningAlgFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.combine</a> &gt; <span class="el_source">CombiningAlgFactory.java</span></div><h1>CombiningAlgFactory.java</h1><pre class="source lang-java linenums">/*
+ * @(#)CombiningAlgFactory.java
+ *
+ * Copyright 2003-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.combine;
+
+import org.wso2.balana.PolicyMetaData;
+import org.wso2.balana.UnknownIdentifierException;
+import org.wso2.balana.XACMLConstants;
+
+import java.net.URI;
+
+import java.util.HashMap;
+import java.util.Set;
+
+/**
+ * Provides a factory mechanism for installing and retrieving combining algorithms.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public abstract class CombiningAlgFactory {
+
+    // the proxy used to get the default factory
+    private static CombiningAlgFactoryProxy defaultFactoryProxy;
+
+    // the map of registered factories
+    private static HashMap&lt;String, CombiningAlgFactoryProxy&gt; registeredFactories;
+
+    /**
+     * static initializer that sets up the default factory proxy and registers the standard
+     * namespaces
+     */
+    static {
+<span class="fc" id="L66">        CombiningAlgFactoryProxy proxy = new CombiningAlgFactoryProxy() {</span>
+            public CombiningAlgFactory getFactory() {
+<span class="nc" id="L68">                return StandardCombiningAlgFactory.getFactory();</span>
+            }
+        };
+
+<span class="fc" id="L72">        registeredFactories = new HashMap&lt;String, CombiningAlgFactoryProxy&gt;();</span>
+<span class="fc" id="L73">        registeredFactories.put(XACMLConstants.XACML_1_0_IDENTIFIER, proxy);</span>
+<span class="fc" id="L74">        registeredFactories.put(XACMLConstants.XACML_2_0_IDENTIFIER, proxy);</span>
+<span class="fc" id="L75">        registeredFactories.put(XACMLConstants.XACML_3_0_IDENTIFIER, proxy);</span>
+
+<span class="fc" id="L77">        defaultFactoryProxy = proxy;</span>
+<span class="fc" id="L78">    };</span>
+
+    /**
+     * Default constructor. Used only by subclasses.
+     */
+<span class="fc" id="L83">    protected CombiningAlgFactory() {</span>
+
+<span class="fc" id="L85">    }</span>
+
+    /**
+     * Returns the default factory. Depending on the default factory's implementation, this may
+     * return a singleton instance or new instances with each invocation.
+     * 
+     * @return the default &lt;code&gt;CombiningAlgFactory&lt;/code&gt;
+     */
+    public static final CombiningAlgFactory getInstance() {
+<span class="nc" id="L94">        return defaultFactoryProxy.getFactory();</span>
+    }
+
+    /**
+     * Returns a factory based on the given identifier. You may register as many factories as you
+     * like, and then retrieve them through this interface, but a factory may only be registered
+     * once using a given identifier. By default, the standard XACML 1.0 2.0 and 3.0 identifiers are
+     * registered to provide the standard factory.
+     * 
+     * @param identifier the identifier for a factory
+     * 
+     * @return a &lt;code&gt;CombiningAlgFactory&lt;/code&gt;
+     * 
+     * @throws UnknownIdentifierException if the given identifier isn't registered
+     */
+    public static final CombiningAlgFactory getInstance(String identifier)
+            throws UnknownIdentifierException {
+
+<span class="nc" id="L112">        CombiningAlgFactoryProxy proxy = registeredFactories.get(identifier);</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (proxy == null) {</span>
+<span class="nc" id="L114">            throw new UnknownIdentifierException(&quot;Unknown CombiningAlgFactory &quot; + &quot;identifier: &quot;</span>
+                    + identifier);
+        }
+<span class="nc" id="L117">        return proxy.getFactory();</span>
+    }
+
+    /**
+     * Sets the default factory. This does not register the factory proxy as an identifiable
+     * factory.
+     * 
+     * @param proxy the &lt;code&gt;CombiningAlgFactoryProxy&lt;/code&gt; to set as the new default factory
+     *            proxy
+     */
+    public static final void setDefaultFactory(CombiningAlgFactoryProxy proxy) {
+<span class="nc" id="L128">        defaultFactoryProxy = proxy;</span>
+<span class="nc" id="L129">    }</span>
+
+    /**
+     * Registers the given factory proxy with the given identifier. If the identifier is already
+     * used, then this throws an exception. If the identifier is not already used, then it will
+     * always be bound to the given proxy.
+     * 
+     * @param identifier the identifier for the proxy
+     * @param proxy the &lt;code&gt;CombiningAlgFactoryProxy&lt;/code&gt; to register with the given identifier
+     * 
+     * @throws IllegalArgumentException if the identifier is already used
+     */
+    public static final void registerFactory(String identifier, CombiningAlgFactoryProxy proxy)
+            throws IllegalArgumentException {
+<span class="nc" id="L143">        synchronized (registeredFactories) {</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            if (registeredFactories.containsKey(identifier))</span>
+<span class="nc" id="L145">                throw new IllegalArgumentException(&quot;Identifier is already &quot; + &quot;registered as &quot;</span>
+                        + &quot;CombiningAlgFactory: &quot; + identifier);
+
+<span class="nc" id="L148">            registeredFactories.put(identifier, proxy);</span>
+<span class="nc" id="L149">        }</span>
+<span class="nc" id="L150">    }</span>
+
+    /**
+     * Adds a combining algorithm to the factory. This single instance will be returned to anyone
+     * who asks the factory for an algorithm with the id given here.
+     * 
+     * @param alg the combining algorithm to add
+     * 
+     * @throws IllegalArgumentException if the algorithm is already registered
+     */
+    public abstract void addAlgorithm(CombiningAlgorithm alg);
+
+    /**
+     * Adds a combining algorithm to the factory. This single instance will be returned to anyone
+     * who asks the factory for an algorithm with the id given here.
+     * 
+     * @deprecated As of version 1.2, replaced by {@link #addAlgorithm(CombiningAlgorithm)}. The new
+     *             factory system requires you to get a factory instance and then call the
+     *             non-static methods on that factory. The static versions of these methods have
+     *             been left in for now, but are slower and will be removed in a future version.
+     * 
+     * @param alg the combining algorithm to add
+     * 
+     * @throws IllegalArgumentException if the algorithm is already registered
+     */
+    public static void addCombiningAlg(CombiningAlgorithm alg) {
+<span class="nc" id="L176">        getInstance().addAlgorithm(alg);</span>
+<span class="nc" id="L177">    }</span>
+
+    /**
+     * Returns the algorithm identifiers supported by this factory.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public abstract Set getSupportedAlgorithms();
+
+    /**
+     * Tries to return the correct combinging algorithm based on the given algorithm ID.
+     * 
+     * @param algId the identifier by which the algorithm is known
+     * 
+     * @return a combining algorithm
+     * 
+     * @throws UnknownIdentifierException algId is unknown
+     */
+    public abstract CombiningAlgorithm createAlgorithm(URI algId) throws UnknownIdentifierException;
+
+    /**
+     * Tries to return the correct combinging algorithm based on the given algorithm ID.
+     * 
+     * @deprecated As of version 1.2, replaced by {@link #createAlgorithm(URI)}. The new factory
+     *             system requires you to get a factory instance and then call the non-static
+     *             methods on that factory. The static versions of these methods have been left in
+     *             for now, but are slower and will be removed in a future version.
+     * 
+     * @param algId the identifier by which the algorithm is known
+     * 
+     * @return a combining algorithm
+     * 
+     * @throws UnknownIdentifierException algId is unknown
+     */
+    public static CombiningAlgorithm createCombiningAlg(URI algId)
+            throws UnknownIdentifierException {
+<span class="nc" id="L213">        return getInstance().createAlgorithm(algId);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

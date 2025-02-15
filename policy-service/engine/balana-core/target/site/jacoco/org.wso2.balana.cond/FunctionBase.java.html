@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FunctionBase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">FunctionBase.java</span></div><h1>FunctionBase.java</h1><pre class="source lang-java linenums">/*
+ * @(#)FunctionBase.java
+ *
+ * Copyright 2003-2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.Indenter;
+
+import org.wso2.balana.attr.AttributeValue;
+
+import org.wso2.balana.ctx.Status;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * An abstract utility superclass for functions. Supplies several useful methods, making it easier
+ * to implement a &lt;code&gt;Function&lt;/code&gt;. You can extend this class or implement
+ * &lt;code&gt;Function&lt;/code&gt; directly, depending on your needs.
+ * 
+ * @since 1.0
+ * @author Steve Hanna
+ * @author Seth Proctor
+ */
+public abstract class FunctionBase implements Function {
+
+    /**
+     * The standard namespace where all XACML 1.0 spec-defined functions live
+     */
+    public static final String FUNCTION_NS = &quot;urn:oasis:names:tc:xacml:1.0:function:&quot;;
+
+    /**
+     * The standard namespace where all XACML 2.0 spec-defined functions live
+     */
+    public static final String FUNCTION_NS_2 = &quot;urn:oasis:names:tc:xacml:2.0:function:&quot;;
+
+    /**
+     * The standard namespace where all XACML 3.0 spec-defined functions live
+     */
+    public static final String FUNCTION_NS_3 = &quot;urn:oasis:names:tc:xacml:3.0:function:&quot;;
+
+    // A List used by makeProcessingError() to save some steps.
+<span class="fc" id="L82">    private static List processingErrList = null;</span>
+
+    // the name of this function
+    private String functionName;
+
+    // the id used by this function
+    private int functionId;
+
+    // the return type of this function, and whether it's a bag
+    private String returnType;
+    private boolean returnsBag;
+
+    // flag that tells us which of the two constructors was used
+    private boolean singleType;
+
+    // parameter data if we're only using a single type
+    private String paramType;
+    private boolean paramIsBag;
+    private int numParams;
+    private int minParams;
+
+    // paramater data if we're using different types
+    private String[] paramTypes;
+    private boolean[] paramsAreBags;
+
+    /**
+     * Constructor that sets up the function as having some number of parameters all of the same
+     * given type. If &lt;code&gt;numParams&lt;/code&gt; is -1, then the length is variable
+     * 
+     * @param functionName the name of this function as used by the factory and any XACML policies
+     * @param functionId an optional identifier that can be used by your code for convenience
+     * @param paramType the type of all parameters to this function, as used by the factory and any
+     *            XACML documents
+     * @param paramIsBag whether or not every parameter is actually a bag of values
+     * @param numParams the number of parameters required by this function, or -1 if any number are
+     *            allowed
+     * @param returnType the type returned by this function, as used by the factory and any XACML
+     *            documents
+     * @param returnsBag whether or not this function returns a bag of values
+     */
+    public FunctionBase(String functionName, int functionId, String paramType, boolean paramIsBag,
+            int numParams, String returnType, boolean returnsBag) {
+<span class="fc" id="L124">        this(functionName, functionId, returnType, returnsBag);</span>
+
+<span class="fc" id="L126">        singleType = true;</span>
+
+<span class="fc" id="L128">        this.paramType = paramType;</span>
+<span class="fc" id="L129">        this.paramIsBag = paramIsBag;</span>
+<span class="fc" id="L130">        this.numParams = numParams;</span>
+<span class="fc" id="L131">        this.minParams = 0;</span>
+<span class="fc" id="L132">    }</span>
+
+    /**
+     * Constructor that sets up the function as having some number of parameters all of the same
+     * given type. If &lt;code&gt;numParams&lt;/code&gt; is -1, then the length is variable, and then
+     * &lt;code&gt;minParams&lt;/code&gt; may be used to specify a minimum number of parameters. If
+     * &lt;code&gt;numParams&lt;/code&gt; is not -1, then &lt;code&gt;minParams&lt;/code&gt; is ignored.
+     * 
+     * @param functionName the name of this function as used by the factory and any XACML policies
+     * @param functionId an optional identifier that can be used by your code for convenience
+     * @param paramType the type of all parameters to this function, as used by the factory and any
+     *            XACML documents
+     * @param paramIsBag whether or not every parameter is actually a bag of values
+     * @param numParams the number of parameters required by this function, or -1 if any number are
+     *            allowed
+     * @param minParams the minimum number of parameters required if &lt;code&gt;numParams&lt;/code&gt; is -1
+     * @param returnType the type returned by this function, as used by the factory and any XACML
+     *            documents
+     * @param returnsBag whether or not this function returns a bag of values
+     */
+    public FunctionBase(String functionName, int functionId, String paramType, boolean paramIsBag,
+            int numParams, int minParams, String returnType, boolean returnsBag) {
+<span class="fc" id="L154">        this(functionName, functionId, returnType, returnsBag);</span>
+
+<span class="fc" id="L156">        singleType = true;</span>
+
+<span class="fc" id="L158">        this.paramType = paramType;</span>
+<span class="fc" id="L159">        this.paramIsBag = paramIsBag;</span>
+<span class="fc" id="L160">        this.numParams = numParams;</span>
+<span class="fc" id="L161">        this.minParams = minParams;</span>
+<span class="fc" id="L162">    }</span>
+
+    /**
+     * Constructor that sets up the function as having different types for each given parameter.
+     * 
+     * @param functionName the name of this function as used by the factory and any XACML policies
+     * @param functionId an optional identifier that can be used by your code for convenience
+     * @param paramTypes the type of each parameter, in order, required by this function, as used by
+     *            the factory and any XACML documents
+     * @param paramIsBag whether or not each parameter is actually a bag of values
+     * @param returnType the type returned by this function, as used by the factory and any XACML
+     *            documents
+     * @param returnsBag whether or not this function returns a bag of values
+     */
+    public FunctionBase(String functionName, int functionId, String[] paramTypes,
+            boolean[] paramIsBag, String returnType, boolean returnsBag) {
+<span class="fc" id="L178">        this(functionName, functionId, returnType, returnsBag);</span>
+
+<span class="fc" id="L180">        singleType = false;</span>
+
+<span class="fc" id="L182">        this.paramTypes = paramTypes;</span>
+<span class="fc" id="L183">        this.paramsAreBags = paramIsBag;</span>
+<span class="fc" id="L184">    }</span>
+
+    /**
+     * Constructor that sets up some basic values for functions that will take care of parameter
+     * checking on their own. If you use this constructor for your function class, then you must
+     * override the two check methods to make sure that parameters are correct.
+     * 
+     * @param functionName the name of this function as used by the factory and any XACML policies
+     * @param functionId an optional identifier that can be used by your code for convenience
+     * @param returnType the type returned by this function, as used by the factory and any XACML
+     *            documents
+     * @param returnsBag whether or not this function returns a bag of values
+     */
+<span class="fc" id="L197">    public FunctionBase(String functionName, int functionId, String returnType, boolean returnsBag) {</span>
+<span class="fc" id="L198">        this.functionName = functionName;</span>
+<span class="fc" id="L199">        this.functionId = functionId;</span>
+<span class="fc" id="L200">        this.returnType = returnType;</span>
+<span class="fc" id="L201">        this.returnsBag = returnsBag;</span>
+<span class="fc" id="L202">    }</span>
+
+    /**
+     * Returns the full identifier of this function, as known by the factories.
+     * 
+     * @return the function's identifier
+     * 
+     * @throws IllegalArgumentException if the identifier isn't a valid URI
+     */
+    public URI getIdentifier() {
+        // this is to get around the exception handling problems, but may
+        // change if this code changes to include exceptions from the
+        // constructors
+        try {
+<span class="fc" id="L216">            return new URI(functionName);</span>
+<span class="nc" id="L217">        } catch (URISyntaxException use) {</span>
+<span class="nc" id="L218">            throw new IllegalArgumentException(&quot;invalid URI&quot;);</span>
+        }
+    }
+
+    /**
+     * Returns the name of the function to be handled by this particular object.
+     * 
+     * @return the function name
+     */
+    public String getFunctionName() {
+<span class="fc" id="L228">        return functionName;</span>
+    }
+
+    /**
+     * Returns the Identifier of the function to be handled by this particular object.
+     * 
+     * @return the function Id
+     */
+    public int getFunctionId() {
+<span class="fc" id="L237">        return functionId;</span>
+    }
+
+    /**
+     * Returns the same value as &lt;code&gt;getReturnType&lt;/code&gt;. This is here to support the
+     * &lt;code&gt;Expression&lt;/code&gt; interface.
+     * 
+     * @return the return type
+     */
+    public URI getType() {
+<span class="nc" id="L247">        return getReturnType();</span>
+    }
+
+    /**
+     * Get the attribute type returned by this function.
+     * 
+     * @return a &lt;code&gt;URI&lt;/code&gt; indicating the attribute type returned by this function
+     */
+    public URI getReturnType() {
+        try {
+<span class="fc" id="L257">            return new URI(returnType);</span>
+<span class="nc" id="L258">        } catch (Exception e) {</span>
+<span class="nc" id="L259">            return null;</span>
+        }
+    }
+
+    /**
+     * Returns true if this function returns a bag of values.
+     * 
+     * @return true if the function returns a bag, false otherwise
+     */
+    public boolean returnsBag() {
+<span class="fc" id="L269">        return returnsBag;</span>
+    }
+
+    /**
+     * Returns the return type for this particular object.
+     * 
+     * @return the return type
+     */
+    public String getReturnTypeAsString() {
+<span class="nc" id="L278">        return returnType;</span>
+    }
+
+    /**
+     * Create an &lt;code&gt;EvaluationResult&lt;/code&gt; that indicates a processing error with the specified
+     * message. This method may be useful to subclasses.
+     * 
+     * @param message a description of the error (&lt;code&gt;null&lt;/code&gt; if none)
+     * @return the desired &lt;code&gt;EvaluationResult&lt;/code&gt;
+     */
+    protected static EvaluationResult makeProcessingError(String message) {
+        // Build up the processing error Status.
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        if (processingErrList == null) {</span>
+<span class="fc" id="L291">            String[] errStrings = { Status.STATUS_PROCESSING_ERROR };</span>
+<span class="fc" id="L292">            processingErrList = Arrays.asList(errStrings);</span>
+        }
+<span class="fc" id="L294">        Status errStatus = new Status(processingErrList, message);</span>
+<span class="fc" id="L295">        EvaluationResult processingError = new EvaluationResult(errStatus);</span>
+
+<span class="fc" id="L297">        return processingError;</span>
+    }
+
+    /**
+     * Evaluates each of the parameters, in order, filling in the argument array with the resulting
+     * values. If any error occurs, this method returns the error, otherwise null is returned,
+     * signalling that evaluation was successful for all inputs, and the resulting argument list can
+     * be used.
+     * 
+     * @param params a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt; objects representing the
+     *            parameters to evaluate
+     * @param context the representation of the request
+     * @param args an array as long as the params &lt;code&gt;List&lt;/code&gt; that will, on return, contain
+     *            the &lt;code&gt;AttributeValue&lt;/code&gt;s generated from evaluating all parameters
+     * 
+     * @return &lt;code&gt;null&lt;/code&gt; if no errors were encountered, otherwise an
+     *         &lt;code&gt;EvaluationResult&lt;/code&gt; representing the error
+     */
+    protected EvaluationResult evalArgs(List&lt;Evaluatable&gt; params, EvaluationCtx context, AttributeValue[] args) {
+<span class="fc" id="L316">        Iterator it = params.iterator();</span>
+<span class="fc" id="L317">        int index = 0;</span>
+
+<span class="fc bfc" id="L319" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+            // get and evaluate the next parameter
+<span class="fc" id="L321">            Evaluatable eval = (Evaluatable) (it.next());</span>
+<span class="fc" id="L322">            EvaluationResult result = eval.evaluate(context);</span>
+
+            // If there was an error, pass it back...
+<span class="fc bfc" id="L325" title="All 2 branches covered.">            if (result.indeterminate()){</span>
+<span class="fc" id="L326">                return result;</span>
+            }
+            // ...otherwise save it and keep going
+<span class="fc" id="L329">            args[index++] = result.getAttributeValue();</span>
+<span class="fc" id="L330">        }</span>
+
+        // if no error occurred then we got here, so we return no errors
+<span class="fc" id="L333">        return null;</span>
+    }
+
+    /**
+     * Default handling of input checking. This does some simple checking based on the type of
+     * constructor used. If you need anything more complex, or if you used the simple constructor,
+     * then you must override this method.
+     * 
+     * @param inputs a &lt;code&gt;List&gt;&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt;s
+     * 
+     * @throws IllegalArgumentException if the inputs won't work
+     */
+    public void checkInputs(List inputs) throws IllegalArgumentException {
+        // first off, see what kind of function we are
+<span class="fc bfc" id="L347" title="All 2 branches covered.">        if (singleType) {</span>
+            // first, check the length of the inputs, if appropriate
+<span class="fc bfc" id="L349" title="All 2 branches covered.">            if (numParams != -1) {</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">                if (inputs.size() != numParams)</span>
+<span class="nc" id="L351">                    throw new IllegalArgumentException(&quot;wrong number of args&quot; + &quot; to &quot;</span>
+                            + functionName);
+            } else {
+<span class="pc bpc" id="L354" title="1 of 2 branches missed.">                if (inputs.size() &lt; minParams)</span>
+<span class="nc" id="L355">                    throw new IllegalArgumentException(&quot;not enough args&quot; + &quot; to &quot; + functionName);</span>
+            }
+
+            // now, make sure everything is of the same, correct type
+<span class="fc" id="L359">            Iterator it = inputs.iterator();</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">            while (it.hasNext()) {</span>
+<span class="fc" id="L361">                Evaluatable eval = (Evaluatable) (it.next());</span>
+
+<span class="pc bpc" id="L363" title="1 of 2 branches missed.">                if ((!eval.getType().toString().equals(paramType))</span>
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">                        || (eval.returnsBag() != paramIsBag))</span>
+<span class="nc" id="L365">                    throw new IllegalArgumentException(&quot;illegal parameter&quot;);</span>
+<span class="fc" id="L366">            }</span>
+<span class="fc" id="L367">        } else {</span>
+            // first, check the length of the inputs
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">            if (paramTypes.length != inputs.size())</span>
+<span class="nc" id="L370">                throw new IllegalArgumentException(&quot;wrong number of args&quot; + &quot; to &quot; + functionName);</span>
+
+            // now, make sure everything is of the same, correct type
+<span class="fc" id="L373">            Iterator it = inputs.iterator();</span>
+<span class="fc" id="L374">            int i = 0;</span>
+<span class="fc bfc" id="L375" title="All 2 branches covered.">            while (it.hasNext()) {</span>
+<span class="fc" id="L376">                Evaluatable eval = (Evaluatable) (it.next());</span>
+
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">                if ((!eval.getType().toString().equals(paramTypes[i]))</span>
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">                        || (eval.returnsBag() != paramsAreBags[i]))</span>
+<span class="nc" id="L380">                    throw new IllegalArgumentException(&quot;illegal parameter&quot;);</span>
+
+<span class="fc" id="L382">                i++;</span>
+<span class="fc" id="L383">            }</span>
+        }
+<span class="fc" id="L385">    }</span>
+
+    /**
+     * Default handling of input checking. This does some simple checking based on the type of
+     * constructor used. If you need anything more complex, or if you used the simple constructor,
+     * then you must override this method.
+     * 
+     * @param inputs a &lt;code&gt;List&gt;&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt;s
+     * 
+     * @throws IllegalArgumentException if the inputs won't work
+     */
+    public void checkInputsNoBag(List inputs) throws IllegalArgumentException {
+        // first off, see what kind of function we are
+<span class="fc bfc" id="L398" title="All 2 branches covered.">        if (singleType) {</span>
+            // first check to see if we need bags
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">            if (paramIsBag)</span>
+<span class="nc" id="L401">                throw new IllegalArgumentException(functionName + &quot;needs&quot; + &quot;bags on input&quot;);</span>
+
+            // now check on the length
+<span class="pc bpc" id="L404" title="1 of 2 branches missed.">            if (numParams != -1) {</span>
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">                if (inputs.size() != numParams)</span>
+<span class="nc" id="L406">                    throw new IllegalArgumentException(&quot;wrong number of args&quot; + &quot; to &quot;</span>
+                            + functionName);
+            } else {
+<span class="nc bnc" id="L409" title="All 2 branches missed.">                if (inputs.size() &lt; minParams)</span>
+<span class="nc" id="L410">                    throw new IllegalArgumentException(&quot;not enough args&quot; + &quot; to &quot; + functionName);</span>
+            }
+
+            // finally check param list
+<span class="fc" id="L414">            Iterator it = inputs.iterator();</span>
+<span class="fc bfc" id="L415" title="All 2 branches covered.">            while (it.hasNext()) {</span>
+<span class="fc" id="L416">                Evaluatable eval = (Evaluatable) (it.next());</span>
+
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">                if (!eval.getType().toString().equals(paramType))</span>
+<span class="nc" id="L419">                    throw new IllegalArgumentException(&quot;illegal parameter&quot;);</span>
+<span class="fc" id="L420">            }</span>
+<span class="fc" id="L421">        } else {</span>
+            // first, check the length of the inputs
+<span class="pc bpc" id="L423" title="1 of 2 branches missed.">            if (paramTypes.length != inputs.size())</span>
+<span class="nc" id="L424">                throw new IllegalArgumentException(&quot;wrong number of args&quot; + &quot; to &quot; + functionName);</span>
+
+            // now, make sure everything is of the same, correct type
+<span class="fc" id="L427">            Iterator it = inputs.iterator();</span>
+<span class="fc" id="L428">            int i = 0;</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">            while (it.hasNext()) {</span>
+<span class="fc" id="L430">                Evaluatable eval = (Evaluatable) (it.next());</span>
+
+<span class="pc bpc" id="L432" title="2 of 4 branches missed.">                if ((!eval.getType().toString().equals(paramTypes[i])) || (paramsAreBags[i]))</span>
+<span class="nc" id="L433">                    throw new IllegalArgumentException(&quot;illegal parameter&quot;);</span>
+
+<span class="fc" id="L435">                i++;</span>
+<span class="fc" id="L436">            }</span>
+        }
+<span class="fc" id="L438">    }</span>
+
+    /**
+     * Encodes this &lt;code&gt;FunctionBase&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="nc" id="L446">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L447">        encode(builder);</span>
+<span class="nc" id="L448">        return builder.toString();</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;FunctionBase&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+<span class="nc" id="L458">        builder.append(&quot;&lt;Function FunctionId=\&quot;&quot;).append(getFunctionName()).append(&quot;\&quot;/&gt;\n&quot;);</span>
+<span class="nc" id="L459">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

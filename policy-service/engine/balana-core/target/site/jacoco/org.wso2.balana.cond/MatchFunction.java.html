@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MatchFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">MatchFunction.java</span></div><h1>MatchFunction.java</h1><pre class="source lang-java linenums">/*
+ * @(#)MatchFunction.java
+ *
+ * Copyright 2003-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.XACMLConstants;
+import org.wso2.balana.attr.AnyURIAttribute;
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.BooleanAttribute;
+import org.wso2.balana.attr.DNSNameAttribute;
+import org.wso2.balana.attr.IPAddressAttribute;
+import org.wso2.balana.attr.RFC822NameAttribute;
+import org.wso2.balana.attr.StringAttribute;
+import org.wso2.balana.attr.X500NameAttribute;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import java.util.regex.Pattern;
+
+import javax.security.auth.x500.X500Principal;
+
+/**
+ * Implements the standard matching and regular expression functions.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ * @author Yassir Elley
+ */
+public class MatchFunction extends FunctionBase {
+
+    /**
+     * Standard identifier for the regexp-string-match function.
+     */
+    public static final String NAME_REGEXP_STRING_MATCH = FUNCTION_NS + &quot;regexp-string-match&quot;;
+
+    /**
+     * Standard identifier for the x500Name-match function.
+     */
+    public static final String NAME_X500NAME_MATCH = FUNCTION_NS + &quot;x500Name-match&quot;;
+
+    /**
+     * Standard identifier for the rfc822Name-match function.
+     */
+    public static final String NAME_RFC822NAME_MATCH = FUNCTION_NS + &quot;rfc822Name-match&quot;;
+
+    /**
+     * Standard identifier for the string-regexp-match function. NOTE: this in the 1.0 namespace
+     * right now because of a bug in the XACML 2.0 specification, but this will be changed to the
+     * 2.0 namespace as soon as the errata is recognized.
+     */
+    public static final String NAME_STRING_REGEXP_MATCH = FUNCTION_NS + &quot;string-regexp-match&quot;;
+
+    /**
+     * Standard identifier for the anyURI-regexp-match function.
+     */
+    public static final String NAME_ANYURI_REGEXP_MATCH = FUNCTION_NS_2 + &quot;anyURI-regexp-match&quot;;
+
+    /**
+     * Standard identifier for the ipAddress-regexp-match function.
+     */
+    public static final String NAME_IPADDRESS_REGEXP_MATCH = FUNCTION_NS_2
+            + &quot;ipAddress-regexp-match&quot;;
+
+    /**
+     * Standard identifier for the dnsName-regexp-match function.
+     */
+    public static final String NAME_DNSNAME_REGEXP_MATCH = FUNCTION_NS_2 + &quot;dnsName-regexp-match&quot;;
+
+    /**
+     * Standard identifier for the rfc822Name-regexp-match function.
+     */
+    public static final String NAME_RFC822NAME_REGEXP_MATCH = FUNCTION_NS_2
+            + &quot;rfc822Name-regexp-match&quot;;
+
+    /**
+     * Standard identifier for the x500Name-regexp-match function.
+     */
+    public static final String NAME_X500NAME_REGEXP_MATCH = FUNCTION_NS_2 + &quot;x500Name-regexp-match&quot;;
+
+    // private identifiers for the supported functions
+    private static final int ID_REGEXP_STRING_MATCH = 0;
+    private static final int ID_X500NAME_MATCH = 1;
+    private static final int ID_RFC822NAME_MATCH = 2;
+    private static final int ID_STRING_REGEXP_MATCH = 3;
+    private static final int ID_ANYURI_REGEXP_MATCH = 4;
+    private static final int ID_IPADDRESS_REGEXP_MATCH = 5;
+    private static final int ID_DNSNAME_REGEXP_MATCH = 6;
+    private static final int ID_RFC822NAME_REGEXP_MATCH = 7;
+    private static final int ID_X500NAME_REGEXP_MATCH = 8;
+
+    // private mappings for the input arguments
+<span class="fc" id="L128">    private static final String regexpParams[] = { StringAttribute.identifier,</span>
+            StringAttribute.identifier };
+<span class="fc" id="L130">    private static final String x500Params[] = { X500NameAttribute.identifier,</span>
+            X500NameAttribute.identifier };
+<span class="fc" id="L132">    private static final String rfc822Params[] = { StringAttribute.identifier,</span>
+            RFC822NameAttribute.identifier };
+<span class="fc" id="L134">    private static final String stringRegexpParams[] = { StringAttribute.identifier,</span>
+            StringAttribute.identifier };
+<span class="fc" id="L136">    private static final String anyURIRegexpParams[] = { StringAttribute.identifier,</span>
+            AnyURIAttribute.identifier };
+<span class="fc" id="L138">    private static final String ipAddressRegexpParams[] = { StringAttribute.identifier,</span>
+            IPAddressAttribute.identifier };
+<span class="fc" id="L140">    private static final String dnsNameRegexpParams[] = { StringAttribute.identifier,</span>
+            DNSNameAttribute.identifier };
+<span class="fc" id="L142">    private static final String rfc822NameRegexpParams[] = { StringAttribute.identifier,</span>
+            RFC822NameAttribute.identifier };
+<span class="fc" id="L144">    private static final String x500NameRegexpParams[] = { StringAttribute.identifier,</span>
+            X500NameAttribute.identifier };
+
+    // private mapping for bag input options
+<span class="fc" id="L148">    private static final boolean bagParams[] = { false, false };</span>
+
+    /**
+     * Creates a new &lt;code&gt;MatchFunction&lt;/code&gt; based on the given name.
+     * 
+     * @param functionName the name of the standard match function, including the complete namespace
+     * 
+     * @throws IllegalArgumentException if the function is unknown
+     */
+    public MatchFunction(String functionName) {
+<span class="fc" id="L158">        super(functionName, getId(functionName), getArgumentTypes(functionName), bagParams,</span>
+                BooleanAttribute.identifier, false);
+<span class="fc" id="L160">    }</span>
+
+    /**
+     * Private helper that returns the internal identifier used for the given standard function.
+     */
+    private static int getId(String functionName) {
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (functionName.equals(NAME_REGEXP_STRING_MATCH))</span>
+<span class="fc" id="L167">            return ID_REGEXP_STRING_MATCH;</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        else if (functionName.equals(NAME_X500NAME_MATCH))</span>
+<span class="fc" id="L169">            return ID_X500NAME_MATCH;</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        else if (functionName.equals(NAME_RFC822NAME_MATCH))</span>
+<span class="fc" id="L171">            return ID_RFC822NAME_MATCH;</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        else if (functionName.equals(NAME_STRING_REGEXP_MATCH))</span>
+<span class="fc" id="L173">            return ID_STRING_REGEXP_MATCH;</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        else if (functionName.equals(NAME_ANYURI_REGEXP_MATCH))</span>
+<span class="fc" id="L175">            return ID_ANYURI_REGEXP_MATCH;</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        else if (functionName.equals(NAME_IPADDRESS_REGEXP_MATCH))</span>
+<span class="fc" id="L177">            return ID_IPADDRESS_REGEXP_MATCH;</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        else if (functionName.equals(NAME_DNSNAME_REGEXP_MATCH))</span>
+<span class="fc" id="L179">            return ID_DNSNAME_REGEXP_MATCH;</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        else if (functionName.equals(NAME_RFC822NAME_REGEXP_MATCH))</span>
+<span class="nc" id="L181">            return ID_RFC822NAME_REGEXP_MATCH;</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">        else if (functionName.equals(NAME_X500NAME_REGEXP_MATCH))</span>
+<span class="nc" id="L183">            return ID_X500NAME_REGEXP_MATCH;</span>
+
+<span class="nc" id="L185">        throw new IllegalArgumentException(&quot;unknown match function: &quot; + functionName);</span>
+    }
+
+    /**
+     * Private helper that returns the types used for the given standard function. Note that this
+     * doesn't check on the return value since the method always is called after getId, so we assume
+     * that the function is present.
+     */
+    private static String[] getArgumentTypes(String functionName) {
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (functionName.equals(NAME_REGEXP_STRING_MATCH))</span>
+<span class="fc" id="L195">            return regexpParams;</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        else if (functionName.equals(NAME_X500NAME_MATCH))</span>
+<span class="fc" id="L197">            return x500Params;</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        else if (functionName.equals(NAME_RFC822NAME_MATCH))</span>
+<span class="fc" id="L199">            return rfc822Params;</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        else if (functionName.equals(NAME_STRING_REGEXP_MATCH))</span>
+<span class="fc" id="L201">            return stringRegexpParams;</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        else if (functionName.equals(NAME_ANYURI_REGEXP_MATCH))</span>
+<span class="fc" id="L203">            return anyURIRegexpParams;</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        else if (functionName.equals(NAME_IPADDRESS_REGEXP_MATCH))</span>
+<span class="fc" id="L205">            return ipAddressRegexpParams;</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">        else if (functionName.equals(NAME_DNSNAME_REGEXP_MATCH))</span>
+<span class="fc" id="L207">            return dnsNameRegexpParams;</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">        else if (functionName.equals(NAME_RFC822NAME_REGEXP_MATCH))</span>
+<span class="nc" id="L209">            return rfc822NameRegexpParams;</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        else if (functionName.equals(NAME_X500NAME_REGEXP_MATCH))</span>
+<span class="nc" id="L211">            return x500NameRegexpParams;</span>
+
+<span class="nc" id="L213">        return null;</span>
+    }
+
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public static Set getSupportedIdentifiers() {
+<span class="fc" id="L222">        Set set = new HashSet();</span>
+
+<span class="fc" id="L224">        set.add(NAME_REGEXP_STRING_MATCH);</span>
+<span class="fc" id="L225">        set.add(NAME_X500NAME_MATCH);</span>
+<span class="fc" id="L226">        set.add(NAME_RFC822NAME_MATCH);</span>
+<span class="fc" id="L227">        set.add(NAME_STRING_REGEXP_MATCH);</span>
+<span class="fc" id="L228">        set.add(NAME_ANYURI_REGEXP_MATCH);</span>
+<span class="fc" id="L229">        set.add(NAME_IPADDRESS_REGEXP_MATCH);</span>
+<span class="fc" id="L230">        set.add(NAME_DNSNAME_REGEXP_MATCH);</span>
+<span class="fc" id="L231">        set.add(NAME_RFC822NAME_MATCH);</span>
+<span class="fc" id="L232">        set.add(NAME_X500NAME_MATCH);</span>
+
+<span class="fc" id="L234">        return set;</span>
+    }
+
+    /**
+     * Evaluate the function, using the specified parameters.
+     * 
+     * @param inputs a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt; objects representing the
+     *            arguments passed to the function
+     * @param context an &lt;code&gt;EvaluationCtx&lt;/code&gt; so that the &lt;code&gt;Evaluatable&lt;/code&gt; objects can
+     *            be evaluated
+     * @return an &lt;code&gt;EvaluationResult&lt;/code&gt; representing the function's result
+     */
+    public EvaluationResult evaluate(List inputs, EvaluationCtx context) {
+
+        // Evaluate the arguments
+<span class="fc" id="L249">        AttributeValue[] argValues = new AttributeValue[inputs.size()];</span>
+<span class="fc" id="L250">        EvaluationResult result = evalArgs(inputs, context, argValues);</span>
+
+        // make sure we didn't get an error in processing the args
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">        if (result != null)</span>
+<span class="nc" id="L254">            return result;</span>
+
+        // now that we're setup, we can do the matching operations
+
+<span class="fc" id="L258">        boolean boolResult = false;</span>
+
+<span class="pc bpc" id="L260" title="6 of 9 branches missed.">        switch (getFunctionId()) {</span>
+
+        case ID_REGEXP_STRING_MATCH:
+        case ID_STRING_REGEXP_MATCH: {
+            // arg0 is a regular expression; arg1 is a general string
+<span class="fc" id="L265">            String arg0 = ((StringAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L266">            String arg1 = ((StringAttribute) (argValues[1])).getValue();</span>
+
+<span class="pc bpc" id="L268" title="3 of 4 branches missed.">            if (context.isSearching() &amp;&amp; arg1.equals(XACMLConstants.ANY)) {</span>
+<span class="nc" id="L269">                boolResult = true;</span>
+            } else {
+<span class="fc" id="L271">                boolResult = regexpHelper(arg0, arg1);</span>
+            }
+
+<span class="fc" id="L274">            break;</span>
+        }
+
+        case ID_X500NAME_MATCH: {
+<span class="fc" id="L278">            X500Principal arg0 = ((X500NameAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L279">            X500Principal arg1 = ((X500NameAttribute) (argValues[1])).getValue();</span>
+
+<span class="fc" id="L281">            boolResult = arg1.getName(X500Principal.CANONICAL).endsWith(</span>
+<span class="fc" id="L282">                    arg0.getName(X500Principal.CANONICAL));</span>
+
+<span class="fc" id="L284">            break;</span>
+        }
+
+        case ID_RFC822NAME_MATCH: {
+<span class="fc" id="L288">            String arg0 = ((StringAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L289">            String arg1 = ((RFC822NameAttribute) (argValues[1])).getValue();</span>
+
+<span class="fc bfc" id="L291" title="All 2 branches covered.">            if (arg0.indexOf('@') != -1) {</span>
+                // this is case #1 : a whole address
+<span class="fc" id="L293">                String normalized = (new RFC822NameAttribute(arg0)).getValue();</span>
+<span class="fc" id="L294">                boolResult = normalized.equals(arg1);</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">            } else if (arg0.charAt(0) == '.') {</span>
+                // this is case #3 : a sub-domain
+<span class="nc" id="L297">                boolResult = arg1.endsWith(arg0.toLowerCase());</span>
+            } else {
+                // this is case #2 : any mailbox at a specific domain
+<span class="fc" id="L300">                String mailDomain = arg1.substring(arg1.indexOf('@') + 1);</span>
+<span class="fc" id="L301">                boolResult = arg0.toLowerCase().equals(mailDomain);</span>
+            }
+
+<span class="fc" id="L304">            break;</span>
+        }
+
+        case ID_ANYURI_REGEXP_MATCH: {
+            // arg0 is a regular expression; arg1 is a general string
+<span class="nc" id="L309">            String arg0 = ((StringAttribute) (argValues[0])).getValue();</span>
+<span class="nc" id="L310">            String arg1 = ((AnyURIAttribute) (argValues[1])).encode();</span>
+
+<span class="nc" id="L312">            boolResult = regexpHelper(arg0, arg1);</span>
+
+<span class="nc" id="L314">            break;</span>
+        }
+
+        case ID_IPADDRESS_REGEXP_MATCH: {
+            // arg0 is a regular expression; arg1 is a general string
+<span class="nc" id="L319">            String arg0 = ((StringAttribute) (argValues[0])).getValue();</span>
+<span class="nc" id="L320">            String arg1 = ((IPAddressAttribute) (argValues[1])).encode();</span>
+
+<span class="nc" id="L322">            boolResult = regexpHelper(arg0, arg1);</span>
+
+<span class="nc" id="L324">            break;</span>
+        }
+
+        case ID_DNSNAME_REGEXP_MATCH: {
+            // arg0 is a regular expression; arg1 is a general string
+<span class="nc" id="L329">            String arg0 = ((StringAttribute) (argValues[0])).getValue();</span>
+<span class="nc" id="L330">            String arg1 = ((DNSNameAttribute) (argValues[1])).encode();</span>
+
+<span class="nc" id="L332">            boolResult = regexpHelper(arg0, arg1);</span>
+
+<span class="nc" id="L334">            break;</span>
+        }
+
+        case ID_RFC822NAME_REGEXP_MATCH: {
+            // arg0 is a regular expression; arg1 is a general string
+<span class="nc" id="L339">            String arg0 = ((StringAttribute) (argValues[0])).getValue();</span>
+<span class="nc" id="L340">            String arg1 = ((RFC822NameAttribute) (argValues[1])).encode();</span>
+
+<span class="nc" id="L342">            boolResult = regexpHelper(arg0, arg1);</span>
+
+<span class="nc" id="L344">            break;</span>
+        }
+
+        case ID_X500NAME_REGEXP_MATCH: {
+            // arg0 is a regular expression; arg1 is a general string
+<span class="nc" id="L349">            String arg0 = ((StringAttribute) (argValues[0])).getValue();</span>
+<span class="nc" id="L350">            String arg1 = ((X500NameAttribute) (argValues[1])).encode();</span>
+
+<span class="nc" id="L352">            boolResult = regexpHelper(arg0, arg1);</span>
+
+<span class="nc" id="L354">            break;</span>
+        }
+
+        }
+
+        // Return the result as a BooleanAttribute.
+<span class="fc" id="L360">        return EvaluationResult.getInstance(boolResult);</span>
+    }
+
+    /**
+     *
+     */
+    private boolean regexpHelper(String xpr, String str) {
+        // the regular expression syntax required by XACML differs
+        // from the syntax supported by java.util.regex.Pattern
+        // in several ways; the next several code blocks transform
+        // the XACML syntax into a semantically equivalent Pattern syntax
+
+<span class="fc" id="L372">        StringBuffer buf = new StringBuffer(xpr);</span>
+
+        // in order to handle the requirement that the string is
+        // considered to match the pattern if any substring matches
+        // the pattern, we prepend &quot;.*&quot; and append &quot;.*&quot; to the reg exp,
+        // but only if there isn't an anchor (^ or $) in place
+
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">        if (xpr.charAt(0) != '^')</span>
+<span class="fc" id="L380">            buf = buf.insert(0, &quot;.*&quot;);</span>
+
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">        if (xpr.charAt(xpr.length() - 1) != '$')</span>
+<span class="fc" id="L383">            buf = buf.insert(buf.length(), &quot;.*&quot;);</span>
+
+        // in order to handle Unicode blocks, we replace all
+        // instances of &quot;\p{Is&quot; with &quot;\p{In&quot; in the reg exp
+
+<span class="fc" id="L388">        int idx = -1;</span>
+<span class="fc" id="L389">        idx = buf.indexOf(&quot;\\p{Is&quot;, 0);</span>
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">        while (idx != -1) {</span>
+<span class="nc" id="L391">            buf = buf.replace(idx, idx + 5, &quot;\\p{In&quot;);</span>
+<span class="nc" id="L392">            idx = buf.indexOf(&quot;\\p{Is&quot;, idx);</span>
+        }
+
+        // in order to handle Unicode blocks, we replace all instances
+        // of &quot;\P{Is&quot; with &quot;\P{In&quot; in the reg exp
+
+<span class="fc" id="L398">        idx = -1;</span>
+<span class="fc" id="L399">        idx = buf.indexOf(&quot;\\P{Is&quot;, 0);</span>
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">        while (idx != -1) {</span>
+<span class="nc" id="L401">            buf = buf.replace(idx, idx + 5, &quot;\\P{In&quot;);</span>
+<span class="nc" id="L402">            idx = buf.indexOf(&quot;\\P{Is&quot;, idx);</span>
+        }
+
+        // in order to handle character class subtraction, we
+        // replace all instances of &quot;-[&quot; with &quot;&amp;&amp;[^&quot; in the reg exp
+
+<span class="fc" id="L408">        idx = -1;</span>
+<span class="fc" id="L409">        idx = buf.indexOf(&quot;-[&quot;, 0);</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">        while (idx != -1) {</span>
+<span class="nc" id="L411">            buf = buf.replace(idx, idx + 2, &quot;&amp;&amp;[^&quot;);</span>
+<span class="nc" id="L412">            idx = buf.indexOf(&quot;-[&quot;, idx);</span>
+        }
+
+<span class="fc" id="L415">        return Pattern.matches(buf.toString(), str);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

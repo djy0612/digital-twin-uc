@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeneralSetFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">GeneralSetFunction.java</span></div><h1>GeneralSetFunction.java</h1><pre class="source lang-java linenums">/*
+ * @(#)GeneralSetFunction.java
+ *
+ * Copyright 2004-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.BagAttribute;
+
+import java.util.*;
+
+/**
+ * Specific &lt;code&gt;SetFunction&lt;/code&gt; class that supports all of the general-purpose set functions:
+ * type-intersection and type-union.
+ * 
+ * @since 1.2
+ * @author Seth Proctor
+ */
+public class GeneralSetFunction extends SetFunction {
+
+	// private identifiers for the supported functions
+	private static final int ID_BASE_INTERSECTION = 0;
+	private static final int ID_BASE_UNION = 1;
+
+	// mapping of function name to its associated id and parameter type
+	private static HashMap&lt;String, Integer&gt; idMap;
+	private static HashMap&lt;String, String&gt; typeMap;
+
+	/**
+	 * Static initializer that sets up the parameter info for all the supported functions.
+	 */
+	static {
+<span class="fc" id="L66">		idMap = new HashMap&lt;String, Integer&gt;();</span>
+<span class="fc" id="L67">		typeMap = new HashMap&lt;String, String&gt;();</span>
+
+<span class="fc" id="L69">		idMap.put(NAME_BASE_INTERSECTION, Integer.valueOf(ID_BASE_INTERSECTION));</span>
+<span class="fc" id="L70">		idMap.put(NAME_BASE_UNION, Integer.valueOf(ID_BASE_UNION));</span>
+
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		for (int i = 0; i &lt; baseTypes.length; i++) {</span>
+<span class="fc" id="L73">			String baseName = FUNCTION_NS + simpleTypes[i];</span>
+<span class="fc" id="L74">			String baseType = baseTypes[i];</span>
+
+<span class="fc" id="L76">			idMap.put(baseName + NAME_BASE_INTERSECTION, Integer.valueOf(ID_BASE_INTERSECTION));</span>
+<span class="fc" id="L77">			idMap.put(baseName + NAME_BASE_UNION, Integer.valueOf(ID_BASE_UNION));</span>
+
+<span class="fc" id="L79">			typeMap.put(baseName + NAME_BASE_INTERSECTION, baseType);</span>
+<span class="fc" id="L80">			typeMap.put(baseName + NAME_BASE_UNION, baseType);</span>
+		}
+
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		for (int i = 0; i &lt; baseTypes2.length; i++) {</span>
+<span class="fc" id="L84">			String baseName = FUNCTION_NS_2 + simpleTypes2[i];</span>
+<span class="fc" id="L85">			String baseType = baseTypes2[i];</span>
+
+<span class="fc" id="L87">			idMap.put(baseName + NAME_BASE_INTERSECTION, Integer.valueOf(ID_BASE_INTERSECTION));</span>
+<span class="fc" id="L88">			idMap.put(baseName + NAME_BASE_UNION, Integer.valueOf(ID_BASE_UNION));</span>
+
+<span class="fc" id="L90">			typeMap.put(baseName + NAME_BASE_INTERSECTION, baseType);</span>
+<span class="fc" id="L91">			typeMap.put(baseName + NAME_BASE_UNION, baseType);</span>
+		}
+<span class="fc" id="L93">	};</span>
+
+	/**
+	 * Constructor that is used to create one of the general-purpose standard set functions. The
+	 * name supplied must be one of the standard XACML functions supported by this class, including
+	 * the full namespace, otherwise an exception is thrown. Look in &lt;code&gt;SetFunction&lt;/code&gt; for
+	 * details about the supported names.
+	 * 
+	 * @param functionName the name of the function to create
+	 * 
+	 * @throws IllegalArgumentException if the function is unknown
+	 */
+	public GeneralSetFunction(String functionName) {
+<span class="fc" id="L106">		super(functionName, getId(functionName), getArgumentType(functionName),</span>
+<span class="fc" id="L107">				getArgumentType(functionName), true);</span>
+<span class="fc" id="L108">	}</span>
+
+	/**
+	 * Constructor that is used to create instances of general-purpose set functions for new
+	 * (non-standard) datatypes. This is equivalent to using the &lt;code&gt;getInstance&lt;/code&gt; methods in
+	 * &lt;code&gt;SetFunction&lt;/code&gt; and is generally only used by the run-time configuration code.
+	 * 
+	 * @param functionName the name of the new function
+	 * @param datatype the full identifier for the supported datatype
+	 * @param functionType which kind of Set function, based on the &lt;code&gt;NAME_BASE_*&lt;/code&gt; fields
+	 */
+	public GeneralSetFunction(String functionName, String datatype, String functionType) {
+<span class="nc" id="L120">		super(functionName, getId(functionType), datatype, datatype, true);</span>
+<span class="nc" id="L121">	}</span>
+
+	/**
+	 * Private helper that returns the internal identifier used for the given standard function.
+	 */
+	private static int getId(String functionName) {
+<span class="fc" id="L127">		Integer id = (Integer) (idMap.get(functionName));</span>
+
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">		if (id == null)</span>
+<span class="nc" id="L130">			throw new IllegalArgumentException(&quot;unknown set function &quot; + functionName);</span>
+
+<span class="fc" id="L132">		return id.intValue();</span>
+	}
+
+	/**
+	 * Private helper that returns the argument type for the given standard function. Note that this
+	 * doesn't check on the return value since the method always is called after getId, so we assume
+	 * that the function is present.
+	 */
+	private static String getArgumentType(String functionName) {
+<span class="fc" id="L141">		return (String) (typeMap.get(functionName));</span>
+	}
+
+	/**
+	 * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+	 * 
+	 * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+	 */
+	public static Set getSupportedIdentifiers() {
+<span class="fc" id="L150">		return Collections.unmodifiableSet(idMap.keySet());</span>
+	}
+
+	/**
+	 * Evaluates the function, using the specified parameters.
+	 * 
+	 * @param inputs a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt; objects representing the
+	 *            arguments passed to the function
+	 * @param context an &lt;code&gt;EvaluationCtx&lt;/code&gt; so that the &lt;code&gt;Evaluatable&lt;/code&gt; objects can
+	 *            be evaluated
+	 * @return an &lt;code&gt;EvaluationResult&lt;/code&gt; representing the function's result
+	 */
+	public EvaluationResult evaluate(List inputs, EvaluationCtx context) {
+
+		// Evaluate the arguments
+<span class="fc" id="L165">		AttributeValue[] argValues = new AttributeValue[inputs.size()];</span>
+<span class="fc" id="L166">		EvaluationResult evalResult = evalArgs(inputs, context, argValues);</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">		if (evalResult != null)</span>
+<span class="nc" id="L168">			return evalResult;</span>
+
+		// setup the two bags we'll be using
+<span class="fc" id="L171">		BagAttribute[] bags = new BagAttribute[2];</span>
+<span class="fc" id="L172">		bags[0] = (BagAttribute) (argValues[0]);</span>
+<span class="fc" id="L173">		bags[1] = (BagAttribute) (argValues[1]);</span>
+
+<span class="fc" id="L175">		AttributeValue result = null;</span>
+<span class="fc" id="L176">		Set&lt;AttributeValue&gt; set = new HashSet&lt;AttributeValue&gt;();</span>
+
+<span class="pc bpc" id="L178" title="1 of 3 branches missed.">		switch (getFunctionId()) {</span>
+
+		// *-intersection takes two bags of the same type and returns
+		// a bag of that type
+		case ID_BASE_INTERSECTION:
+			// create a bag with the common elements of both inputs, removing
+			// all duplicate values
+
+<span class="fc" id="L186">			Iterator it = bags[0].iterator();</span>
+
+			// find all the things in bags[0] that are also in bags[1]
+<span class="fc bfc" id="L189" title="All 2 branches covered.">			while (it.hasNext()) {</span>
+<span class="fc" id="L190">				AttributeValue value = (AttributeValue) (it.next());</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">				if (bags[1].contains(value)) {</span>
+					// sets won't allow duplicates, so this addition is ok
+<span class="fc" id="L193">					set.add(value);</span>
+				}
+<span class="fc" id="L195">			}</span>
+
+<span class="fc" id="L197">			result = new BagAttribute(bags[0].getType(), Arrays.asList(set.toArray(new AttributeValue[set.size()])));</span>
+
+<span class="fc" id="L199">			break;</span>
+
+		// *-union takes two bags of the same type and returns a bag of
+		// that type
+		case ID_BASE_UNION:
+			// create a bag with all the elements from both inputs, removing
+			// all duplicate values
+
+<span class="fc" id="L207">			Iterator it0 = bags[0].iterator();</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">			while (it0.hasNext()) {</span>
+				// first off, add all elements from the first bag...the set
+				// will ignore all duplicates
+<span class="fc" id="L211">				set.add((AttributeValue)it0.next());</span>
+			}
+
+<span class="fc" id="L214">			Iterator it1 = bags[1].iterator();</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">			while (it1.hasNext()) {</span>
+				// now add all the elements from the second bag...again, all
+				// duplicates will be ignored by the set
+<span class="fc" id="L218">				set.add((AttributeValue)it1.next());</span>
+			}
+
+<span class="fc" id="L221">			result = new BagAttribute(bags[0].getType(),  Arrays.asList(set.toArray(new AttributeValue[set.size()])));</span>
+
+			break;
+		}
+
+<span class="fc" id="L226">		return new EvaluationResult(result);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -1,0 +1,751 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>XACML3EvaluationCtx.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.ctx.xacml3</a> &gt; <span class="el_source">XACML3EvaluationCtx.java</span></div><h1>XACML3EvaluationCtx.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+package org.wso2.balana.ctx.xacml3;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.*;
+import org.wso2.balana.attr.*;
+import org.wso2.balana.attr.xacml3.XPathAttribute;
+import org.wso2.balana.cond.EvaluationResult;
+import org.wso2.balana.ctx.*;
+import org.wso2.balana.finder.ResourceFinderResult;
+import org.wso2.balana.xacml3.*;
+
+import javax.xml.namespace.NamespaceContext;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathFactory;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
+
+/**
+ * This is implementation of XACML3 evaluation context
+ *
+ */
+public class XACML3EvaluationCtx extends BasicEvaluationCtx {
+
+    /**
+     * Attributes set of the request
+     */
+    private Set&lt;Attributes&gt; attributesSet;
+
+    /**
+     * multiple content selectors.
+     */
+    private Set&lt;Attributes&gt; multipleContentSelectors;
+
+    /**
+     * whether multiple attributes are present or not
+     */
+    private boolean multipleAttributes;
+
+    /**
+     * Set of policy references
+     */
+    private Set&lt;PolicyReference&gt; policyReferences;
+
+    /**
+     * attributes categorized as Map
+     *
+     * Category  --&gt; Attributes Set
+     */
+    private Map&lt;String, List&lt;Attributes&gt;&gt; mapAttributes;
+
+    /**
+     * XACML3 request
+     */
+    private RequestCtx requestCtx;
+
+    /**
+     * XACML3 request scope. used with multiple resource profile
+     */
+    private Attribute resourceScopeAttribute;
+
+    /**
+     * XACML3 request scope. used with hierarchical resource
+     */
+    private int resourceScope;
+
+    /**
+     * XACML 3 request resource id.  used with hierarchical resource
+     */
+    private Attribute resourceId;
+
+    /**
+     * logger
+     */
+<span class="fc" id="L99">    private static final Log logger = LogFactory.getLog(XACML3EvaluationCtx.class);</span>
+
+    /**
+     * Creates a new &lt;code&gt;XACML3EvaluationCtx&lt;/code&gt;
+     *
+     * @param requestCtx  XACML3  RequestCtx
+     * @param pdpConfig PDP configurations
+     */
+<span class="fc" id="L107">    public XACML3EvaluationCtx(RequestCtx requestCtx, PDPConfig pdpConfig) {</span>
+
+        // initialize the cached date/time values so it's clear we haven't
+        // retrieved them yet
+<span class="fc" id="L111">        currentDate = null;</span>
+<span class="fc" id="L112">        currentTime = null;</span>
+<span class="fc" id="L113">        currentDateTime = null;</span>
+
+<span class="fc" id="L115">        mapAttributes = new HashMap&lt;String, List&lt;Attributes&gt;&gt; ();</span>
+
+<span class="fc" id="L117">        attributesSet = requestCtx.getAttributesSet();</span>
+<span class="fc" id="L118">        this.pdpConfig = pdpConfig;</span>
+<span class="fc" id="L119">        this.requestCtx = requestCtx;</span>
+
+<span class="fc" id="L121">        setupAttributes(attributesSet, mapAttributes);</span>
+<span class="fc" id="L122">    }</span>
+
+    public EvaluationResult getAttribute(URI type, URI id, String issuer, URI category) {
+
+<span class="fc" id="L126">        List&lt;AttributeValue&gt; attributeValues = new ArrayList&lt;AttributeValue&gt;();</span>
+<span class="fc" id="L127">        List&lt;Attributes&gt; attributesSet = mapAttributes.get(category.toString());</span>
+<span class="pc bpc" id="L128" title="2 of 4 branches missed.">        if(attributesSet != null &amp;&amp; attributesSet.size() &gt; 0){</span>
+<span class="fc" id="L129">            Set&lt;Attribute&gt; attributeSet  = attributesSet.get(0).getAttributes();</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">            for(Attribute attribute : attributeSet) {</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">                if(attribute.getId().toString().equals(id.toString())</span>
+<span class="pc bpc" id="L132" title="2 of 4 branches missed.">                        &amp;&amp; attribute.getType().toString().equals(type.toString())</span>
+<span class="pc bnc" id="L133" title="All 2 branches missed.">                        &amp;&amp; (issuer == null || issuer.equals(attribute.getIssuer()))</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">                        &amp;&amp; attribute.getValue() != null){</span>
+<span class="fc" id="L135">                    List&lt;AttributeValue&gt; attributeValueList = attribute.getValues();</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">                    for (AttributeValue attributeVal : attributeValueList) {</span>
+<span class="fc" id="L137">                    	attributeValues.add(attributeVal);</span>
+<span class="fc" id="L138">                    }</span>
+                }
+<span class="fc" id="L140">            }</span>
+        }
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (attributeValues.isEmpty()) {</span>
+<span class="fc" id="L143">            return callHelper(type, id, issuer, category);</span>
+        }
+
+        // if we got here, then we found at least one useful AttributeValue
+<span class="fc" id="L147">        return new EvaluationResult(new BagAttribute(type, attributeValues));</span>
+    }
+
+
+    public EvaluationResult getAttribute(String path, URI type, URI category,
+                                         URI contextSelector, String xpathVersion){
+
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if(pdpConfig.getAttributeFinder() == null){</span>
+
+<span class="nc" id="L156">            logger.warn(&quot;Context tried to invoke AttributeFinder but was &quot; +</span>
+                           &quot;not configured with one&quot;);
+<span class="nc" id="L158">            return new EvaluationResult(BagAttribute.createEmptyBag(type));</span>
+        }
+
+<span class="fc" id="L161">        List&lt;Attributes&gt; attributesSet = null;</span>
+
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if(category != null){</span>
+<span class="fc" id="L164">            attributesSet = mapAttributes.get(category.toString());</span>
+        }
+
+<span class="pc bpc" id="L167" title="2 of 4 branches missed.">        if(attributesSet != null &amp;&amp; attributesSet.size() &gt; 0){</span>
+<span class="fc" id="L168">            Attributes attributes  = attributesSet.get(0);</span>
+<span class="fc" id="L169">            Object content = attributes.getContent();</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">            if(content instanceof Node){</span>
+<span class="fc" id="L171">                Node root = (Node) content;</span>
+<span class="pc bpc" id="L172" title="1 of 4 branches missed.">                if(contextSelector != null &amp;&amp; contextSelector.toString().trim().length() &gt; 0){</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">                    for(Attribute attribute : attributes.getAttributes()) {</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">                        if(attribute.getId().equals(contextSelector)){</span>
+<span class="fc" id="L175">                            List&lt;AttributeValue&gt; values = attribute.getValues();</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">                            for(AttributeValue value : values){</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">                                if(value instanceof XPathAttribute){</span>
+<span class="fc" id="L178">                                    XPathAttribute xPathAttribute = (XPathAttribute)value;</span>
+<span class="fc" id="L179">                                    if(xPathAttribute.getXPathCategory().</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">                                                                    equals(category.toString())){</span>
+<span class="fc" id="L181">                                        return pdpConfig.getAttributeFinder().findAttribute(path,</span>
+<span class="fc" id="L182">                                                            xPathAttribute.getValue(), type,</span>
+                                                            root, this, xpathVersion);
+                                    }
+                                }
+<span class="nc" id="L186">                            }</span>
+                        }
+<span class="nc" id="L188">                    }</span>
+                } else {
+<span class="fc" id="L190">                    return pdpConfig.getAttributeFinder().findAttribute(path, null, type,</span>
+                                                         root, this, xpathVersion);
+                }
+            }
+        }
+
+<span class="nc" id="L196">        return new EvaluationResult(BagAttribute.createEmptyBag(type));</span>
+    }
+
+
+    public int getXacmlVersion() {
+<span class="fc" id="L201">        return requestCtx.getXacmlVersion();</span>
+    }
+
+
+    /**
+     * Generic routine for resource, attribute and environment attributes to build the lookup map
+     * for each. The Form is a Map that is indexed by the String form of the category ids, and that
+     * contains Sets at each entry with all attributes that have that id
+     *
+     * @param attributeSet
+     * @param mapAttributes
+     * @return
+     */
+    private void setupAttributes(Set&lt;Attributes&gt; attributeSet, Map&lt;String,
+                                            List&lt;Attributes&gt;&gt; mapAttributes)  {
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        for (Attributes attributes : attributeSet) {</span>
+<span class="fc" id="L217">            String category = attributes.getCategory().toString();</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">            for(Attribute attribute : attributes.getAttributes()){</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">                if(XACMLConstants.RESOURCE_CATEGORY.equals(category)){</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">                    if(XACMLConstants.RESOURCE_SCOPE_2_0.equals(attribute.getId().toString())){</span>
+<span class="nc" id="L221">                        resourceScopeAttribute = attribute;</span>
+<span class="nc" id="L222">                        AttributeValue value = attribute.getValue();</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">                        if (value instanceof StringAttribute) {</span>
+<span class="nc" id="L224">                            String scope = ((StringAttribute) value).getValue();</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">                            if (scope.equals(&quot;Children&quot;)) {</span>
+<span class="nc" id="L226">                                resourceScope = XACMLConstants.SCOPE_CHILDREN;</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">                            } else if (scope.equals(&quot;Descendants&quot;)) {</span>
+<span class="nc" id="L228">                                resourceScope = XACMLConstants.SCOPE_DESCENDANTS;</span>
+                            }
+<span class="nc" id="L230">                        } else {</span>
+<span class="nc" id="L231">                            logger.error(&quot;scope attribute must be a string&quot;);     //TODO</span>
+                            //throw new ParsingException(&quot;scope attribute must be a string&quot;);
+                        }
+                    }
+
+<span class="fc bfc" id="L236" title="All 2 branches covered.">                    if (XACMLConstants.RESOURCE_ID.equals(attribute.getId().toString())){</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">                        if(resourceId == null) { //TODO  when there are more than one resource ids??</span>
+<span class="fc" id="L238">                            resourceId = attribute;</span>
+                        }
+                    }
+                }
+
+<span class="fc bfc" id="L243" title="All 2 branches covered.">                if(attribute.getId().toString().equals(XACMLConstants.MULTIPLE_CONTENT_SELECTOR)){</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">                    if(multipleContentSelectors == null){</span>
+<span class="fc" id="L245">                        multipleContentSelectors = new HashSet&lt;Attributes&gt;();</span>
+                    }
+<span class="fc" id="L247">                    multipleContentSelectors.add(attributes);</span>
+                }
+<span class="fc" id="L249">            }</span>
+
+<span class="fc bfc" id="L251" title="All 2 branches covered.">            if (mapAttributes.containsKey(category)) {</span>
+<span class="fc" id="L252">                List&lt;Attributes&gt; set = mapAttributes.get(category);</span>
+<span class="fc" id="L253">                set.add(attributes);</span>
+<span class="fc" id="L254">                multipleAttributes = true;</span>
+<span class="fc" id="L255">             } else {</span>
+<span class="fc" id="L256">                List&lt;Attributes&gt; set = new ArrayList&lt;Attributes&gt;();</span>
+<span class="fc" id="L257">                set.add(attributes);</span>
+<span class="fc" id="L258">                mapAttributes.put(category, set);</span>
+            }
+<span class="fc" id="L260">        }</span>
+<span class="fc" id="L261">    }</span>
+
+    public MultipleCtxResult getMultipleEvaluationCtx()  {
+
+<span class="fc" id="L265">        Set&lt;EvaluationCtx&gt; evaluationCtxSet = new HashSet&lt;EvaluationCtx&gt;();</span>
+<span class="fc" id="L266">        MultiRequests multiRequests =  requestCtx.getMultiRequests();</span>
+
+        // 1st check whether there is a multi request attribute
+<span class="fc bfc" id="L269" title="All 2 branches covered.">        if(multiRequests != null){</span>
+
+<span class="fc" id="L271">            MultipleCtxResult result = processMultiRequestElement(this);</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">            if(result.isIndeterminate()){</span>
+<span class="nc" id="L273">                return result;</span>
+            } else {
+<span class="fc" id="L275">                evaluationCtxSet.addAll(result.getEvaluationCtxSet());</span>
+            }
+        }
+
+        // 2nd check repeated values for category attribute
+<span class="fc bfc" id="L280" title="All 2 branches covered.">        if(evaluationCtxSet.size() &gt; 0){</span>
+<span class="fc" id="L281">            Set&lt;EvaluationCtx&gt; newSet = new HashSet&lt;EvaluationCtx&gt;(evaluationCtxSet);</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">            for(EvaluationCtx evaluationCtx : newSet){</span>
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">                if(((XACML3EvaluationCtx)evaluationCtx).isMultipleAttributes()){</span>
+<span class="nc" id="L284">                    evaluationCtxSet.remove(evaluationCtx);</span>
+<span class="nc" id="L285">                    MultipleCtxResult result = processMultipleAttributes((XACML3EvaluationCtx)evaluationCtx);</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">                    if(result.isIndeterminate()){</span>
+<span class="nc" id="L287">                        return result;</span>
+                    } else {
+<span class="nc" id="L289">                        evaluationCtxSet.addAll(result.getEvaluationCtxSet());</span>
+                    }
+                }
+<span class="fc" id="L292">            }</span>
+<span class="fc" id="L293">        } else {</span>
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">            if(multipleAttributes){</span>
+<span class="nc" id="L295">                MultipleCtxResult result = processMultipleAttributes(this);</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">                if(result.isIndeterminate()){</span>
+<span class="nc" id="L297">                    return result;</span>
+                } else {
+<span class="nc" id="L299">                    evaluationCtxSet.addAll(result.getEvaluationCtxSet());</span>
+                }
+            }
+        }
+
+        // 3rd check for both scope and multiple-content-selector attributes. Spec does not mention
+        // which one to pick when both are present, there for high priority has given to scope
+        // attribute
+<span class="fc bfc" id="L307" title="All 2 branches covered.">        if(evaluationCtxSet.size() &gt; 0){</span>
+<span class="fc" id="L308">            Set&lt;EvaluationCtx&gt; newSet = new HashSet&lt;EvaluationCtx&gt;(evaluationCtxSet);</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">            for(EvaluationCtx evaluationCtx : newSet){</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">                if(((XACML3EvaluationCtx)evaluationCtx).getResourceScope() != XACMLConstants.SCOPE_IMMEDIATE){</span>
+<span class="nc" id="L311">                    evaluationCtxSet.remove(evaluationCtx);</span>
+<span class="nc" id="L312">                    MultipleCtxResult result = processHierarchicalAttributes((XACML3EvaluationCtx)evaluationCtx);</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">                    if(result.isIndeterminate()){</span>
+<span class="nc" id="L314">                        return result;</span>
+                    } else {
+<span class="nc" id="L316">                        evaluationCtxSet.addAll(result.getEvaluationCtxSet());</span>
+                    }
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">                } else if(((XACML3EvaluationCtx)evaluationCtx).getMultipleContentSelectors() != null){</span>
+<span class="nc" id="L319">                    MultipleCtxResult result = processMultipleContentSelectors((XACML3EvaluationCtx)evaluationCtx);</span>
+<span class="nc bnc" id="L320" title="All 2 branches missed.">                    if(result.isIndeterminate()){</span>
+<span class="nc" id="L321">                        return result;</span>
+                    } else {
+<span class="nc" id="L323">                        evaluationCtxSet.addAll(result.getEvaluationCtxSet());</span>
+                    }
+                }
+<span class="fc" id="L326">            }</span>
+<span class="fc" id="L327">        } else {</span>
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">            if(resourceScope != XACMLConstants.SCOPE_IMMEDIATE){</span>
+<span class="nc" id="L329">                MultipleCtxResult result = processHierarchicalAttributes(this);</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">                if(result.isIndeterminate()){</span>
+<span class="nc" id="L331">                    return result;</span>
+                } else {
+<span class="nc" id="L333">                    evaluationCtxSet.addAll(result.getEvaluationCtxSet());</span>
+                }
+<span class="pc bfc" id="L335" title="All 2 branches covered.">            } else if(multipleContentSelectors != null){</span>
+<span class="fc" id="L336">                MultipleCtxResult result = processMultipleContentSelectors(this);</span>
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">                if(result.isIndeterminate()){</span>
+<span class="nc" id="L338">                    return result;</span>
+                } else {
+<span class="fc" id="L340">                    evaluationCtxSet.addAll(result.getEvaluationCtxSet());</span>
+                }
+            }
+        }
+
+<span class="fc bfc" id="L345" title="All 2 branches covered.">        if(evaluationCtxSet.size() &gt; 0){</span>
+<span class="fc" id="L346">            return new MultipleCtxResult(evaluationCtxSet);</span>
+        } else {
+<span class="fc" id="L348">            evaluationCtxSet.add(this);</span>
+<span class="fc" id="L349">            return new MultipleCtxResult(evaluationCtxSet);</span>
+        }
+    }
+
+    /**
+     * Process multi request element
+     *
+     * @param evaluationCtx &lt;code&gt;XACML3EvaluationCtx&lt;/code&gt;
+     * @return &lt;code&gt;MultipleCtxResult&lt;/code&gt;
+     */
+    private MultipleCtxResult processMultiRequestElement(XACML3EvaluationCtx evaluationCtx)  {
+
+<span class="fc" id="L361">        Set&lt;EvaluationCtx&gt; children = new HashSet&lt;EvaluationCtx&gt;();</span>
+<span class="fc" id="L362">        MultiRequests multiRequests =  requestCtx.getMultiRequests();</span>
+
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">        if(multiRequests == null){</span>
+<span class="nc" id="L365">            return new MultipleCtxResult(children);</span>
+        }
+
+<span class="fc" id="L368">        Set&lt;RequestReference&gt; requestReferences =  multiRequests.getRequestReferences();</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">        for(RequestReference reference :  requestReferences) {</span>
+<span class="fc" id="L370">            Set&lt;AttributesReference&gt;  attributesReferences = reference.getReferences();</span>
+<span class="pc bpc" id="L371" title="2 of 4 branches missed.">            if(attributesReferences != null &amp;&amp; attributesReferences.size() &gt; 0){</span>
+<span class="fc" id="L372">                Set&lt;Attributes&gt; attributes = new HashSet&lt;Attributes&gt;();</span>
+<span class="fc bfc" id="L373" title="All 2 branches covered.">                for(AttributesReference attributesReference : attributesReferences){</span>
+<span class="fc" id="L374">                    String referenceId = attributesReference.getId();</span>
+<span class="pc bpc" id="L375" title="1 of 2 branches missed.">                    if(referenceId != null){</span>
+<span class="fc" id="L376">                        Attributes newAttributes = null;</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">                        for(Attributes attribute : evaluationCtx.getAttributesSet()){</span>
+                            // check equal with reference id
+<span class="pc bpc" id="L379" title="1 of 4 branches missed.">                            if(attribute.getId() != null &amp;&amp; attribute.getId().equals(referenceId)){</span>
+<span class="fc" id="L380">                                newAttributes = attribute;</span>
+                            }
+<span class="fc" id="L382">                        }</span>
+<span class="pc bpc" id="L383" title="1 of 2 branches missed.">                        if(newAttributes != null){</span>
+<span class="fc" id="L384">                            attributes.add(newAttributes);</span>
+                        } else {
+                            // This must be only for one result. But here it is used to create error for
+<span class="nc" id="L387">                            List&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L388">                            code.add(Status.STATUS_SYNTAX_ERROR);</span>
+<span class="nc" id="L389">                            return new MultipleCtxResult(new Status(code,</span>
+                                                            &quot;Invalid reference to attributes&quot;));
+                        }
+                    }
+<span class="fc" id="L393">                }</span>
+<span class="fc" id="L394">                RequestCtx ctx = new RequestCtx(attributes, null);</span>
+<span class="fc" id="L395">                children.add(new XACML3EvaluationCtx(ctx, pdpConfig));</span>
+            }
+<span class="fc" id="L397">        }</span>
+
+<span class="fc" id="L399">        return new MultipleCtxResult(children);</span>
+    }
+
+    /**
+     * Process multiple attributes with same category
+     *
+     * @param evaluationCtx &lt;code&gt;XACML3EvaluationCtx&lt;/code&gt;
+     * @return &lt;code&gt;MultipleCtxResult&lt;/code&gt;
+     */
+    private MultipleCtxResult processMultipleAttributes(XACML3EvaluationCtx evaluationCtx) {
+
+<span class="nc" id="L410">        Set&lt;EvaluationCtx&gt; children = new HashSet&lt;EvaluationCtx&gt;();</span>
+
+<span class="nc" id="L412">        Map&lt;String, List&lt;Attributes&gt;&gt; mapAttributes = evaluationCtx.getMapAttributes();</span>
+
+<span class="nc" id="L414">        Set&lt;Set&lt;Attributes&gt;&gt; tempRequestAttributes =</span>
+<span class="nc" id="L415">                    new HashSet&lt;Set&lt;Attributes&gt;&gt;(Arrays.asList(evaluationCtx.getAttributesSet()));</span>
+
+<span class="nc bnc" id="L417" title="All 2 branches missed.">        for(Map.Entry&lt;String, List&lt;Attributes&gt;&gt; mapAttributesEntry : mapAttributes.entrySet()){</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">            if(mapAttributesEntry.getValue().size() &gt; 1){</span>
+<span class="nc" id="L419">                Set&lt;Set&lt;Attributes&gt;&gt; temp = new HashSet&lt;Set&lt;Attributes&gt;&gt;();</span>
+<span class="nc bnc" id="L420" title="All 2 branches missed.">                for(Attributes attributesElement :  mapAttributesEntry.getValue()){</span>
+<span class="nc bnc" id="L421" title="All 2 branches missed.">                    for(Set&lt;Attributes&gt; tempRequestAttribute : tempRequestAttributes){</span>
+<span class="nc" id="L422">                        Set&lt;Attributes&gt; newSet = new HashSet&lt;Attributes&gt;(tempRequestAttribute);</span>
+<span class="nc" id="L423">                        newSet.removeAll(mapAttributesEntry.getValue());</span>
+<span class="nc" id="L424">                        newSet.add(attributesElement);</span>
+<span class="nc" id="L425">                        temp.add(newSet);</span>
+<span class="nc" id="L426">                    }</span>
+<span class="nc" id="L427">                }</span>
+<span class="nc" id="L428">                tempRequestAttributes = temp;</span>
+            }
+<span class="nc" id="L430">        }</span>
+
+<span class="nc bnc" id="L432" title="All 2 branches missed.">        for(Set&lt;Attributes&gt; ctx : tempRequestAttributes){</span>
+<span class="nc" id="L433">            RequestCtx requestCtx = new RequestCtx(ctx, null);</span>
+<span class="nc" id="L434">            children.add(new XACML3EvaluationCtx(requestCtx, pdpConfig));</span>
+<span class="nc" id="L435">        }</span>
+
+<span class="nc" id="L437">        return new MultipleCtxResult(children);</span>
+    }
+
+
+    /**
+     *
+     * @param evaluationCtx
+     * @return
+     */
+    private MultipleCtxResult processHierarchicalAttributes(XACML3EvaluationCtx evaluationCtx) {
+
+<span class="nc" id="L448">        ResourceFinderResult resourceResult = null;</span>
+<span class="nc" id="L449">        Set&lt;EvaluationCtx&gt; children = new HashSet&lt;EvaluationCtx&gt;();</span>
+
+<span class="nc" id="L451">        Attribute resourceId = evaluationCtx.getResourceId();</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">        if(resourceId != null){</span>
+
+<span class="nc bnc" id="L454" title="All 2 branches missed.">            if(evaluationCtx.getResourceScope() == XACMLConstants.SCOPE_CHILDREN){</span>
+<span class="nc" id="L455">                resourceResult = pdpConfig.getResourceFinder().</span>
+<span class="nc" id="L456">                                                findChildResources(resourceId.getValue(), evaluationCtx);</span>
+<span class="nc bnc" id="L457" title="All 2 branches missed.">            } else if(evaluationCtx.getResourceScope()  == XACMLConstants.SCOPE_DESCENDANTS) {</span>
+<span class="nc" id="L458">                resourceResult = pdpConfig.getResourceFinder().</span>
+<span class="nc" id="L459">                                                findDescendantResources(resourceId.getValue(), evaluationCtx);</span>
+            } else {
+<span class="nc" id="L461">                logger.error(&quot;Unknown scope type: &quot; );</span>
+                //TODO
+            }
+        } else {
+<span class="nc" id="L465">             logger.error(&quot;ResourceId Attribute is NULL: &quot; );</span>
+            // TODO
+        }
+
+<span class="nc bnc" id="L469" title="All 4 branches missed.">        if(resourceResult == null || resourceResult.isEmpty()){</span>
+<span class="nc" id="L470">            logger.error(&quot;Resource Finder result is NULL: &quot; );</span>
+            // TODO
+        } else {
+<span class="nc bnc" id="L473" title="All 2 branches missed.">            for (AttributeValue resource : resourceResult.getResources()) {</span>
+<span class="nc" id="L474">                Set&lt;Attributes&gt; newSet = new HashSet&lt;Attributes&gt;(evaluationCtx.getAttributesSet());</span>
+<span class="nc" id="L475">                Attributes resourceAttributes = null;</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">                for(Attributes attributes : newSet){</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">                    if(XACMLConstants.RESOURCE_CATEGORY.equals(attributes.getCategory().toString())){</span>
+<span class="nc" id="L478">                        Set&lt;Attribute&gt; attributeSet = new HashSet&lt;Attribute&gt;(attributes.getAttributes());</span>
+<span class="nc" id="L479">                        attributeSet.remove(resourceScopeAttribute);</span>
+<span class="nc" id="L480">                        attributeSet.remove(resourceId);</span>
+                        try{
+<span class="nc" id="L482">                            Attribute attribute = new Attribute(new URI(XACMLConstants.RESOURCE_ID),</span>
+<span class="nc" id="L483">                                    resourceId.getIssuer(), null, resource, resourceId.isIncludeInResult(),</span>
+                                    XACMLConstants.XACML_VERSION_3_0);
+<span class="nc" id="L485">                            attributeSet.add(attribute);</span>
+<span class="nc" id="L486">                            Attributes newAttributes = new Attributes(new URI(XACMLConstants.RESOURCE_CATEGORY),</span>
+<span class="nc" id="L487">                                        (Node)attributes.getContent(), attributeSet, attributes.getId());</span>
+<span class="nc" id="L488">                            newSet.add(newAttributes);</span>
+<span class="nc" id="L489">                            resourceAttributes = attributes;</span>
+<span class="nc" id="L490">                        } catch (URISyntaxException e) {</span>
+                            //ignore
+<span class="nc" id="L492">                        }</span>
+<span class="nc" id="L493">                        break;</span>
+                    }
+<span class="nc" id="L495">                }</span>
+<span class="nc bnc" id="L496" title="All 2 branches missed.">                if(resourceAttributes != null){</span>
+<span class="nc" id="L497">                    newSet.remove(resourceAttributes);</span>
+<span class="nc" id="L498">                    children.add(new XACML3EvaluationCtx(new RequestCtx(newSet, null), pdpConfig));</span>
+                }
+<span class="nc" id="L500">            }</span>
+        }
+
+<span class="nc" id="L503">        return new MultipleCtxResult(children);</span>
+
+    }
+
+    /**
+     *
+     * @param evaluationCtx
+     * @return
+     */
+    private MultipleCtxResult processMultipleContentSelectors(XACML3EvaluationCtx evaluationCtx) {
+
+<span class="fc" id="L514">        Set&lt;EvaluationCtx&gt; children = new HashSet&lt;EvaluationCtx&gt;();</span>
+<span class="fc" id="L515">        Set&lt;Attributes&gt; newAttributesSet = new HashSet&lt;Attributes&gt;();</span>
+
+<span class="fc bfc" id="L517" title="All 2 branches covered.">        for(Attributes attributes : evaluationCtx.getMultipleContentSelectors()){</span>
+<span class="fc" id="L518">            Set&lt;Attribute&gt; newAttributes = null;</span>
+<span class="fc" id="L519">            Attribute oldAttribute = null;</span>
+<span class="fc" id="L520">            Object content = attributes.getContent();</span>
+<span class="pc bpc" id="L521" title="2 of 4 branches missed.">            if(content != null &amp;&amp; content instanceof Node){</span>
+<span class="fc" id="L522">                Node root = (Node) content;</span>
+<span class="fc bfc" id="L523" title="All 2 branches covered.">                for(Attribute attribute : attributes.getAttributes()){</span>
+<span class="fc" id="L524">                    oldAttribute = attribute;</span>
+<span class="pc bpc" id="L525" title="1 of 2 branches missed.">                    if(attribute.getId().toString().equals(XACMLConstants.MULTIPLE_CONTENT_SELECTOR)){</span>
+<span class="fc" id="L526">                        List&lt;AttributeValue&gt; values = attribute.getValues();</span>
+<span class="fc bfc" id="L527" title="All 2 branches covered.">                        for(AttributeValue value : values){</span>
+<span class="pc bpc" id="L528" title="1 of 2 branches missed.">                            if(value instanceof XPathAttribute){</span>
+<span class="fc" id="L529">                                XPathAttribute xPathAttribute = (XPathAttribute)value;</span>
+<span class="fc" id="L530">                                if(xPathAttribute.getXPathCategory().</span>
+<span class="pc bpc" id="L531" title="1 of 2 branches missed.">                                                    equals(attributes.getCategory().toString())){</span>
+<span class="fc" id="L532">                                    Set&lt;String&gt; xPaths = getChildXPaths(root, xPathAttribute.getValue());</span>
+<span class="fc bfc" id="L533" title="All 2 branches covered.">                                    for(String xPath : xPaths){</span>
+                                        try {
+<span class="fc" id="L535">                                            AttributeValue newValue = Balana.getInstance().getAttributeFactory().</span>
+<span class="fc" id="L536">                                                createValue(value.getType(), xPath,</span>
+<span class="fc" id="L537">                                                new String[] {xPathAttribute.getXPathCategory()});</span>
+<span class="fc" id="L538">                                            Attribute newAttribute =</span>
+                                                new Attribute(new URI(XACMLConstants.CONTENT_SELECTOR),
+<span class="fc" id="L540">                                                attribute.getIssuer(), attribute.getIssueInstant(),</span>
+<span class="fc" id="L541">                                                newValue, attribute.isIncludeInResult(),</span>
+                                                XACMLConstants.XACML_VERSION_3_0);
+<span class="fc bfc" id="L543" title="All 2 branches covered.">                                            if(newAttributes == null){</span>
+<span class="fc" id="L544">                                                newAttributes = new HashSet&lt;Attribute&gt;();</span>
+                                            }
+<span class="fc" id="L546">                                            newAttributes.add(newAttribute);</span>
+<span class="nc" id="L547">                                        } catch (Exception e) {</span>
+<span class="nc" id="L548">                                            logger.error(e);  // TODO</span>
+<span class="fc" id="L549">                                        }</span>
+<span class="fc" id="L550">                                    }</span>
+                                }
+                            }
+<span class="fc" id="L553">                        }</span>
+                    }
+<span class="fc" id="L555">                }</span>
+<span class="pc bpc" id="L556" title="1 of 2 branches missed.">                if(newAttributes != null){</span>
+<span class="fc" id="L557">                    attributes.getAttributes().remove(oldAttribute);</span>
+<span class="fc bfc" id="L558" title="All 2 branches covered.">                    for(Attribute attribute : newAttributes){</span>
+<span class="fc" id="L559">                        Set&lt;Attribute&gt; set = new HashSet&lt;Attribute&gt;(attributes.getAttributes());</span>
+<span class="fc" id="L560">                        set.add(attribute);</span>
+<span class="fc" id="L561">                        Attributes attr = new Attributes(attributes.getCategory(),</span>
+<span class="fc" id="L562">                                                attributes.getContent(), set, attributes.getId());</span>
+<span class="fc" id="L563">                        newAttributesSet.add(attr);</span>
+<span class="fc" id="L564">                    }</span>
+<span class="fc" id="L565">                    evaluationCtx.getAttributesSet().remove(attributes);</span>
+                }
+            }
+<span class="fc" id="L568">        }</span>
+
+<span class="fc bfc" id="L570" title="All 2 branches covered.">        for(Attributes attributes : newAttributesSet){</span>
+<span class="fc" id="L571">            Set&lt;Attributes&gt; set = new HashSet&lt;Attributes&gt;(evaluationCtx.getAttributesSet());</span>
+<span class="fc" id="L572">            set.add(attributes);</span>
+<span class="fc" id="L573">            RequestCtx requestCtx = new RequestCtx(set, null);</span>
+<span class="fc" id="L574">            children.add(new XACML3EvaluationCtx(requestCtx, pdpConfig));</span>
+<span class="fc" id="L575">        }</span>
+
+<span class="fc" id="L577">        return new MultipleCtxResult(children);</span>
+
+    }
+
+    /**
+     * Changes the value of the resource-id attribute in this context. This is useful when you have
+     * multiple resources (ie, a scope other than IMMEDIATE), and you need to keep changing only the
+     * resource-id to evaluate the different effective requests.
+     *
+     * @param resourceId  resourceId the new resource-id value
+     * @param attributesSet a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;Attributes&lt;/code&gt;
+     */
+    public void setResourceId(AttributeValue resourceId, Set&lt;Attributes&gt; attributesSet) {
+
+<span class="nc bnc" id="L591" title="All 2 branches missed.">        for(Attributes attributes : attributesSet){</span>
+<span class="nc bnc" id="L592" title="All 2 branches missed.">            if(XACMLConstants.RESOURCE_CATEGORY.equals(attributes.getCategory().toString())){</span>
+<span class="nc" id="L593">                Set&lt;Attribute&gt; attributeSet = attributes.getAttributes();</span>
+<span class="nc" id="L594">                Set&lt;Attribute&gt; newSet = new HashSet&lt;Attribute&gt;(attributeSet);</span>
+<span class="nc" id="L595">                Attribute resourceIdAttribute = null;</span>
+
+<span class="nc bnc" id="L597" title="All 2 branches missed.">                for (Attribute attribute : newSet){</span>
+<span class="nc bnc" id="L598" title="All 2 branches missed.">                    if(XACMLConstants.RESOURCE_ID.equals(attribute.getId().toString())){</span>
+<span class="nc" id="L599">                        resourceIdAttribute = attribute;</span>
+<span class="nc" id="L600">                        attributeSet.remove(attribute);</span>
+<span class="nc bnc" id="L601" title="All 2 branches missed.">                    } else if(XACMLConstants.RESOURCE_SCOPE_2_0.equals(attribute.getId().toString())){</span>
+<span class="nc" id="L602">                        attributeSet.remove(attribute);</span>
+                    }
+<span class="nc" id="L604">                }</span>
+
+<span class="nc bnc" id="L606" title="All 2 branches missed.">                if(resourceIdAttribute != null) {</span>
+<span class="nc" id="L607">                    attributeSet.add(new Attribute(resourceIdAttribute.getId(), resourceIdAttribute.getIssuer(),</span>
+<span class="nc" id="L608">                    resourceIdAttribute.getIssueInstant(), resourceId, resourceIdAttribute.isIncludeInResult(),</span>
+                                                                XACMLConstants.XACML_VERSION_3_0));
+                }
+                break;
+            }
+
+<span class="nc" id="L614">        }</span>
+<span class="nc" id="L615">    }</span>
+
+    private Set&lt;String&gt; getChildXPaths(Node root, String xPath){
+
+<span class="fc" id="L619">        Set&lt;String&gt; xPaths = new HashSet&lt;String&gt;();</span>
+<span class="fc" id="L620">        NamespaceContext namespaceContext = null;</span>
+
+<span class="fc" id="L622">        XPathFactory factory = XPathFactory.newInstance();</span>
+<span class="fc" id="L623">        XPath xpath = factory.newXPath();</span>
+
+<span class="pc bpc" id="L625" title="1 of 2 branches missed.">        if(namespaceContext == null){</span>
+
+            //see if the request root is in a namespace
+<span class="fc" id="L628">            String namespace = null;</span>
+<span class="pc bpc" id="L629" title="1 of 2 branches missed.">            if(root != null){</span>
+<span class="fc" id="L630">                namespace = root.getNamespaceURI();</span>
+            }
+            // name spaces are used, so we need to lookup the correct
+            // prefix to use in the search string
+<span class="fc" id="L634">            NamedNodeMap namedNodeMap = root.getAttributes();</span>
+
+<span class="fc" id="L636">            Map&lt;String, String&gt; nsMap = new HashMap&lt;String, String&gt;();</span>
+<span class="pc bpc" id="L637" title="1 of 2 branches missed.">            if(namedNodeMap != null){</span>
+<span class="fc bfc" id="L638" title="All 2 branches covered.">                for (int i = 0; i &lt; namedNodeMap.getLength(); i++) {</span>
+<span class="fc" id="L639">                    Node n = namedNodeMap.item(i);</span>
+                    // we found the matching namespace, so get the prefix
+                    // and then break out
+<span class="fc" id="L642">                    String prefix = DOMHelper.getLocalName(n);</span>
+<span class="fc" id="L643">                    String nodeValue= n.getNodeValue();</span>
+<span class="fc" id="L644">                    nsMap.put(prefix, nodeValue);</span>
+                }
+            }
+
+            // if there is not any namespace is defined for content element, default XACML request
+            //  name space would be there.
+<span class="pc bpc" id="L650" title="1 of 2 branches missed.">            if(XACMLConstants.REQUEST_CONTEXT_3_0_IDENTIFIER.equals(namespace) ||</span>
+<span class="pc bpc" id="L651" title="1 of 2 branches missed.">                    XACMLConstants.REQUEST_CONTEXT_2_0_IDENTIFIER.equals(namespace) ||</span>
+<span class="pc bpc" id="L652" title="1 of 2 branches missed.">                    XACMLConstants.REQUEST_CONTEXT_1_0_IDENTIFIER.equals(namespace)){</span>
+<span class="nc" id="L653">                nsMap.put(&quot;xacml&quot;, namespace);</span>
+            }
+
+<span class="fc" id="L656">            namespaceContext = new DefaultNamespaceContext(nsMap);</span>
+        }
+
+<span class="fc" id="L659">        xpath.setNamespaceContext(namespaceContext);</span>
+
+
+        try {
+<span class="fc" id="L663">            XPathExpression expression = xpath.compile(xPath);</span>
+<span class="fc" id="L664">            NodeList matches = (NodeList) expression.evaluate(root, XPathConstants.NODESET);</span>
+<span class="pc bpc" id="L665" title="2 of 4 branches missed.">            if(matches != null &amp;&amp; matches.getLength() &gt; 0){</span>
+
+<span class="fc bfc" id="L667" title="All 2 branches covered.">                for (int i = 0; i &lt; matches.getLength(); i++) {</span>
+<span class="fc" id="L668">                    String text = null;</span>
+<span class="fc" id="L669">                    Node node = matches.item(i);</span>
+<span class="fc" id="L670">                    short nodeType = node.getNodeType();</span>
+
+                    // see if this is straight text, or a node with data under
+                    // it and then get the values accordingly
+<span class="pc bpc" id="L674" title="4 of 8 branches missed.">                    if ((nodeType == Node.CDATA_SECTION_NODE) || (nodeType == Node.COMMENT_NODE)</span>
+                            || (nodeType == Node.TEXT_NODE) || (nodeType == Node.ATTRIBUTE_NODE)) {
+                        // there is no child to this node
+<span class="nc" id="L677">                        text = node.getNodeValue();</span>
+                    } else {
+
+                        // the data is in a child node
+<span class="fc" id="L681">                        text = &quot;/&quot; + DOMHelper.getLocalName(node);</span>
+                    }
+<span class="fc" id="L683">                    String newXPath = '(' + xPath + &quot;)[&quot; + (i+1) + ']';</span>
+<span class="fc" id="L684">                    xPaths.add(newXPath);</span>
+                }
+            }
+<span class="nc" id="L687">        } catch (Exception e) {</span>
+            // TODO
+<span class="fc" id="L689">        }</span>
+
+<span class="fc" id="L691">        return xPaths;</span>
+    }
+
+    public boolean isMultipleAttributes() {
+<span class="fc" id="L695">        return multipleAttributes;</span>
+    }
+
+    public AbstractRequestCtx getRequestCtx() {
+<span class="fc" id="L699">        return requestCtx;</span>
+    }
+
+    /**
+     *
+     * @return
+     */
+    public Set&lt;PolicyReference&gt; getPolicyReferences() {
+<span class="fc" id="L707">        return policyReferences;</span>
+    }
+
+    /**
+     *
+     * @param policyReferences
+     */
+    public void setPolicyReferences(Set&lt;PolicyReference&gt; policyReferences) {
+<span class="nc" id="L715">        this.policyReferences = policyReferences;</span>
+<span class="nc" id="L716">    }</span>
+
+    /**
+     *
+     * @param category
+     * @return
+     */
+    public List&lt;Attributes&gt; getAttributes(String category){
+<span class="nc" id="L724">        return mapAttributes.get(category);</span>
+    }
+
+    public Set&lt;Attributes&gt; getMultipleContentSelectors() {
+<span class="fc" id="L728">        return multipleContentSelectors;</span>
+    }
+
+    public Map&lt;String, List&lt;Attributes&gt;&gt; getMapAttributes() {
+<span class="nc" id="L732">        return mapAttributes;</span>
+    }
+
+    public Set&lt;Attributes&gt; getAttributesSet() {
+<span class="fc" id="L736">        return attributesSet;</span>
+    }
+
+    public Attribute getResourceId() {
+<span class="nc" id="L740">        return resourceId;</span>
+    }
+
+    public int getResourceScope() {
+<span class="fc" id="L744">        return resourceScope;</span>
+    }
+
+    public Attribute getResourceScopeAttribute() {
+<span class="nc" id="L748">        return resourceScopeAttribute;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

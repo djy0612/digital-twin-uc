@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Advice.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.xacml3</a> &gt; <span class="el_source">Advice.java</span></div><h1>Advice.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+package org.wso2.balana.xacml3;
+
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.DOMHelper;
+import org.wso2.balana.Indenter;
+import org.wso2.balana.ParsingException;
+import org.wso2.balana.ctx.AttributeAssignment;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Represents the AdviceType XML type in XACML. Advice are introduced with XACML 3
+ */
+public class Advice {
+
+    /**
+     * The value of the advice identifier may be interpreted by the PEP.
+     */
+    private URI adviceId;
+
+    /**
+     *  Advice arguments as a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeAssignment&lt;/code&gt;
+     *  The values of the advice arguments may be interpreted by the PEP
+     */
+    private List&lt;AttributeAssignment&gt; assignments;
+
+    /**
+     * Constructor that creates a new &lt;code&gt;Advice&lt;/code&gt; based on
+     * the given elements.
+     *
+     * @param adviceId  Identifier that uniquely identify the Advice
+     * @param assignments  &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeAssignment&lt;/code&gt;
+     */
+<span class="fc" id="L58">    public Advice(URI adviceId, List&lt;AttributeAssignment&gt; assignments) {</span>
+<span class="fc" id="L59">        this.adviceId = adviceId;</span>
+<span class="fc" id="L60">        this.assignments = assignments;</span>
+<span class="fc" id="L61">    }</span>
+
+    
+
+    /**
+     * Encodes this &lt;code&gt;Advice&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="fc" id="L71">        StringBuilder builder = new StringBuilder();</span>
+<span class="fc" id="L72">        encode(builder);</span>
+<span class="fc" id="L73">        return builder.toString();</span>
+    }
+
+    /**
+     * Creates a &lt;code&gt;Advice&lt;/code&gt; based on its DOM node.
+     *
+     * @param root the DOM root of a AdviceType
+     * @return  an instance of an advice
+     * @throws ParsingException   if the structure isn't valid
+     */
+    public static Advice getInstance(Node root) throws ParsingException {
+
+        URI adviceId;
+<span class="fc" id="L86">        List&lt;AttributeAssignment&gt; assignments =  new ArrayList&lt;AttributeAssignment&gt;();</span>
+
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (!DOMHelper.getLocalName(root).equals(&quot;Advice&quot;)) {</span>
+<span class="nc" id="L89">            throw new ParsingException(&quot;Advice object cannot be created &quot;</span>
+<span class="nc" id="L90">                    + &quot;with root node of type: &quot; + DOMHelper.getLocalName(root));</span>
+        }
+
+<span class="fc" id="L93">        NamedNodeMap nodeAttributes = root.getAttributes();</span>
+
+        try {
+<span class="fc" id="L96">            adviceId = new URI(nodeAttributes.getNamedItem(&quot;AdviceId&quot;).getNodeValue());</span>
+<span class="nc" id="L97">        } catch (Exception e) {</span>
+<span class="nc" id="L98">            throw new ParsingException(&quot;Error parsing required AdviceId in &quot; +</span>
+                    &quot;AdviceType&quot;, e);
+<span class="fc" id="L100">        }</span>
+
+<span class="fc" id="L102">        NodeList children = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        for(int i = 0; i &lt; children.getLength(); i ++){</span>
+<span class="fc" id="L105">            Node child = children.item(i);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if(&quot;AttributeAssignment&quot;.equals(DOMHelper.getLocalName(child))){</span>
+<span class="fc" id="L107">                assignments.add(AttributeAssignment.getInstance(child));</span>
+            }
+        }
+
+<span class="fc" id="L111">        return new Advice(adviceId, assignments);</span>
+    }
+
+    public URI getAdviceId() {
+<span class="nc" id="L115">        return adviceId;</span>
+    }
+
+    public List&lt;AttributeAssignment&gt; getAssignments() {
+<span class="nc" id="L119">        return assignments;</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;Advice&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder){
+
+<span class="fc" id="L130">        builder.append(&quot;&lt;Advice AdviceId=\&quot;&quot;).append(adviceId).append(&quot;\&quot; &gt;&quot;);</span>
+
+<span class="pc bpc" id="L132" title="2 of 4 branches missed.">        if(assignments != null &amp;&amp; assignments.size() &gt; 0){</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            for(AttributeAssignment assignment : assignments){</span>
+<span class="fc" id="L134">                assignment.encode(builder);</span>
+<span class="fc" id="L135">            }</span>
+        }
+<span class="fc" id="L137">        builder.append(&quot;&lt;/Advice&gt;&quot;);</span>
+<span class="fc" id="L138">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

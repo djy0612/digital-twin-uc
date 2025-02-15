@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IPAddressAttribute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.attr</a> &gt; <span class="el_source">IPAddressAttribute.java</span></div><h1>IPAddressAttribute.java</h1><pre class="source lang-java linenums">/*
+ * @(#)IPAddressAttribute.java
+ *
+ * Copyright 2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.attr;
+
+import org.wso2.balana.ParsingException;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.net.URI;
+
+import org.w3c.dom.Node;
+
+/**
+ * Represents the IPAddress datatype introduced in XACML 2.0. All objects of this class are
+ * immutable and all methods of the class are thread-safe.
+ * &lt;p&gt;
+ * To create an instance of an ipAddress from an encoded String or a DOM Node you should use the
+ * &lt;code&gt;getInstance&lt;/code&gt; methods provided by this class. To construct an ipAddress instance
+ * directly, you must use the constructors provided by &lt;code&gt;IPv4AddressAttribute&lt;/code&gt; and
+ * &lt;code&gt;IPv6AddressAttribute&lt;/code&gt;. These will both create an attribute of XACML type ipAddress,
+ * but will handle the differences in these two representations correctly.
+ * 
+ * @since 2.0
+ * @author Seth Proctor
+ */
+public abstract class IPAddressAttribute extends AttributeValue {
+
+    /**
+     * Official name of this type
+     */
+    public static final String identifier = &quot;urn:oasis:names:tc:xacml:2.0:data-type:ipAddress&quot;;
+
+    /**
+     * URI version of name for this type
+     * &lt;p&gt;
+     * This field is initialized by a static initializer so that we can catch any exceptions thrown
+     * by URI(String) and transform them into a RuntimeException, since this should never happen but
+     * should be reported properly if it ever does.
+     */
+    private static URI identifierURI;
+
+    /**
+     * RuntimeException that wraps an Exception thrown during the creation of identifierURI, null if
+     * none.
+     */
+    private static RuntimeException earlyException;
+
+    /**
+     * Static initializer that initializes the identifierURI class field so that we can catch any
+     * exceptions thrown by URI(String) and transform them into a RuntimeException. Such exceptions
+     * should never happen but should be reported properly if they ever do.
+     */
+    static {
+        try {
+<span class="fc" id="L88">            identifierURI = new URI(identifier);</span>
+<span class="nc" id="L89">        } catch (Exception e) {</span>
+<span class="nc" id="L90">            earlyException = new IllegalArgumentException();</span>
+<span class="nc" id="L91">            earlyException.initCause(e);</span>
+<span class="fc" id="L92">        }</span>
+<span class="fc" id="L93">    };</span>
+
+    // the required address
+    private InetAddress address;
+
+    // the optional mask
+    private InetAddress mask;
+
+    // this is the optional port-range
+    private PortRange range;
+
+    /**
+     * Creates the new &lt;code&gt;IPAddressAttribute&lt;/code&gt; with all the optional components.
+     * 
+     * @param address a non-null &lt;code&gt;InetAddress&lt;/code&gt;
+     * @param mask an &lt;code&gt;InetAddress&lt;/code&gt; or null if there is no mask
+     * @param portRange a non-null &lt;code&gt;PortRange&lt;/code&gt;
+     */
+    protected IPAddressAttribute(InetAddress address, InetAddress mask, PortRange range) {
+<span class="fc" id="L112">        super(identifierURI);</span>
+
+        // shouldn't happen, but just in case...
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        if (earlyException != null)</span>
+<span class="nc" id="L116">            throw earlyException;</span>
+
+<span class="fc" id="L118">        this.address = address;</span>
+<span class="fc" id="L119">        this.mask = mask;</span>
+<span class="fc" id="L120">        this.range = range;</span>
+<span class="fc" id="L121">    }</span>
+
+    /**
+     * Returns a new &lt;code&gt;IPAddressAttribute&lt;/code&gt; that represents the name at a particular DOM
+     * node.
+     * 
+     * @param root the &lt;code&gt;Node&lt;/code&gt; that contains the desired value
+     * 
+     * @return a new &lt;code&gt;IPAddressAttribute&lt;/code&gt; representing the appropriate value (null if
+     *         there is a parsing error)
+     * 
+     * @throws ParsingException if any of the address components is invalid
+     */
+    public static IPAddressAttribute getInstance(Node root) throws ParsingException {
+<span class="fc" id="L135">        return getInstance(root.getFirstChild().getNodeValue());</span>
+    }
+
+    /**
+     * Returns a new &lt;code&gt;IPAddressAttribute&lt;/code&gt; that represents the name indicated by the
+     * &lt;code&gt;String&lt;/code&gt; provided.
+     * 
+     * @param value a string representing the address
+     * 
+     * @return a new &lt;code&gt;IPAddressAttribute&lt;/code&gt;
+     * 
+     * @throws ParsingException if any of the address components is invalid
+     */
+    public static IPAddressAttribute getInstance(String value) throws ParsingException {
+        try {
+            // an IPv6 address starts with a '['
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">            if (value.indexOf('[') == 0)</span>
+<span class="nc" id="L152">                return IPv6AddressAttribute.getV6Instance(value);</span>
+            else
+<span class="fc" id="L154">                return IPv4AddressAttribute.getV4Instance(value);</span>
+<span class="nc" id="L155">        } catch (UnknownHostException uhe) {</span>
+<span class="nc" id="L156">            throw new ParsingException(&quot;Failed to parse an IPAddress&quot;, uhe);</span>
+        }
+    }
+
+    /**
+     * Returns the address represented by this object.
+     * 
+     * @return the address
+     */
+    public InetAddress getAddress() {
+<span class="fc" id="L166">        return address;</span>
+    }
+
+    /**
+     * Returns the mask represented by this object, or null if there is no mask.
+     * 
+     * @return the mask or null
+     */
+    public InetAddress getMask() {
+<span class="nc" id="L175">        return mask;</span>
+    }
+
+    /**
+     * Returns the port range represented by this object which will be unbound if no range was
+     * specified.
+     * 
+     * @return the range
+     */
+    public PortRange getRange() {
+<span class="nc" id="L185">        return range;</span>
+    }
+
+    /**
+     * Returns true if the input is an instance of this class and if its value equals the value
+     * contained in this class.
+     * 
+     * @param o the object to compare
+     * 
+     * @return true if this object and the input represent the same value
+     */
+    public boolean equals(Object o) {
+<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (!(o instanceof IPAddressAttribute))</span>
+<span class="nc" id="L198">            return false;</span>
+
+<span class="nc" id="L200">        IPAddressAttribute other = (IPAddressAttribute) o;</span>
+
+<span class="nc bnc" id="L202" title="All 2 branches missed.">        if (!address.equals(other.address))</span>
+<span class="nc" id="L203">            return false;</span>
+
+<span class="nc bnc" id="L205" title="All 2 branches missed.">        if (mask != null) {</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            if (other.mask == null)</span>
+<span class="nc" id="L207">                return false;</span>
+
+<span class="nc bnc" id="L209" title="All 2 branches missed.">            if (!mask.equals(other.mask))</span>
+<span class="nc" id="L210">                return false;</span>
+        } else {
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            if (other.mask != null)</span>
+<span class="nc" id="L213">                return false;</span>
+        }
+
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        if (!range.equals(other.range))</span>
+<span class="nc" id="L217">            return false;</span>
+
+<span class="nc" id="L219">        return true;</span>
+    }
+
+    /**
+     * Returns the hashcode value used to index and compare this object with others of the same
+     * type.
+     * 
+     * @return the object's hashcode value
+     */
+    public int hashCode() {
+
+        // FIXME: what should the hashcode be?
+
+<span class="nc" id="L232">        return 0;</span>
+    }
+
+    /**
+     * Converts to a String representation.
+     * 
+     * @return the String representation
+     */
+    public String toString() {
+<span class="nc" id="L241">        return &quot;IPAddressAttribute: \&quot;&quot; + encode() + &quot;\&quot;&quot;;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

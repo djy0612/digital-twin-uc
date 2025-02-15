@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MissingAttributeDetail.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.ctx</a> &gt; <span class="el_source">MissingAttributeDetail.java</span></div><h1>MissingAttributeDetail.java</h1><pre class="source lang-java linenums">/*
+ *  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  WSO2 Inc. licenses this file to you under the Apache License,
+ *  Version 2.0 (the &quot;License&quot;); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.wso2.balana.ctx;
+
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.*;
+import org.wso2.balana.attr.AttributeFactory;
+import org.wso2.balana.attr.AttributeValue;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * This represents the MissingAttributeDetailType in context schema. this contains the  information
+ * about attributes required for policy evaluation that were missing from the request context.
+ */
+public class MissingAttributeDetail {
+
+    /**
+     * attribute identifier
+     */
+    private URI id;
+
+    /**
+     * attribute data type,  this is not used in XACML3
+     */
+    private URI type;
+
+    /**
+     * category of the Attributes element whether it is subject, action and etc
+     */
+    private URI category;    
+
+    /**
+     * issuer of the attribute.   optional one
+     */
+<span class="fc" id="L55">    private String issuer = null;</span>
+
+    /**
+     * a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeValue&lt;/code&gt;
+     */
+    private List&lt;AttributeValue&gt; attributeValues;
+
+    /**
+     * XACML version
+     */
+    private int xacmlVersion;
+
+    /**
+     * Creates a new &lt;code&gt;MissingAttributeDetail&lt;/code&gt;
+     *
+     * @param id the id of the attribute
+     * @param type the type of the attribute
+     * @param category category of the attributes elements whether it is subject, action and etc
+     * @param issuer the attribute's issuer or null if there is none
+     * @param attributeValues actual &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeValue&lt;/code&gt;
+     * @param xacmlVersion xacml version
+     */
+    public MissingAttributeDetail(URI id, URI type, URI category, String issuer,
+<span class="fc" id="L78">                                  List&lt;AttributeValue&gt; attributeValues, int xacmlVersion) {</span>
+<span class="fc" id="L79">        this.id = id;</span>
+<span class="fc" id="L80">        this.type = type;</span>
+<span class="fc" id="L81">        this.category = category;</span>
+<span class="fc" id="L82">        this.issuer = issuer;</span>
+<span class="fc" id="L83">        this.attributeValues = attributeValues;</span>
+<span class="fc" id="L84">        this.xacmlVersion = xacmlVersion;</span>
+<span class="fc" id="L85">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;MissingAttributeDetail&lt;/code&gt;
+     *
+     * @param id the id of the attribute
+     * @param type the type of the attribute
+     * @param category category of the attributes elements whether it is subject, action and etc
+     * @param attributeValues  actual &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeValue&lt;/code&gt;
+     * @param xacmlVersion xacml version
+     */
+    public MissingAttributeDetail(URI id, URI type, URI category,
+                                   List&lt;AttributeValue&gt; attributeValues, int xacmlVersion) {
+<span class="nc" id="L98">        this(id, type, category, null, attributeValues, xacmlVersion);</span>
+
+<span class="nc" id="L100">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;MissingAttributeDetail&lt;/code&gt;
+     *
+     * @param id the id of the attribute
+     * @param type the type of the attribute
+     * @param category category of the attributes elements whether it is subject, action and etc
+     * @param xacmlVersion xacml version
+     */
+    public MissingAttributeDetail(URI id, URI type, URI category, int xacmlVersion) {
+<span class="nc" id="L111">        this(id, type, category, null, null, xacmlVersion);</span>
+<span class="nc" id="L112">    }</span>
+    
+    /**
+     * Creates an instance of an &lt;code&gt;MissingAttributeDetail&lt;/code&gt; based on the root
+     * DOM node of the XML data.
+     *
+     * @param root the DOM root of the AttributeType XML type
+     * @param metaData policy meta data
+     * @return  a &lt;code&gt;MissingAttributeDetail&lt;/code&gt;  object       
+     * @throws ParsingException throws ParsingException if the data is invalid
+     */
+    public static MissingAttributeDetail getInstance(Node root, PolicyMetaData metaData)
+                                                                        throws ParsingException {
+<span class="nc" id="L125">        URI id = null;</span>
+<span class="nc" id="L126">        URI type = null;</span>
+<span class="nc" id="L127">        URI category = null;</span>
+<span class="nc" id="L128">        String issuer = null;</span>
+<span class="nc" id="L129">        List&lt;AttributeValue&gt; values = new ArrayList&lt;AttributeValue&gt;();</span>
+<span class="nc" id="L130">        int version  = metaData.getXACMLVersion();</span>
+
+<span class="nc" id="L132">        AttributeFactory attrFactory = Balana.getInstance().getAttributeFactory();</span>
+
+        // First check that we're really parsing an Attribute
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        if (!DOMHelper.getLocalName(root).equals(&quot;MissingAttributeDetail&quot;)) {</span>
+<span class="nc" id="L136">            throw new ParsingException(&quot;MissingAttributeDetailType object cannot be created &quot;</span>
+<span class="nc" id="L137">                    + &quot;with root node of type: &quot; + DOMHelper.getLocalName(root));</span>
+        }
+
+<span class="nc" id="L140">        NamedNodeMap attrs = root.getAttributes();</span>
+
+        try {
+<span class="nc" id="L143">            id = new URI(attrs.getNamedItem(&quot;AttributeId&quot;).getNodeValue());</span>
+<span class="nc" id="L144">        } catch (Exception e) {</span>
+<span class="nc" id="L145">            throw new ParsingException(&quot;Error parsing required attribute &quot;</span>
+                    + &quot;AttributeId in MissingAttributeDetailType&quot;, e);
+<span class="nc" id="L147">        }</span>
+
+
+        try {
+<span class="nc" id="L151">            type = new URI(attrs.getNamedItem(&quot;DataType&quot;).getNodeValue());</span>
+<span class="nc" id="L152">        } catch (Exception e) {</span>
+<span class="nc" id="L153">            throw new ParsingException(&quot;Error parsing required attribute &quot;</span>
+                    + &quot;DataType in MissingAttributeDetailType&quot;, e);
+<span class="nc" id="L155">        }</span>
+
+
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        if(version == XACMLConstants.XACML_VERSION_3_0){</span>
+            try {
+<span class="nc" id="L160">                category =  new URI(attrs.getNamedItem(&quot;IncludeInResult&quot;).getNodeValue());</span>
+<span class="nc" id="L161">            } catch (Exception e) {</span>
+<span class="nc" id="L162">                throw new ParsingException(&quot;Error parsing required attribute &quot;</span>
+                        + &quot;Category in MissingAttributeDetailType&quot;, e);
+<span class="nc" id="L164">            }</span>
+        }
+
+        try {
+<span class="nc" id="L168">            Node issuerNode = attrs.getNamedItem(&quot;Issuer&quot;);</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">            if (issuerNode != null){</span>
+<span class="nc" id="L170">                issuer = issuerNode.getNodeValue();</span>
+            }
+<span class="nc" id="L172">        } catch (Exception e) {</span>
+            // shouldn't happen, but just in case...
+<span class="nc" id="L174">            throw new ParsingException(&quot;Error parsing optional attributes in MissingAttributeDetailType&quot;, e);</span>
+<span class="nc" id="L175">        }</span>
+
+        // now we get the attribute value
+<span class="nc" id="L178">        NodeList nodes = root.getChildNodes();</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="nc" id="L180">            Node node = nodes.item(i);</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">            if (DOMHelper.getLocalName(node).equals(&quot;AttributeValue&quot;)) {</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">                if(version == XACMLConstants.XACML_VERSION_3_0){</span>
+<span class="nc" id="L183">                    NamedNodeMap dataTypeAttribute = node.getAttributes();</span>
+                    try {
+<span class="nc" id="L185">                        type = new URI(dataTypeAttribute.getNamedItem(&quot;DataType&quot;).getNodeValue());</span>
+<span class="nc" id="L186">                    } catch (Exception e) {</span>
+<span class="nc" id="L187">                        throw new ParsingException(&quot;Error parsing required attribute &quot;</span>
+                                + &quot;DataType in MissingAttributeDetailType&quot;, e);
+<span class="nc" id="L189">                    }</span>
+                }
+
+                try {
+<span class="nc" id="L193">                    values.add(attrFactory.createValue(node, type));</span>
+<span class="nc" id="L194">                } catch (UnknownIdentifierException uie) {</span>
+<span class="nc" id="L195">                    throw new ParsingException(&quot;Unknown AttributeValue&quot;, uie);</span>
+<span class="nc" id="L196">                }</span>
+            }
+        }
+
+<span class="nc" id="L200">        return new MissingAttributeDetail(id, type, category, issuer, values, version);</span>
+    }
+
+    /**
+     * Returns the encoded String from MissingAttributeDetail
+     *
+     * @return String
+     * @throws ParsingException if there are any issues, when parsing object in to Sting 
+     */
+    public String getEncoded() throws ParsingException {
+
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        if(id == null){</span>
+<span class="nc" id="L212">            throw new ParsingException(&quot;Required AttributeId attribute is Null&quot;);</span>
+        }
+
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">        if(type == null){</span>
+<span class="nc" id="L216">            throw new ParsingException(&quot;Required DataType attribute is Null&quot;);</span>
+        }
+
+<span class="pc bpc" id="L219" title="2 of 4 branches missed.">        if(xacmlVersion == XACMLConstants.XACML_VERSION_3_0 &amp;&amp; category == null){</span>
+<span class="nc" id="L220">            throw new ParsingException(&quot;Required Category attribute is Null&quot;);</span>
+        }
+        
+<span class="fc" id="L223">        String encoded = &quot;&lt;MissingAttributeDetail AttributeId=\&quot;&quot; + id + &quot;\&quot; DataType=\&quot;&quot; + type + &quot;\&quot;&quot;;</span>
+
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">        if(xacmlVersion == XACMLConstants.XACML_VERSION_3_0){</span>
+<span class="fc" id="L226">            encoded += &quot; Category=\&quot;&quot; + category + &quot;\&quot;&quot;;</span>
+        }
+
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">        if(issuer != null){</span>
+<span class="nc" id="L230">            encoded += &quot; Issuer=\&quot;&quot; + issuer + &quot;\&quot;&quot;;</span>
+        }
+
+<span class="fc" id="L233">        encoded += &quot; &gt;&quot;;</span>
+
+<span class="pc bpc" id="L235" title="3 of 4 branches missed.">        if(attributeValues != null &amp;&amp; attributeValues.size() &gt; 0){</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">            for(AttributeValue value : attributeValues){</span>
+<span class="nc" id="L237">                encoded += (value.encodeWithTags(true) + &quot;\n&quot;);</span>
+<span class="nc" id="L238">            }</span>
+        }
+
+<span class="fc" id="L241">        encoded += &quot;&lt;/MissingAttributeDetail&gt;&quot;;</span>
+
+<span class="fc" id="L243">        return encoded;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

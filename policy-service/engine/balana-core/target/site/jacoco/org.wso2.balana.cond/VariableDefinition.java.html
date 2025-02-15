@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VariableDefinition.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">VariableDefinition.java</span></div><h1>VariableDefinition.java</h1><pre class="source lang-java linenums">/*
+ * @(#)VariableDefinition.java
+ *
+ * Copyright 2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.Indenter;
+import org.wso2.balana.ParsingException;
+import org.wso2.balana.PolicyMetaData;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * This class supports the VariableDefinitionType type introuced in XACML 2.0. It allows a Policy to
+ * pre-define any number of expression blocks for general use. Note that it's legal (though not
+ * usually useful) to define expressions that don't get referenced within the Policy. It is illegal
+ * to have more than one definition with the same identifier within a Policy.
+ * 
+ * @since 2.0
+ * @author Seth Proctor
+ */
+public class VariableDefinition {
+
+    // the identitifer for this definition
+    private String variableId;
+
+    // the actual expression defined here
+    private Expression expression;
+
+    /**
+     * Creates a new &lt;code&gt;VariableDefinition&lt;/code&gt; with the given identifier and expression.
+     * 
+     * @param variableId the identifier for this definition
+     * @param expression the expression defined here
+     */
+<span class="nc" id="L71">    public VariableDefinition(String variableId, Expression expression) {</span>
+<span class="nc" id="L72">        this.variableId = variableId;</span>
+<span class="nc" id="L73">        this.expression = expression;</span>
+<span class="nc" id="L74">    }</span>
+
+    /**
+     * Returns a new instance of the &lt;code&gt;VariableDefinition&lt;/code&gt; class based on a DOM node. The
+     * node must be the root of an XML VariableDefinitionType.
+     * 
+     * @param root the DOM root of a VariableDefinitionType XML type
+     * @param metaData the meta-data associated with the containing policy
+     * @param manager &lt;code&gt;VariableManager&lt;/code&gt; used to connect references to this definition
+     * 
+     * @throws ParsingException if the VariableDefinitionType is invalid
+     */
+    public static VariableDefinition getInstance(Node root, PolicyMetaData metaData,
+            VariableManager manager) throws ParsingException {
+<span class="nc" id="L88">        String variableId = root.getAttributes().getNamedItem(&quot;VariableId&quot;).getNodeValue();</span>
+
+        // get the first element, which is the expression node
+<span class="nc" id="L91">        NodeList nodes = root.getChildNodes();</span>
+<span class="nc" id="L92">        Node xprNode = nodes.item(0);</span>
+<span class="nc" id="L93">        int i = 1;</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        while (xprNode.getNodeType() != Node.ELEMENT_NODE)</span>
+<span class="nc" id="L95">            xprNode = nodes.item(i++);</span>
+
+        // use that node to get the expression
+<span class="nc" id="L98">        Expression xpr = ExpressionHandler.parseExpression(xprNode, metaData, manager);</span>
+
+<span class="nc" id="L100">        return new VariableDefinition(variableId, xpr);</span>
+    }
+
+    /**
+     * Returns the identifier for this definition.
+     * 
+     * @return the definition's identifier
+     */
+    public String getVariableId() {
+<span class="nc" id="L109">        return variableId;</span>
+    }
+
+    /**
+     * Returns the expression provided by this definition.
+     * 
+     * @return the definition's expression
+     */
+    public Expression getExpression() {
+<span class="nc" id="L118">        return expression;</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;VariableDefinition&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="nc" id="L127">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L128">        encode(builder);</span>
+<span class="nc" id="L129">        return builder.toString();</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;VariableDefinition&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L140">        builder.append(&quot;&lt;VariableDefinition VariableId=\&quot;&quot;).append(variableId).append(&quot;\&quot;&gt;\n&quot;);</span>
+
+<span class="nc" id="L142">        expression.encode(builder);</span>
+
+<span class="nc" id="L144">        builder.append(&quot;&lt;/VariableDefinition&gt;\n&quot;);</span>
+<span class="nc" id="L145">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

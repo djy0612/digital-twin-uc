@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>URLStringCatFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">URLStringCatFunction.java</span></div><h1>URLStringCatFunction.java</h1><pre class="source lang-java linenums">/*
+ * @(#)URLStringCatFunction.java
+ *
+ * Copyright 2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.attr.AnyURIAttribute;
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.StringAttribute;
+
+import org.wso2.balana.ctx.Status;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * Represents the XACML 2.0 url-string-concatenate function.
+ * 
+ * @since 2.0
+ * @author Seth Proctor
+ */
+public class URLStringCatFunction extends FunctionBase {
+
+	/**
+	 * Standard identifier for the url-string-concatenate function.
+	 */
+	public static final String NAME_URI_STRING_CONCATENATE = FUNCTION_NS_2
+			+ &quot;uri-string-concatenate&quot;;
+
+	/**
+	 * Creates an instance of this function.
+	 */
+	public URLStringCatFunction() {
+<span class="fc" id="L71">		super(NAME_URI_STRING_CONCATENATE, 0, AnyURIAttribute.identifier, false);</span>
+<span class="fc" id="L72">	}</span>
+
+	/**
+	 * Checks the inputs of this function.
+	 * 
+	 * @param inputs a &lt;code&gt;List&gt;&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt;s
+	 * 
+	 * @throws IllegalArgumentException if the inputs won't work
+	 */
+	public void checkInputs(List inputs) throws IllegalArgumentException {
+		// scan the list to make sure nothing returns a bag
+<span class="nc" id="L83">		Iterator it = inputs.iterator();</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">		while (it.hasNext()) {</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">			if (((Expression) (it.next())).returnsBag())</span>
+<span class="nc" id="L86">				throw new IllegalArgumentException(NAME_URI_STRING_CONCATENATE</span>
+						+ &quot; doesn't accept bags&quot;);
+		}
+
+		// nothing is a bag, so check using the no-bag method
+<span class="nc" id="L91">		checkInputsNoBag(inputs);</span>
+<span class="nc" id="L92">	}</span>
+
+	/**
+	 * Checks the inputs of this function assuming no parameters are bags.
+	 * 
+	 * @param inputs a &lt;code&gt;List&gt;&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt;s
+	 * 
+	 * @throws IllegalArgumentException if the inputs won't work
+	 */
+	public void checkInputsNoBag(List inputs) throws IllegalArgumentException {
+		// make sure it's long enough
+<span class="nc bnc" id="L103" title="All 2 branches missed.">		if (inputs.size() &lt; 2)</span>
+<span class="nc" id="L104">			throw new IllegalArgumentException(&quot;not enough args to &quot; + NAME_URI_STRING_CONCATENATE);</span>
+
+		// check that the parameters are of the correct types...
+<span class="nc" id="L107">		Iterator it = inputs.iterator();</span>
+
+		// ...the first argument must be a URI...
+<span class="nc bnc" id="L110" title="All 2 branches missed.">		if (!((Expression) (it.next())).getType().toString().equals(AnyURIAttribute.identifier))</span>
+<span class="nc" id="L111">			throw new IllegalArgumentException(&quot;illegal parameter&quot;);</span>
+
+		// ...and all following arguments must be strings
+<span class="nc bnc" id="L114" title="All 2 branches missed.">		while (it.hasNext()) {</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">			if (!((Expression) (it.next())).getType().toString().equals(StringAttribute.identifier))</span>
+<span class="nc" id="L116">				throw new IllegalArgumentException(&quot;illegal parameter&quot;);</span>
+		}
+<span class="nc" id="L118">	}</span>
+
+	/**
+	 * Evaluates the function given the input data. This function expects an
+	 * &lt;code&gt;AnyURIAttribute&lt;/code&gt; followed by one or more &lt;code&gt;StringAttribute&lt;/code&gt;s, and
+	 * returns an &lt;code&gt;AnyURIAttribute&lt;/code&gt;.
+	 * 
+	 * @param inputs the input agrument list
+	 * @param context the representation of the request
+	 * 
+	 * @return the result of evaluation
+	 */
+	public EvaluationResult evaluate(List inputs, EvaluationCtx context) {
+		// Evaluate the arguments
+<span class="nc" id="L132">		AttributeValue[] argValues = new AttributeValue[inputs.size()];</span>
+<span class="nc" id="L133">		EvaluationResult result = evalArgs(inputs, context, argValues);</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (result != null)</span>
+<span class="nc" id="L135">			return result;</span>
+
+		// the first argument is always a URI
+<span class="nc" id="L138">		String str = ((AnyURIAttribute) (argValues[0])).getValue().toString();</span>
+
+		// the remaining arguments are strings
+<span class="nc" id="L141">		StringBuffer buffer = new StringBuffer(str);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">		for (int i = 1; i &lt; argValues.length; i++) {</span>
+<span class="nc" id="L143">			buffer.append(((StringAttribute) (argValues[i])).getValue());</span>
+		}
+
+		// finally, try to convert the string back to a URI
+		try {
+<span class="nc" id="L148">			return new EvaluationResult(new AnyURIAttribute(new URI(str)));</span>
+<span class="nc" id="L149">		} catch (URISyntaxException use) {</span>
+<span class="nc" id="L150">			List code = new ArrayList();</span>
+<span class="nc" id="L151">			code.add(Status.STATUS_PROCESSING_ERROR);</span>
+<span class="nc" id="L152">			String message = NAME_URI_STRING_CONCATENATE + &quot; didn't produce&quot; + &quot; a valid URI: &quot;</span>
+					+ str;
+
+<span class="nc" id="L155">			return new EvaluationResult(new Status(code, message));</span>
+		}
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

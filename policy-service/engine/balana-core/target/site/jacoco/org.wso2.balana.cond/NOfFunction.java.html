@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NOfFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">NOfFunction.java</span></div><h1>NOfFunction.java</h1><pre class="source lang-java linenums">/*
+ * @(#)NOfFunction.java
+ *
+ * Copyright 2003-2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.attr.BooleanAttribute;
+import org.wso2.balana.attr.IntegerAttribute;
+
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * A class that implements the n-of function. It requires at least one argument. The first argument
+ * must be an integer and the rest of the arguments must be booleans. If the number of boolean
+ * arguments that evaluate to true is at least the value of the first argument, the function returns
+ * true. Otherwise, it returns false (or indeterminate, as described in the next paragraph.
+ * &lt;p&gt;
+ * This function evaluates the arguments one at a time, starting with the first one. As soon as the
+ * result of the function can be determined, evaluation stops and that result is returned. During
+ * this process, if any argument evaluates to indeterminate, an indeterminate result is returned.
+ * 
+ * @since 1.0
+ * @author Steve Hanne
+ * @author Seth Proctor
+ */
+public class NOfFunction extends FunctionBase {
+
+    /**
+     * Standard identifier for the n-of function.
+     */
+    public static final String NAME_N_OF = FUNCTION_NS + &quot;n-of&quot;;
+
+    /**
+     * Creates a new &lt;code&gt;NOfFunction&lt;/code&gt; object.
+     * 
+     * @param functionName the standard XACML name of the function to be handled by this object,
+     *            including the full namespace
+     * 
+     * @throws IllegalArgumentException if the function is unknown
+     */
+    public NOfFunction(String functionName) {
+<span class="fc" id="L78">        super(NAME_N_OF, 0, BooleanAttribute.identifier, false);</span>
+
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (!functionName.equals(NAME_N_OF))</span>
+<span class="nc" id="L81">            throw new IllegalArgumentException(&quot;unknown nOf function: &quot; + functionName);</span>
+<span class="fc" id="L82">    }</span>
+
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public static Set getSupportedIdentifiers() {
+<span class="fc" id="L90">        Set set = new HashSet();</span>
+
+<span class="fc" id="L92">        set.add(NAME_N_OF);</span>
+
+<span class="fc" id="L94">        return set;</span>
+    }
+
+    /**
+     * Evaluate the function, using the specified parameters.
+     * 
+     * @param inputs a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt; objects representing the
+     *            arguments passed to the function
+     * @param context an &lt;code&gt;EvaluationCtx&lt;/code&gt; so that the &lt;code&gt;Evaluatable&lt;/code&gt; objects can
+     *            be evaluated
+     * @return an &lt;code&gt;EvaluationResult&lt;/code&gt; representing the function's result
+     */
+    public EvaluationResult evaluate(List inputs, EvaluationCtx context) {
+
+        // Evaluate the arguments one by one. As soon as we can return
+        // a result, do so. Return Indeterminate if any argument
+        // evaluated is indeterminate.
+<span class="fc" id="L111">        Iterator it = inputs.iterator();</span>
+<span class="fc" id="L112">        Evaluatable eval = (Evaluatable) (it.next());</span>
+
+        // Evaluate the first argument
+<span class="fc" id="L115">        EvaluationResult result = eval.evaluate(context);</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (result.indeterminate())</span>
+<span class="nc" id="L117">            return result;</span>
+
+        // if there were no problems, we know 'n'
+<span class="fc" id="L120">        long n = ((IntegerAttribute) (result.getAttributeValue())).getValue();</span>
+
+        // If the number of trues needed is less than zero, report an error.
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (n &lt; 0)</span>
+<span class="nc" id="L124">            return makeProcessingError(&quot;First argument to &quot; + getFunctionName()</span>
+                    + &quot; cannot be negative.&quot;);
+
+        // If the number of trues needed is zero, return true.
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">        if (n == 0)</span>
+<span class="nc" id="L129">            return EvaluationResult.getTrueInstance();</span>
+
+        // make sure it's possible to find n true values
+<span class="fc" id="L132">        long remainingArgs = inputs.size() - 1;</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (n &gt; remainingArgs)</span>
+<span class="nc" id="L134">            return makeProcessingError(&quot;not enough arguments to n-of to &quot; + &quot;find &quot; + n</span>
+                    + &quot; true values&quot;);
+
+        // loop through the inputs, trying to find at least n trues
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        while (remainingArgs &gt;= n) {</span>
+<span class="fc" id="L139">            eval = (Evaluatable) (it.next());</span>
+
+            // evaluate the next argument
+<span class="fc" id="L142">            result = eval.evaluate(context);</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">            if (result.indeterminate())</span>
+<span class="nc" id="L144">                return result;</span>
+
+            // get the next value, and see if it's true
+<span class="fc bfc" id="L147" title="All 2 branches covered.">            if (((BooleanAttribute) (result.getAttributeValue())).getValue()) {</span>
+                // we're one closer to our goal...see if we met it
+<span class="fc bfc" id="L149" title="All 2 branches covered.">                if (--n == 0)</span>
+<span class="fc" id="L150">                    return EvaluationResult.getTrueInstance();</span>
+            }
+
+            // we're still looking, but we've got one fewer arguments
+<span class="fc" id="L154">            remainingArgs--;</span>
+        }
+
+        // if we got here then we didn't meet our quota
+<span class="fc" id="L158">        return EvaluationResult.getFalseInstance();</span>
+    }
+
+    /**
+     *
+     */
+    public void checkInputs(List inputs) throws IllegalArgumentException {
+        // check that none of the inputs is a bag
+<span class="fc" id="L166">        Object[] list = inputs.toArray();</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        for (int i = 0; i &lt; list.length; i++)</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">            if (((Evaluatable) (list[i])).returnsBag())</span>
+<span class="nc" id="L169">                throw new IllegalArgumentException(&quot;n-of can't use bags&quot;);</span>
+
+        // if we got here then there were no bags, so ask the other check
+        // method to finish the checking
+<span class="fc" id="L173">        checkInputsNoBag(inputs);</span>
+<span class="fc" id="L174">    }</span>
+
+    /**
+     *
+     */
+    public void checkInputsNoBag(List inputs) throws IllegalArgumentException {
+<span class="fc" id="L180">        Object[] list = inputs.toArray();</span>
+
+        // check that there is at least one arg
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if (list.length == 0)</span>
+<span class="nc" id="L184">            throw new IllegalArgumentException(&quot;n-of requires an argument&quot;);</span>
+
+        // check that the first element is an Integer
+<span class="fc" id="L187">        Evaluatable eval = (Evaluatable) (list[0]);</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (!eval.getType().toString().equals(IntegerAttribute.identifier))</span>
+<span class="nc" id="L189">            throw new IllegalArgumentException(&quot;first argument to n-of must&quot; + &quot; be an integer&quot;);</span>
+
+        // now check that the rest of the args are booleans
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        for (int i = 1; i &lt; list.length; i++) {</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">            if (!((Evaluatable) (list[i])).getType().toString().equals(BooleanAttribute.identifier))</span>
+<span class="nc" id="L194">                throw new IllegalArgumentException(&quot;invalid parameter in n-of&quot;</span>
+                        + &quot;: expected boolean&quot;);
+        }
+<span class="fc" id="L197">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

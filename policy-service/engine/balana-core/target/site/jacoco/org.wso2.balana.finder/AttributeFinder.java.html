@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AttributeFinder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.finder</a> &gt; <span class="el_source">AttributeFinder.java</span></div><h1>AttributeFinder.java</h1><pre class="source lang-java linenums">/*
+ * @(#)AttributeFinder.java
+ *
+ * Copyright 2003-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.finder;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.attr.BagAttribute;
+
+import org.wso2.balana.cond.EvaluationResult;
+
+import java.net.URI;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.w3c.dom.Node;
+
+/**
+ * This class is used by the PDP to find attribute values that weren't originally supplied in the
+ * request. It can be called with the data supplied in
+ * &lt;code&gt;AttributeDesignator&lt;code&gt;s or &lt;code&gt;AttributeSelector&lt;/code&gt;s. Because the modules in this
+ * finder may themselves need attribute data to search for attribute data, it's possible that the
+ * modules will look for values in the &lt;code&gt;EvaluationCtx&lt;/code&gt;, which may in turn result in the
+ * invocation of this finder again, so module writers need to be careful about how they build their
+ * modules.
+ * &lt;p&gt;
+ * Note that unlike the PolicyFinder, this class doesn't always need to use every module it has to
+ * find a value. The ordering is maintained, however, so it will always start with the first module,
+ * and proceed in order until it finds a value or runs out of modules.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class AttributeFinder {
+
+    // the list of all modules
+    private List&lt;AttributeFinderModule&gt; allModules;
+
+    //
+    private List&lt;AttributeFinderModule&gt; designatorModules;
+
+    //
+    private List&lt;AttributeFinderModule&gt; selectorModules;
+
+    // the logger we'll use for all messages
+<span class="fc" id="L83">    private static final Log logger = LogFactory.getLog(AttributeFinder.class);</span>
+
+    /**
+     * Default constructor.
+     */
+<span class="fc" id="L88">    public AttributeFinder() {</span>
+<span class="fc" id="L89">        allModules = new ArrayList&lt;AttributeFinderModule&gt;();</span>
+<span class="fc" id="L90">        designatorModules = new ArrayList&lt;AttributeFinderModule&gt;();</span>
+<span class="fc" id="L91">        selectorModules = new ArrayList&lt;AttributeFinderModule&gt;();</span>
+<span class="fc" id="L92">    }</span>
+
+    /**
+     * Returns the ordered &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeFinderModule&lt;/code&gt;s used by this
+     * class to find attribute values.
+     * 
+     * @return a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeFinderModule&lt;/code&gt;s
+     */
+    public List&lt;AttributeFinderModule&gt; getModules() {
+<span class="nc" id="L101">        return new ArrayList&lt;AttributeFinderModule&gt;(allModules);</span>
+    }
+
+    /**
+     * Sets the ordered &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeFinderModule&lt;/code&gt;s used by this class
+     * to find attribute values. The ordering will be maintained.
+     * 
+     * @param modules a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeFinderModule&lt;/code&gt;s
+     */
+    public void setModules(List&lt;AttributeFinderModule&gt; modules) {
+<span class="fc" id="L111">        Iterator it = modules.iterator();</span>
+
+<span class="fc" id="L113">        allModules = new ArrayList&lt;AttributeFinderModule&gt;(modules);</span>
+<span class="fc" id="L114">        designatorModules = new ArrayList&lt;AttributeFinderModule&gt;();</span>
+<span class="fc" id="L115">        selectorModules = new ArrayList&lt;AttributeFinderModule&gt;();</span>
+
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+<span class="fc" id="L118">            AttributeFinderModule module = (AttributeFinderModule) (it.next());</span>
+
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            if (module.isDesignatorSupported())</span>
+<span class="fc" id="L121">                designatorModules.add(module);</span>
+
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            if (module.isSelectorSupported())</span>
+<span class="fc" id="L124">                selectorModules.add(module);</span>
+<span class="fc" id="L125">        }</span>
+<span class="fc" id="L126">    }</span>
+
+    /**
+     * Tries to find attribute values based on the given designator data. The result, if successful,
+     * will always contain a &lt;code&gt;BagAttribute&lt;/code&gt;, even if only one value was found. If no
+     * values were found, but no other error occurred, an empty bag is returned.
+     * 
+     * @param attributeType the datatype of the attributes to find
+     * @param attributeId the identifier of the attributes to find
+     * @param issuer the issuer of the attributes, or null if unspecified
+     * @param category the category of the attribute if the designatorType is SUBJECT_TARGET,
+     *            otherwise null
+     * @param context the representation of the request data
+     * 
+     * @return the result of attribute retrieval, which will be a bag of attributes or an error
+     */
+    public EvaluationResult findAttribute(URI attributeType, URI attributeId, String issuer,
+            URI category, EvaluationCtx context) {
+<span class="fc" id="L144">        Iterator it = designatorModules.iterator();</span>
+
+        // start with empty list of Attribute ValuesS
+<span class="fc" id="L147">        List&lt;AttributeValue&gt; attributeValues = new ArrayList&lt;AttributeValue&gt;();</span>
+
+        // go through each module in order
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+<span class="fc" id="L151">            AttributeFinderModule module = (AttributeFinderModule) (it.next());</span>
+
+            // see if the module supports this type, note: if supportedIds and supportedCategories are null
+            // it implies that the module will resolve any type attributes
+<span class="pc bpc" id="L155" title="3 of 4 branches missed.">            if(module.getSupportedIds() != null &amp;&amp; module.getSupportedCategories() != null){</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">                if (!module.getSupportedCategories().contains(category.toString()) ||</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">                        !module.getSupportedIds().contains(attributeId.toString())){</span>
+<span class="nc" id="L158">                       continue;</span>
+                }
+            }
+
+            // see if the module can find an attribute value
+<span class="fc" id="L163">            EvaluationResult result = module.findAttribute(attributeType, attributeId, issuer,</span>
+                    category, context);
+
+            // if there was an error, we stop right away
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">            if (result.indeterminate()) {</span>
+<span class="nc" id="L168">                logger.error(&quot;Error while trying to resolve values: &quot;</span>
+<span class="nc" id="L169">                        + result.getStatus().getMessage());</span>
+<span class="nc" id="L170">                return result;</span>
+            }
+
+            // if the result wasn't empty, add the found attributes to list of AttributeValues and continue iterating
+<span class="fc" id="L174">            BagAttribute bag = (BagAttribute) (result.getAttributeValue());</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (!bag.isEmpty()) {</span>
+<span class="fc" id="L176">                Iterator iterator = bag.iterator();</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">                while (iterator.hasNext()) {</span>
+<span class="fc" id="L178">                    AttributeValue attr = (AttributeValue) (iterator.next());</span>
+<span class="fc" id="L179">                    attributeValues.add(attr);</span>
+<span class="fc" id="L180">                }</span>
+            }
+
+<span class="fc" id="L183">        }</span>
+
+        // check whether we were able to find any attributes, if not return an empty bag
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (attributeValues.isEmpty()){</span>
+            // if we got here then there were no errors but there were also no
+            // matches
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">            if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L190">                logger.debug(&quot;Failed to resolve any values for &quot; + attributeId.toString());</span>
+            }
+
+        }
+
+<span class="fc" id="L195">        return new EvaluationResult(new BagAttribute(attributeType,attributeValues));</span>
+    }
+
+    /**
+     * Tries to find attribute values based on the given selector data. The result, if successful,
+     * must always contain a &lt;code&gt;BagAttribute&lt;/code&gt;, even if only one value was found. If no
+     * values were found, but no other error occurred, an empty bag is returned.
+     * 
+     * @param contextPath the XPath expression to search against
+     * @param attributeType the datatype of the attributes to find
+     * @param context the representation of the request data
+     * @param xpathVersion the XPath version to use
+     * 
+     * @return the result of attribute retrieval, which will be a bag of attributes or an error
+     */
+    public EvaluationResult findAttribute(String contextPath, URI attributeType,
+                                          EvaluationCtx context, String xpathVersion) {
+<span class="nc" id="L212">        Iterator it = selectorModules.iterator();</span>
+
+        // start with empty list of Attribute Values
+<span class="nc" id="L215">        List&lt;AttributeValue&gt; attributeValues = new ArrayList&lt;AttributeValue&gt;();</span>
+
+        // go through each module in order
+<span class="nc bnc" id="L218" title="All 2 branches missed.">        while (it.hasNext()) {</span>
+<span class="nc" id="L219">            AttributeFinderModule module = (AttributeFinderModule) (it.next());</span>
+
+            // see if the module can find an attribute value
+<span class="nc" id="L222">            EvaluationResult result = module.findAttribute(contextPath,</span>
+                    attributeType, null, null, context, xpathVersion);
+
+            // if there was an error, we stop right away
+<span class="nc bnc" id="L226" title="All 2 branches missed.">            if (result.indeterminate()) {</span>
+<span class="nc" id="L227">                logger.error(&quot;Error while trying to resolve values: &quot;</span>
+<span class="nc" id="L228">                        + result.getStatus().getMessage());</span>
+<span class="nc" id="L229">                return result;</span>
+            }
+
+            // if the result wasn't empty, add the found attributes to list of AttributeValues and continue iterating
+<span class="nc" id="L233">            BagAttribute bag = (BagAttribute) (result.getAttributeValue());</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">            if (!bag.isEmpty()) {</span>
+<span class="nc" id="L235">                Iterator iterator = bag.iterator();</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">                while (iterator.hasNext()) {</span>
+<span class="nc" id="L237">                    AttributeValue attr = (AttributeValue) (iterator.next());</span>
+<span class="nc" id="L238">                    attributeValues.add(attr);</span>
+<span class="nc" id="L239">                }</span>
+            }
+<span class="nc" id="L241">        }</span>
+
+        // check whether we were able to find any attributes, if not return an empty bag
+<span class="nc bnc" id="L244" title="All 2 branches missed.">        if (attributeValues.isEmpty()) {</span>
+            // if we got here then there were no errors but there were also no
+            // matches
+<span class="nc bnc" id="L247" title="All 2 branches missed.">            if (logger.isDebugEnabled()) {</span>
+<span class="nc" id="L248">                logger.debug(&quot;Failed to resolve any values for &quot; + contextPath);</span>
+            }
+        }
+
+<span class="nc" id="L252">        return new EvaluationResult(new BagAttribute(attributeType,attributeValues));</span>
+    }
+
+    /**
+     * Tries to find attribute values based on the given selector data. The result, if successful,
+     * must always contain a &lt;code&gt;BagAttribute&lt;/code&gt;, even if only one value was found. If no
+     * values were found, but no other error occurred, an empty bag is returned.
+     *
+     * @param contextPath the XPath expression to search against
+     * @param contextSelector select the context to evaluate
+     * @param attributeType the datatype of the attributes to find
+     * @param root root XML node
+     * @param context the representation of the request data
+     * @param xpathVersion the XPath version to use
+     *
+     * @return the result of attribute retrieval, which will be a bag of attributes or an error
+     */    
+    public EvaluationResult findAttribute(String contextPath, String contextSelector, URI attributeType,
+                        Node root, EvaluationCtx context, String xpathVersion) {
+
+<span class="fc" id="L272">        Iterator it = selectorModules.iterator();</span>
+
+        // start with empty list of Attribute Values
+<span class="fc" id="L275">        List&lt;AttributeValue&gt; attributeValues = new ArrayList&lt;AttributeValue&gt;();</span>
+
+        // go through each module in order
+<span class="fc bfc" id="L278" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+<span class="fc" id="L279">            AttributeFinderModule module = (AttributeFinderModule) (it.next());</span>
+
+            // see if the module can find an attribute value
+<span class="fc" id="L282">            EvaluationResult result = module.findAttribute(contextPath, </span>
+                    attributeType, contextSelector, root, context, xpathVersion);
+
+            // if there was an error, we stop right away
+<span class="fc bfc" id="L286" title="All 2 branches covered.">            if (result.indeterminate()) {</span>
+<span class="fc" id="L287">                logger.error(&quot;Error while trying to resolve values: &quot;</span>
+<span class="fc" id="L288">                        + result.getStatus().getMessage());</span>
+<span class="fc" id="L289">                return result;</span>
+            }
+
+            // if the result wasn't empty, add the found attributes to list of AttributeValues and continue iterating
+<span class="fc" id="L293">            BagAttribute bag = (BagAttribute) (result.getAttributeValue());</span>
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">            if (!bag.isEmpty()) {</span>
+<span class="fc" id="L295">                Iterator iterator = bag.iterator();</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">                while (iterator.hasNext()) {</span>
+<span class="fc" id="L297">                    AttributeValue attr = (AttributeValue) (iterator.next());</span>
+<span class="fc" id="L298">                    attributeValues.add(attr);</span>
+<span class="fc" id="L299">                }</span>
+            }
+<span class="fc" id="L301">        }</span>
+
+        // check whether we were able to find any attributes, if not return an empty bag
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">        if (attributeValues.isEmpty()) {</span>
+            // if we got here then there were no errors but there were also no
+            // matches
+<span class="nc bnc" id="L307" title="All 2 branches missed.">            if (logger.isDebugEnabled()) {</span>
+<span class="nc" id="L308">                logger.debug(&quot;Failed to resolve any values for &quot; + contextPath);</span>
+            }
+        }
+
+<span class="fc" id="L312">        return new EvaluationResult(new BagAttribute(attributeType,attributeValues));</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

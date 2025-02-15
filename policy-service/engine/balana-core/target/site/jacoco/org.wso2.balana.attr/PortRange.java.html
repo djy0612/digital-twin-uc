@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PortRange.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.attr</a> &gt; <span class="el_source">PortRange.java</span></div><h1>PortRange.java</h1><pre class="source lang-java linenums">/*
+ * @(#)PortRange.java
+ *
+ * Copyright 2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.attr;
+
+/**
+ * This class represents a port range as specified in the XACML 2.0 description of
+ * &lt;code&gt;dnsName&lt;/code&gt; and &lt;code&gt;ipAddress&lt;/code&gt;. The range may have upper and lower bounds, be
+ * specified by a single port number, or may be unbound.
+ * 
+ * @since 2.0
+ * @author Seth Proctor
+ */
+public class PortRange {
+
+    /**
+     * Constant used to specify that the range is unbound on one side.
+     */
+    public static final int UNBOUND = -1;
+
+    // the port bound values
+    private int lowerBound;
+    private int upperBound;
+
+    /**
+     * Default constructor used to represent an unbound range. This is typically used when an
+     * address has no port information.
+     */
+    public PortRange() {
+<span class="fc" id="L62">        this(UNBOUND, UNBOUND);</span>
+<span class="fc" id="L63">    }</span>
+
+    /**
+     * Creates a &lt;code&gt;PortRange&lt;/code&gt; that represents a single port value instead of a range of
+     * values.
+     * 
+     * @param singlePort the single port number
+     */
+    public PortRange(int singlePort) {
+<span class="nc" id="L72">        this(singlePort, singlePort);</span>
+<span class="nc" id="L73">    }</span>
+
+    /**
+     * Creates a &lt;code&gt;PortRange&lt;/code&gt; with upper and lower bounds. Either of the parameters may
+     * have the value &lt;code&gt;UNBOUND&lt;/code&gt; meaning that there is no bound at the respective end.
+     * 
+     * @param lowerBound the lower-bound port number or &lt;code&gt;UNBOUND&lt;/code&gt;
+     * @param upperBound the upper-bound port number or &lt;code&gt;UNBOUND&lt;/code&gt;
+     */
+<span class="fc" id="L82">    public PortRange(int lowerBound, int upperBound) {</span>
+<span class="fc" id="L83">        this.lowerBound = lowerBound;</span>
+<span class="fc" id="L84">        this.upperBound = upperBound;</span>
+<span class="fc" id="L85">    }</span>
+
+    /**
+     * Creates an instance of &lt;code&gt;PortRange&lt;/code&gt; based on the given value.
+     * 
+     * @param value a &lt;code&gt;String&lt;/code&gt; representing the range
+     * 
+     * @return a new &lt;code&gt;PortRange&lt;/code&gt;
+     * 
+     * @throws NumberFormatException if a port value isn't an integer
+     */
+    public static PortRange getInstance(String value) {
+<span class="nc" id="L97">        int lowerBound = UNBOUND;</span>
+<span class="nc" id="L98">        int upperBound = UNBOUND;</span>
+
+        // first off, make sure there's actually content here
+<span class="nc bnc" id="L101" title="All 4 branches missed.">        if ((value.length() == 0) || (value.equals(&quot;-&quot;)))</span>
+<span class="nc" id="L102">            return new PortRange();</span>
+
+        // there's content, so figure where the '-' is, if at all
+<span class="nc" id="L105">        int dashPos = value.indexOf('-');</span>
+
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (dashPos == -1) {</span>
+            // there's no dash, so it's just a single number
+<span class="nc" id="L109">            lowerBound = upperBound = Integer.parseInt(value);</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        } else if (dashPos == 0) {</span>
+            // it starts with a dash, so it's just upper-range bound
+<span class="nc" id="L112">            upperBound = Integer.parseInt(value.substring(1));</span>
+        } else {
+            // it's a number followed by a dash, so get the lower-bound...
+<span class="nc" id="L115">            lowerBound = Integer.parseInt(value.substring(0, dashPos));</span>
+<span class="nc" id="L116">            int len = value.length();</span>
+
+            // ... and see if there is a second port number
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            if (dashPos != (len - 1)) {</span>
+                // the dash wasn't at the end, so there's an upper-bound
+<span class="nc" id="L121">                upperBound = Integer.parseInt(value.substring(dashPos + 1, len));</span>
+            }
+        }
+
+<span class="nc" id="L125">        return new PortRange(lowerBound, upperBound);</span>
+    }
+
+    /**
+     * Returns the lower-bound port value. If the range is not lower-bound, then this returns
+     * &lt;code&gt;UNBOUND&lt;/code&gt;. If the range is actually a single port number, then this returns the
+     * same value as &lt;code&gt;getUpperBound&lt;/code&gt;.
+     * 
+     * @return the upper-bound
+     */
+    public int getLowerBound() {
+<span class="nc" id="L136">        return lowerBound;</span>
+    }
+
+    /**
+     * Returns the upper-bound port value. If the range is not upper-bound, then this returns
+     * &lt;code&gt;UNBOUND&lt;/code&gt;. If the range is actually a single port number, then this returns the
+     * same value as &lt;code&gt;getLowerBound&lt;/code&gt;.
+     * 
+     * @return the upper-bound
+     */
+    public int getUpperBound() {
+<span class="nc" id="L147">        return upperBound;</span>
+    }
+
+    /**
+     * Returns whether the range is bounded by a lower port number.
+     * 
+     * @return true if lower-bounded, false otherwise
+     */
+    public boolean isLowerBounded() {
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        return (lowerBound != -1);</span>
+    }
+
+    /**
+     * Returns whether the range is bounded by an upper port number.
+     * 
+     * @return true if upper-bounded, false otherwise
+     */
+    public boolean isUpperBounded() {
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        return (upperBound != -1);</span>
+    }
+
+    /**
+     * Returns whether the range is actually a single port number.
+     * 
+     * @return true if the range is a single port number, false otherwise
+     */
+    public boolean isSinglePort() {
+<span class="nc bnc" id="L174" title="All 4 branches missed.">        return ((lowerBound == upperBound) &amp;&amp; (lowerBound != UNBOUND));</span>
+    }
+
+    /**
+     * Returns whether the range is unbound, which means that it specifies no port number or range.
+     * This is typically used with addresses that include no port information.
+     * 
+     * @return true if the range is unbound, false otherwise
+     */
+    public boolean isUnbound() {
+<span class="nc bnc" id="L184" title="All 4 branches missed.">        return ((lowerBound == UNBOUND) &amp;&amp; (upperBound == UNBOUND));</span>
+    }
+
+    /**
+     * Returns true if the input is an instance of this class and if its value equals the value
+     * contained in this class.
+     * 
+     * @param o the object to compare
+     * 
+     * @return true if this object and the input represent the same value
+     */
+    public boolean equals(Object o) {
+<span class="nc bnc" id="L196" title="All 2 branches missed.">        if (!(o instanceof PortRange))</span>
+<span class="nc" id="L197">            return false;</span>
+
+<span class="nc" id="L199">        PortRange other = (PortRange) o;</span>
+
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        if (lowerBound != other.lowerBound)</span>
+<span class="nc" id="L202">            return false;</span>
+
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        if (upperBound != other.upperBound)</span>
+<span class="nc" id="L205">            return false;</span>
+
+<span class="nc" id="L207">        return true;</span>
+    }
+
+    @Override
+    public int hashCode() {
+        
+<span class="nc" id="L213">        int result = lowerBound;</span>
+<span class="nc" id="L214">        result = 31 * result + upperBound;</span>
+<span class="nc" id="L215">        return result;</span>
+        
+    }
+
+    /**
+     *
+     */
+    public String encode() {
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (isUnbound())</span>
+<span class="nc" id="L224">            return &quot;&quot;;</span>
+
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        if (isSinglePort())</span>
+<span class="nc" id="L227">            return String.valueOf(lowerBound);</span>
+
+<span class="nc bnc" id="L229" title="All 2 branches missed.">        if (!isLowerBounded())</span>
+<span class="nc" id="L230">            return &quot;-&quot; + String.valueOf(upperBound);</span>
+
+<span class="nc bnc" id="L232" title="All 2 branches missed.">        if (!isUpperBounded())</span>
+<span class="nc" id="L233">            return String.valueOf(lowerBound) + &quot;-&quot;;</span>
+
+<span class="nc" id="L235">        return String.valueOf(lowerBound) + &quot;-&quot; + String.valueOf(upperBound);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

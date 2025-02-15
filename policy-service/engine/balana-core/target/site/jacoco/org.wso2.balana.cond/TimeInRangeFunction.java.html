@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TimeInRangeFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">TimeInRangeFunction.java</span></div><h1>TimeInRangeFunction.java</h1><pre class="source lang-java linenums">/*
+ * @(#)TimeInRangeFunction.java
+ *
+ * Copyright 2003-2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.BooleanAttribute;
+import org.wso2.balana.attr.TimeAttribute;
+
+import java.util.List;
+
+/**
+ * This class implements the time-in-range function, which takes three time values and returns true
+ * if the first value falls between the second and the third value. This function was introduced in
+ * XACML 2.0.
+ * &lt;p&gt;
+ * Note that this function allows any time ranges less than 24 hours. In other words, it is not
+ * bound by normal day boundries (midnight GMT), but by the minimum time in the range. This means
+ * that ranges like 9am-5pm are supported, as are ranges like 5pm-9am.
+ * 
+ * @since 2.0
+ * @author seth proctor
+ */
+public class TimeInRangeFunction extends FunctionBase {
+
+    /**
+     * The identifier for this function
+     */
+    public static final String NAME = FUNCTION_NS_2 + &quot;time-in-range&quot;;
+
+    /**
+     * The number of milliseconds in a minute
+     */
+    public static final long MILLIS_PER_MINUTE = 1000 * 60;
+
+    /**
+     * The number of milliseconds in a day
+     */
+    public static final long MILLIS_PER_DAY = MILLIS_PER_MINUTE * 60 * 24;
+
+    /**
+     * Default constructor.
+     */
+    public TimeInRangeFunction() {
+<span class="fc" id="L79">        super(NAME, 0, TimeAttribute.identifier, false, 3, BooleanAttribute.identifier, false);</span>
+<span class="fc" id="L80">    }</span>
+
+    /**
+     * Evaluates the time-in-range function, which takes three &lt;code&gt;TimeAttribute&lt;/code&gt; values.
+     * This function return true if the first value falls between the second and third values (ie.,
+     * on or after the second time and on or before the third time). If no time zone is specified
+     * for the second and/or third time value, then the timezone from the first time value is used.
+     * This lets you say time-in-range(current-time, 9am, 5pm) and always have the evaluation happen
+     * in your current-time timezone.
+     * 
+     * @param inputs a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt; objects representing the
+     *            arguments passed to the function
+     * @param context the respresentation of the request
+     * 
+     * @return an &lt;code&gt;EvaluationResult&lt;/code&gt; containing true or false
+     */
+    public EvaluationResult evaluate(List inputs, EvaluationCtx context) {
+<span class="nc" id="L97">        AttributeValue[] argValues = new AttributeValue[inputs.size()];</span>
+<span class="nc" id="L98">        EvaluationResult result = evalArgs(inputs, context, argValues);</span>
+
+        // check if any errors occured while resolving the inputs
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        if (result != null)</span>
+<span class="nc" id="L102">            return result;</span>
+
+        // get the three time values
+<span class="nc" id="L105">        TimeAttribute attr = (TimeAttribute) (argValues[0]);</span>
+<span class="nc" id="L106">        long middleTime = attr.getMilliseconds();</span>
+<span class="nc" id="L107">        long minTime = resolveTime(attr, (TimeAttribute) (argValues[1]));</span>
+<span class="nc" id="L108">        long maxTime = resolveTime(attr, (TimeAttribute) (argValues[2]));</span>
+
+        // first off, if the min and max are the same, then this can only
+        // be true is the middle is also the same value
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if (minTime == maxTime)</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">            return EvaluationResult.getInstance(middleTime == minTime);</span>
+
+        // shift the minTime to 00:00:00 so we can do a normal comparison,
+        // taking care to shift in the correct direction (left if the
+        // maxTime is bigger, otherwise right), and making sure that we
+        // handle any wrapping values for the middle time (the maxTime will
+        // never wrap around 00:00:00 GMT as long as we're dealing with
+        // windows of less than 24 hours)                                              ur
+
+        // the amount we're shifting
+        long shiftSpan;
+
+        // figure out the right direction and get the shift amount
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (minTime &lt; maxTime)</span>
+<span class="nc" id="L127">            shiftSpan = -minTime;</span>
+        else
+<span class="nc" id="L129">            shiftSpan = MILLIS_PER_DAY - minTime;</span>
+
+        // shift the maxTime and the middleTime
+<span class="nc" id="L132">        maxTime = maxTime + shiftSpan;</span>
+<span class="nc" id="L133">        middleTime = handleWrap(middleTime + shiftSpan);</span>
+
+        // we're in the range if the middle is now between 0 and maxTime
+<span class="nc bnc" id="L136" title="All 4 branches missed.">        return EvaluationResult.getInstance((middleTime &gt;= 0) &amp;&amp; (middleTime &lt;= maxTime));</span>
+    }
+
+    /**
+     * Private helper method that is used to resolve the correct values for min and max. If an
+     * explicit timezone is provided for either, then that value gets used. Otherwise we need to
+     * pick the timezone the middle time is using, and move the other time into that timezone.
+     */
+    private long resolveTime(TimeAttribute middleTime, TimeAttribute otherTime) {
+<span class="nc" id="L145">        long time = otherTime.getMilliseconds();</span>
+<span class="nc" id="L146">        int tz = otherTime.getTimeZone();</span>
+
+        // if there's no explicit timezone, then the otherTime needs to
+        // be shifted to the middleTime's timezone
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (tz == TimeAttribute.TZ_UNSPECIFIED) {</span>
+            // the other time didn't specify a timezone, so we use the
+            // timezone specified in the middle time...
+<span class="nc" id="L153">            int middleTz = middleTime.getTimeZone();</span>
+
+            // ...and we get the default timezone from the otherTime
+<span class="nc" id="L156">            tz = otherTime.getDefaultedTimeZone();</span>
+
+            // if there was no specified timezone for the middleTime, use
+            // the default timezone for that too
+<span class="nc bnc" id="L160" title="All 2 branches missed.">            if (middleTz == TimeAttribute.TZ_UNSPECIFIED)</span>
+<span class="nc" id="L161">                middleTz = middleTime.getDefaultedTimeZone();</span>
+
+            // use the timezone to offset the time value, if the two aren't
+            // already in the same timezone
+<span class="nc bnc" id="L165" title="All 2 branches missed.">            if (middleTz != tz) {</span>
+<span class="nc" id="L166">                time -= ((middleTz - tz) * MILLIS_PER_MINUTE);</span>
+<span class="nc" id="L167">                time = handleWrap(time);</span>
+            }
+        }
+
+<span class="nc" id="L171">        return time;</span>
+    }
+
+    /**
+     * Private helper method that handles when a time value wraps no more than 24 hours either above
+     * 23:59:59 or below 00:00:00.
+     */
+    private long handleWrap(long time) {
+<span class="nc bnc" id="L179" title="All 2 branches missed.">        if (time &lt; 0) {</span>
+            // if it's negative, add one day
+<span class="nc" id="L181">            return time + MILLIS_PER_DAY;</span>
+        }
+
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        if (time &gt; MILLIS_PER_DAY) {</span>
+            // if it's more than 24 hours, subtract one day
+<span class="nc" id="L186">            return time - MILLIS_PER_DAY;</span>
+        }
+
+<span class="nc" id="L189">        return time;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

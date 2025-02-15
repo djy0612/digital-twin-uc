@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PolicyMetaData.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana</a> &gt; <span class="el_source">PolicyMetaData.java</span></div><h1>PolicyMetaData.java</h1><pre class="source lang-java linenums">/*
+ * @(#)PolicyMetaData.java
+ *
+ * Copyright 2005-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana;
+
+import org.wso2.balana.attr.AttributeFactoryProxy;
+import org.wso2.balana.combine.CombiningAlgFactoryProxy;
+import org.wso2.balana.cond.FunctionFactoryProxy;
+
+/**
+ * This is used to share polcy meta-data throughout the policy tree. Examples of common meta-data
+ * include the version of XACML or XPath being used in a policy.
+ * 
+ * @since 2.0
+ * @author Seth Proctor
+ */
+public class PolicyMetaData {
+
+
+    /**
+     * The default version of XACML, 1.0, used if no namespace string is specified
+     */
+    public static final int XACML_DEFAULT_VERSION = XACMLConstants.XACML_VERSION_1_0;
+
+    // private mapping from XACML version number to identifier string
+<span class="fc" id="L58">    private static String[] xacmlIdentifiers = { XACMLConstants.XACML_1_0_IDENTIFIER,</span>
+            XACMLConstants.XACML_1_0_IDENTIFIER, XACMLConstants.XACML_2_0_IDENTIFIER,
+            XACMLConstants.XACML_3_0_IDENTIFIER };
+
+    /**
+     * XPath 1.0 identifier
+     */
+    public static final String XPATH_1_0_IDENTIFIER = &quot;http://www.w3.org/TR/1999/Rec-xpath-19991116&quot;;
+
+    /**
+     * Version identifier for an unspecified version of XPath
+     */
+    public static final int XPATH_VERSION_UNSPECIFIED = 0;
+
+    /**
+     * Version identifier for XPath 1.0
+     */
+    public static final int XPATH_VERSION_1_0 = 1;
+
+    // private mapping from XPath version number to identifier string
+<span class="fc" id="L78">    private static String[] xpathIdentifiers = { null, XPATH_1_0_IDENTIFIER };</span>
+
+    // the version of XACML
+    private int xacmlVersion;
+
+    // the version of XPath, or null if none is specified
+    private int xpathVersion;
+
+    /**
+     * Creates a &lt;code&gt;PolicyMetaData&lt;/code&gt; instance with all the parameters set to their default
+     * values.
+     */
+    public PolicyMetaData() {
+<span class="nc" id="L91">        this(XACML_DEFAULT_VERSION, XPATH_VERSION_UNSPECIFIED);</span>
+<span class="nc" id="L92">    }</span>
+
+    /**
+     * Creates a &lt;code&gt;PolicyMetaData&lt;/code&gt; instance with the given parameters. A proxy value of
+     * null implies the default factory.
+     *
+     * @param xacmlVersion the version of XACML used in a policy
+     * @param xpathVersion the XPath version to use in any selectors
+     */
+<span class="nc" id="L101">    public PolicyMetaData(int xacmlVersion, int xpathVersion) {</span>
+<span class="nc" id="L102">        this.xacmlVersion = xacmlVersion;</span>
+<span class="nc" id="L103">        this.xpathVersion = xpathVersion;</span>
+<span class="nc" id="L104">    }</span>
+
+    /**
+     * Creates a &lt;code&gt;PolicyMetaData&lt;/code&gt; instance with the given parameters.
+     * 
+     * @param xacmlVersion the version of XACML used in a policy
+     * @param xpathVersion the XPath version to use in any selectors, or null if this is unspecified
+     *            (ie, not supplied in the defaults section of the policy)
+     * the XACML policy, if null use default factories
+     * @throws IllegalArgumentException if the identifier strings are unknown
+     */
+<span class="fc" id="L115">    public PolicyMetaData(String xacmlVersion, String xpathVersion) {</span>
+
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (xacmlVersion == null){</span>
+<span class="nc" id="L118">            this.xacmlVersion = XACML_DEFAULT_VERSION;</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        } else if (xacmlVersion.equals(XACMLConstants.XACML_1_0_IDENTIFIER)){</span>
+<span class="nc" id="L120">            this.xacmlVersion = XACMLConstants.XACML_VERSION_1_0;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        } else if (xacmlVersion.equals(XACMLConstants.XACML_2_0_IDENTIFIER)){</span>
+<span class="fc" id="L122">            this.xacmlVersion = XACMLConstants.XACML_VERSION_2_0;</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        } else if (xacmlVersion.equals(XACMLConstants.XACML_3_0_IDENTIFIER)){</span>
+<span class="fc" id="L124">            this.xacmlVersion = XACMLConstants.XACML_VERSION_3_0;</span>
+        } else {
+<span class="nc" id="L126">            throw new IllegalArgumentException(&quot;Unknown XACML version &quot; + &quot;string: &quot; + xacmlVersion);</span>
+        }
+
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (xpathVersion != null) {</span>
+//            if (!xpathVersion.equals(XPATH_1_0_IDENTIFIER)){
+//                throw new IllegalArgumentException(&quot;Unsupported XPath &quot; + &quot; version: &quot;
+//                        + xpathVersion);
+//            }
+<span class="fc" id="L134">            this.xpathVersion = XPATH_VERSION_1_0;</span>
+        } else {
+<span class="fc" id="L136">            this.xpathVersion = XPATH_VERSION_UNSPECIFIED;</span>
+        }        
+<span class="fc" id="L138">    }</span>
+
+    /**
+     * Returns which version of XACML is specified in this meta-data.
+     *
+     * @return the XACML version
+     */
+    public int getXACMLVersion() {
+<span class="fc" id="L146">        return xacmlVersion;</span>
+    }
+
+    /**
+     * Returns the identifier string for the specified version of XACML.
+     *
+     * @return the identifier string
+     */
+    public String getXACMLIdentifier() {
+<span class="nc" id="L155">        return xacmlIdentifiers[xacmlVersion];</span>
+    }
+
+    /**
+     * Returns which version of XPath is specified in this meta-data.
+     *
+     * @return the XPath version or null
+     */
+    public int getXPathVersion() {
+<span class="nc" id="L164">        return xpathVersion;</span>
+    }
+
+    /**
+     * Returns the identifier string for the specified version of XPath, or null if no version is
+     * specified.
+     *
+     * @return the identifier string or null
+     */
+    public String getXPathIdentifier() {
+<span class="fc" id="L174">        return xpathIdentifiers[xpathVersion];</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StringCreationFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond.xacml3</a> &gt; <span class="el_source">StringCreationFunction.java</span></div><h1>StringCreationFunction.java</h1><pre class="source lang-java linenums">/*
+ *  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  WSO2 Inc. licenses this file to you under the Apache License,
+ *  Version 2.0 (the &quot;License&quot;); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.wso2.balana.cond.xacml3;
+
+import org.wso2.balana.attr.*;
+import org.wso2.balana.cond.Evaluatable;
+import org.wso2.balana.cond.EvaluationResult;
+import org.wso2.balana.cond.FunctionBase;
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import java.util.*;
+
+/**
+ * String creation function that creates String from other data types
+ */
+public class StringCreationFunction extends FunctionBase {
+
+    /**
+     *  Standard identifier for the string-from-boolean function.
+     */
+    public static final String NAME_STRING_FROM_BOOLEAN = FUNCTION_NS_3 + &quot;string-from-boolean&quot;;
+
+    /**
+     *  Standard identifier for the string-from-double function.
+     */
+    public static final String NAME_STRING_FROM_DOUBLE= FUNCTION_NS_3 + &quot;string-from-double&quot;;
+
+    /**
+     *  Standard identifier for the string-from-time function.
+     */
+    public static final String NAME_STRING_FROM_TIME = FUNCTION_NS_3 + &quot;string-from-time&quot;;
+
+    /**
+     *  Standard identifier for the string-from-dateTime function.
+     */
+    public static final String NAME_STRING_FROM_DATE_TIME = FUNCTION_NS_3 + &quot;string-from-dateTime&quot;;
+
+    /**
+     *  Standard identifier for the string-from-date function.
+     */
+    public static final String NAME_STRING_FROM_DATE= FUNCTION_NS_3 + &quot;string-from-date&quot;;
+
+    /**
+     *  Standard identifier for the string-from-integer function.
+     */
+    public static final String NAME_STRING_FROM_INTEGER = FUNCTION_NS_3 + &quot;string-from-integer&quot;;
+
+    /**
+     *  Standard identifier for the string-from-anyURI function.
+     */
+    public static final String NAME_STRING_FROM_URI = FUNCTION_NS_3 + &quot;string-from-anyURI&quot;;
+
+    /**
+     *  Standard identifier for the string-from-dayTimeDuration function.
+     */
+    public static final String NAME_STRING_FROM_DAYTIME_DURATION = FUNCTION_NS_3 + &quot;string-from-dayTimeDuration&quot;;
+
+    /**
+     *  Standard identifier for the string-from-yearMonthDuration function.
+     */
+    public static final String NAME_STRING_FROM_YEAR_MONTH_DURATION = FUNCTION_NS_3 + &quot;string-from-yearMonthDuration&quot;;
+
+    /**
+     *  Standard identifier for the string-from-x500Name function.
+     */
+    public static final String NAME_STRING_FROM_X500NAME = FUNCTION_NS_3 + &quot;string-from-x500Name&quot;;
+
+    /**
+     *  Standard identifier for the string-from-rfc822Name function.
+     */
+    public static final String NAME_STRING_FROM_RFC822NAME = FUNCTION_NS_3 + &quot;string-from-rfc822Name&quot;;
+
+    /**
+     *  Standard identifier for the string-from-dnsName function.
+     */
+    public static final String NAME_STRING_FROM_DNS = FUNCTION_NS_3 + &quot;string-from-dnsName&quot;;
+
+    /**
+     *  Standard identifier for the string-from-ipAddress function.
+     */
+    public static final String NAME_STRING_FROM_IP_ADDRESS = FUNCTION_NS_3 + &quot;string-from-ipAddress&quot;;
+
+    private static Map&lt;String, String&gt; dataTypeMap;
+
+    /**
+     * Static initializer sets up a map of standard function names to their associated argument
+     * data types
+     */
+    static {
+
+<span class="fc" id="L107">        dataTypeMap = new HashMap&lt;String, String&gt;();</span>
+        
+<span class="fc" id="L109">        dataTypeMap.put(NAME_STRING_FROM_BOOLEAN, BooleanAttribute.identifier);</span>
+<span class="fc" id="L110">        dataTypeMap.put(NAME_STRING_FROM_INTEGER, IntegerAttribute.identifier);</span>
+<span class="fc" id="L111">        dataTypeMap.put(NAME_STRING_FROM_DOUBLE, DoubleAttribute.identifier);</span>
+<span class="fc" id="L112">        dataTypeMap.put(NAME_STRING_FROM_DATE, DateAttribute.identifier);</span>
+<span class="fc" id="L113">        dataTypeMap.put(NAME_STRING_FROM_TIME, TimeAttribute.identifier);</span>
+<span class="fc" id="L114">        dataTypeMap.put(NAME_STRING_FROM_DATE_TIME, DateTimeAttribute.identifier);</span>
+<span class="fc" id="L115">        dataTypeMap.put(NAME_STRING_FROM_DAYTIME_DURATION, DayTimeDurationAttribute.identifier);</span>
+<span class="fc" id="L116">        dataTypeMap.put(NAME_STRING_FROM_YEAR_MONTH_DURATION, YearMonthDurationAttribute.identifier);</span>
+<span class="fc" id="L117">        dataTypeMap.put(NAME_STRING_FROM_URI, AnyURIAttribute.identifier);</span>
+<span class="fc" id="L118">        dataTypeMap.put(NAME_STRING_FROM_X500NAME, X500NameAttribute.identifier);</span>
+<span class="fc" id="L119">        dataTypeMap.put(NAME_STRING_FROM_RFC822NAME, RFC822NameAttribute.identifier);</span>
+<span class="fc" id="L120">        dataTypeMap.put(NAME_STRING_FROM_IP_ADDRESS, IPAddressAttribute.identifier);</span>
+<span class="fc" id="L121">        dataTypeMap.put(NAME_STRING_FROM_DNS, DNSNameAttribute.identifier);</span>
+
+<span class="fc" id="L123">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;EqualFunction&lt;/code&gt; object.
+     *
+     * @param functionName the standard XACML name of the function to be handled by this object,
+     *            including the full namespace
+     */
+    public StringCreationFunction(String functionName) {
+<span class="fc" id="L132">        super(functionName, 0, getArgumentType(functionName), false, 1, StringAttribute.identifier, false);</span>
+<span class="fc" id="L133">    }</span>
+
+    /**
+     * Private helper that returns the parameter type used for the given standard function.
+     *
+     * @param functionName function name
+     * @return identifier of the Data type
+     */
+    private static String getArgumentType(String functionName) {
+<span class="fc" id="L142">        return dataTypeMap.get(functionName);</span>
+    }
+
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+     *
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public static Set&lt;String&gt; getSupportedIdentifiers() {
+<span class="fc" id="L151">        return Collections.unmodifiableSet(dataTypeMap.keySet());</span>
+    }
+
+    public EvaluationResult evaluate(List&lt;Evaluatable&gt; inputs, EvaluationCtx context) {
+        // Evaluate the arguments
+<span class="nc" id="L156">        AttributeValue[] argValues = new AttributeValue[inputs.size()];</span>
+<span class="nc" id="L157">        EvaluationResult result = evalArgs(inputs, context, argValues);</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        if (result != null){</span>
+<span class="nc" id="L159">            return result;</span>
+        }
+
+<span class="nc" id="L162">        return new EvaluationResult(new StringAttribute(argValues[0].encode()));</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

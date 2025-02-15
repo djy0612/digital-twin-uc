@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AttributeSelector.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.attr.xacml3</a> &gt; <span class="el_source">AttributeSelector.java</span></div><h1>AttributeSelector.java</h1><pre class="source lang-java linenums">/*
+ *  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  WSO2 Inc. licenses this file to you under the Apache License,
+ *  Version 2.0 (the &quot;License&quot;); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.wso2.balana.attr.xacml3;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.wso2.balana.ParsingException;
+import org.wso2.balana.PolicyMetaData;
+import org.wso2.balana.attr.AbstractAttributeSelector;
+import org.wso2.balana.attr.BagAttribute;
+import org.wso2.balana.cond.EvaluationResult;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.Status;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Supports the standard selector functionality in XACML 3.0 version, which uses XPath expressions to resolve
+ * values from the Request or elsewhere. All selector queries are done by
+ * &lt;code&gt;AttributeFinderModule&lt;/code&gt;s so that it's easy to plugin different XPath implementations.
+ */
+public class AttributeSelector extends AbstractAttributeSelector {
+
+    /**
+     * category of the select 
+     */
+    private URI category;
+
+    /**
+     * the XPath search for context node
+     */
+    private URI contextSelectorId;
+
+    /**
+     * the XPath to search fpr attributes
+     */
+    private String path;
+
+    /**
+     * the logger we'll use for all messages
+     */
+<span class="fc" id="L62">    private static final Log logger = LogFactory.getLog(AttributeSelector.class);</span>
+
+
+
+    /**
+     * Creates a new &lt;code&gt;AttributeSelector&lt;/code&gt;.
+     *
+     * @param category category of the attribute select
+     * @param type the data type of the attribute values this selector looks for
+     * @param contextSelectorId  XPath search for context node
+     * @param path the XPath to query attribute
+     * @param mustBePresent must resolution find a match
+     * @param xpathVersion the XPath version to use, which must be a valid XPath version string (the
+     *            identifier for XPath 1.0 is provided in &lt;code&gt;PolicyMetaData&lt;/code&gt;)
+     */
+    public AttributeSelector(URI category, URI type, URI contextSelectorId, String path,
+<span class="fc" id="L78">                                                    boolean mustBePresent, String xpathVersion) {</span>
+<span class="fc" id="L79">        this.category = category;</span>
+<span class="fc" id="L80">        this.type = type;</span>
+<span class="fc" id="L81">        this.contextSelectorId = contextSelectorId;</span>
+<span class="fc" id="L82">        this.mustBePresent = mustBePresent;</span>
+<span class="fc" id="L83">        this.xpathVersion = xpathVersion;</span>
+<span class="fc" id="L84">        this.path = path;</span>
+<span class="fc" id="L85">    }</span>
+
+
+    /**
+     * Creates a new &lt;code&gt;AttributeSelector&lt;/code&gt; based on the DOM root of the XML type. Note that
+     * as of XACML 1.1 the XPathVersion element is required in any policy that uses a selector, so
+     * if the &lt;code&gt;xpathVersion&lt;/code&gt; string is null, then this will throw an exception.
+     *
+     * @param root the root of the DOM tree for the XML AttributeSelectorType XML type
+     * @param metaData the meta-data associated with the containing policy
+     *
+     * @return an &lt;code&gt;AttributeSelector&lt;/code&gt;
+     *
+     * @throws ParsingException if the AttributeSelectorType was invalid
+     */
+    public static AttributeSelector getInstance(Node root, PolicyMetaData metaData)
+                                                                        throws ParsingException {
+<span class="fc" id="L102">        URI category = null;</span>
+<span class="fc" id="L103">        URI type = null;</span>
+<span class="fc" id="L104">        URI contextSelectorId = null;</span>
+<span class="fc" id="L105">        String path = null;</span>
+<span class="fc" id="L106">        boolean mustBePresent = false;</span>
+<span class="fc" id="L107">        String xpathVersion = metaData.getXPathIdentifier();</span>
+
+        // make sure we were given an xpath version
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (xpathVersion == null){</span>
+<span class="nc" id="L111">            throw new ParsingException(&quot;An XPathVersion is required for &quot;</span>
+                    + &quot;any policies that use selectors&quot;);
+        }
+
+<span class="fc" id="L115">        NamedNodeMap attrs = root.getAttributes();</span>
+
+        try {
+            // there's always a DataType attribute
+<span class="fc" id="L119">            category = new URI(attrs.getNamedItem(&quot;Category&quot;).getNodeValue());</span>
+<span class="nc" id="L120">        } catch (Exception e) {</span>
+<span class="nc" id="L121">            throw new ParsingException(&quot;Error parsing required Category &quot;</span>
+                    + &quot;attribute in AttributeSelector&quot;, e);
+<span class="fc" id="L123">        }</span>
+        
+        try {
+            // there's always a DataType attribute
+<span class="fc" id="L127">            type = new URI(attrs.getNamedItem(&quot;DataType&quot;).getNodeValue());</span>
+<span class="nc" id="L128">        } catch (Exception e) {</span>
+<span class="nc" id="L129">            throw new ParsingException(&quot;Error parsing required DataType &quot;</span>
+                    + &quot;attribute in AttributeSelector&quot;, e);
+<span class="fc" id="L131">        }</span>
+
+        try {
+            // there's always a RequestPath
+<span class="fc" id="L135">            path = attrs.getNamedItem(&quot;Path&quot;).getNodeValue();</span>
+<span class="nc" id="L136">        } catch (Exception e) {</span>
+<span class="nc" id="L137">            throw new ParsingException(&quot;Error parsing required &quot;</span>
+                    + &quot;Path attribute in &quot; + &quot;AttributeSelector&quot;, e);
+<span class="fc" id="L139">        }</span>
+
+        try {
+<span class="fc" id="L142">            String stringValue = attrs.getNamedItem(&quot;MustBePresent&quot;).getNodeValue();</span>
+<span class="fc" id="L143">            mustBePresent = Boolean.parseBoolean(stringValue);</span>
+<span class="nc" id="L144">        } catch (Exception e) {</span>
+<span class="nc" id="L145">            throw new ParsingException(&quot;Error parsing required MustBePresent attribute &quot;</span>
+                    + &quot;in AttributeSelector&quot;, e);
+<span class="fc" id="L147">        }</span>
+
+        try {
+<span class="fc" id="L150">            Node node = attrs.getNamedItem(&quot;ContextSelectorId&quot;);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">            if(node != null){</span>
+<span class="fc" id="L152">                contextSelectorId = new URI(node.getNodeValue());</span>
+            }
+<span class="nc" id="L154">        } catch (Exception e) {</span>
+<span class="nc" id="L155">            throw new ParsingException(&quot;Error parsing required MustBePresent attribute &quot;</span>
+                    + &quot;in AttributeSelector&quot;, e);
+<span class="fc" id="L157">        }</span>
+
+<span class="fc" id="L159">        return new AttributeSelector(category, type, contextSelectorId, path, mustBePresent,</span>
+                                                                                    xpathVersion);
+    }
+
+
+    /**
+     * Invokes the &lt;code&gt;AttributeFinder&lt;/code&gt; used by the given &lt;code&gt;EvaluationCtx&lt;/code&gt; to try
+     * to resolve an attribute value. If the selector is defined with MustBePresent as true, then
+     * failure to find a matching value will result in Indeterminate, otherwise it will result in an
+     * empty bag. To support the basic selector functionality defined in the XACML specification,
+     * use a finder that has only the &lt;code&gt;SelectorModule&lt;/code&gt; as a module that supports selector
+     * finding.
+     *
+     * @param context representation of the request to search
+     *
+     * @return a result containing a bag either empty because no values were found or containing at
+     *         least one value, or status associated with an Indeterminate result
+     */
+
+    public EvaluationResult evaluate(EvaluationCtx context) {
+        // query the context
+<span class="fc" id="L180">        EvaluationResult result = context.getAttribute(path, type, category,</span>
+                                                                contextSelectorId, xpathVersion);
+
+        // see if we got anything
+<span class="fc bfc" id="L184" title="All 2 branches covered.">        if (!result.indeterminate()) {</span>
+<span class="fc" id="L185">            BagAttribute bag = (BagAttribute) (result.getAttributeValue());</span>
+
+            // see if it's an empty bag
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">            if (bag.isEmpty()) {</span>
+                // see if this is an error or not
+<span class="nc bnc" id="L190" title="All 2 branches missed.">                if (mustBePresent) {</span>
+                    // this is an error
+<span class="nc bnc" id="L192" title="All 2 branches missed.">                    if (logger.isDebugEnabled()) {</span>
+<span class="nc" id="L193">                        logger.debug(&quot;AttributeSelector failed to resolve a &quot;</span>
+                                + &quot;value for a required attribute: &quot; + path);
+                    }
+
+<span class="nc" id="L197">                    ArrayList&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L198">                    code.add(Status.STATUS_MISSING_ATTRIBUTE);</span>
+
+<span class="nc" id="L200">                    String message = &quot;couldn't resolve XPath expression &quot; + path</span>
+<span class="nc" id="L201">                            + &quot; for type &quot; + type.toString();</span>
+<span class="nc" id="L202">                    return new EvaluationResult(new Status(code, message));</span>
+                } else {
+                    // return the empty bag
+<span class="nc" id="L205">                    return result;</span>
+                }
+            } else {
+                // return the values
+<span class="fc" id="L209">                return result;</span>
+            }
+        } else {
+            // return the error
+<span class="fc" id="L213">            return result;</span>
+        }
+    }
+
+    public boolean evaluatesToBag() {
+<span class="nc" id="L218">        return true;</span>
+    }
+
+    public List getChildren() {
+<span class="nc" id="L222">        return null;</span>
+    }
+
+
+
+    public boolean returnsBag() {
+<span class="fc" id="L228">        return true;</span>
+    }
+
+
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L234">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

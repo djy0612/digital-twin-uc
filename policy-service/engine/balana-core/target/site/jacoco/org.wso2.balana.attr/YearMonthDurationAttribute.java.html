@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>YearMonthDurationAttribute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.attr</a> &gt; <span class="el_source">YearMonthDurationAttribute.java</span></div><h1>YearMonthDurationAttribute.java</h1><pre class="source lang-java linenums">/*
+ * @(#)YearMonthDurationAttribute.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.attr;
+
+import org.wso2.balana.ParsingException;
+
+import java.math.BigInteger;
+
+import java.net.URI;
+
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import java.util.regex.Matcher;
+
+import org.w3c.dom.Node;
+
+/**
+ * Representation of an xf:yearMonthDuration value. This class supports parsing xd:yearMonthDuration
+ * values. All objects of this class are immutable and thread-safe. The &lt;code&gt;Date&lt;/code&gt; objects
+ * returned are not, but these objects are cloned before being returned.
+ * 
+ * @since 1.0
+ * @author Steve Hanna
+ */
+public class YearMonthDurationAttribute extends AttributeValue {
+	/**
+	 * Official name of this type
+	 */
+	public static final String identifier = &quot;http://www.w3.org/TR/2002/WD-xquery-operators-20020816#&quot;
+			+ &quot;yearMonthDuration&quot;;
+
+	/**
+	 * URI version of name for this type
+	 * &lt;p&gt;
+	 * This field is initialized by a static initializer so that we can catch any exceptions thrown
+	 * by URI(String) and transform them into a RuntimeException, since this should never happen but
+	 * should be reported properly if it ever does.
+	 */
+	private static URI identifierURI;
+
+	/**
+	 * RuntimeException that wraps an Exception thrown during the creation of identifierURI, null if
+	 * none.
+	 */
+	private static RuntimeException earlyException;
+
+	/**
+	 * Static initializer that initializes the identifierURI class field so that we can catch any
+	 * exceptions thrown by URI(String) and transform them into a RuntimeException. Such exceptions
+	 * should never happen but should be reported properly if they ever do.
+	 */
+	static {
+		try {
+<span class="fc" id="L87">			identifierURI = new URI(identifier);</span>
+<span class="nc" id="L88">		} catch (Exception e) {</span>
+<span class="nc" id="L89">			earlyException = new IllegalArgumentException();</span>
+<span class="nc" id="L90">			earlyException.initCause(e);</span>
+<span class="fc" id="L91">		}</span>
+	};
+
+	/**
+	 * Regular expression for yearMonthDuration (a la java.util.regex)
+	 */
+	private static final String patternString = &quot;(\\-)?P((\\d+)?Y)?((\\d+)?M)?&quot;;
+
+	/**
+	 * The index of the capturing group for the negative sign.
+	 */
+	private static final int GROUP_SIGN = 1;
+
+	/**
+	 * The index of the capturing group for the number of years.
+	 */
+	private static final int GROUP_YEARS = 3;
+
+	/**
+	 * The index of the capturing group for the number of months.
+	 */
+	private static final int GROUP_MONTHS = 5;
+
+	/**
+	 * Static BigInteger values. We only use these if one of the components is bigger than
+	 * Integer.MAX_LONG and we want to detect overflow, so we don't initialize these until they're
+	 * needed.
+	 */
+<span class="fc" id="L119">	private static BigInteger big12 = BigInteger.valueOf(12);</span>
+<span class="fc" id="L120">	private static BigInteger bigMaxLong = BigInteger.valueOf(Long.MAX_VALUE);</span>
+
+	/**
+	 * A shared Pattern object, only initialized if needed
+	 */
+	private static Pattern pattern;
+
+	/**
+	 * Negative flag. true if duration is negative, false otherwise
+	 */
+	private boolean negative;
+
+	/**
+	 * Number of years
+	 */
+	private long years;
+
+	/**
+	 * Number of months
+	 */
+	private long months;
+
+	/**
+	 * Total number of months (used for equals)
+	 */
+	private long totalMonths;
+
+	/**
+	 * Cached encoded value (null if not cached yet).
+	 */
+<span class="fc" id="L150">	private String encodedValue = null;</span>
+
+	/**
+	 * Creates a new &lt;code&gt;YearMonthDurationAttribute&lt;/code&gt; that represents the duration supplied.
+	 * 
+	 * @param negative true if the duration is negative, false otherwise
+	 * @param years the number of years in the duration (must be positive)
+	 * @param months the number of months in the duration (must be positive)
+	 * @throws IllegalArgumentException if the total number of months exceeds Long.MAX_LONG or the
+	 *             number of months or years is negative
+	 */
+	public YearMonthDurationAttribute(boolean negative, long years, long months)
+			throws IllegalArgumentException {
+<span class="fc" id="L163">		super(identifierURI);</span>
+
+		// Shouldn't happen, but just in case...
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">		if (earlyException != null)</span>
+<span class="nc" id="L167">			throw earlyException;</span>
+
+<span class="fc" id="L169">		this.negative = negative;</span>
+<span class="fc" id="L170">		this.years = years;</span>
+<span class="fc" id="L171">		this.months = months;</span>
+
+		// Convert all the components except nanoseconds to milliseconds
+
+		// If any of the components is big (too big to be an int),
+		// use the BigInteger class to do the math so we can detect
+		// overflow.
+<span class="pc bpc" id="L178" title="2 of 4 branches missed.">		if ((years &gt; Integer.MAX_VALUE) || (months &gt; Integer.MAX_VALUE)) {</span>
+			
+<span class="nc" id="L180">			BigInteger bigMonths = BigInteger.valueOf(months);</span>
+<span class="nc" id="L181">			BigInteger bigYears = BigInteger.valueOf(years);</span>
+
+<span class="nc" id="L183">			BigInteger bigTotal = bigYears.multiply(big12).add(bigMonths);</span>
+
+			// If the result is bigger than Long.MAX_VALUE, we have an
+			// overflow. Indicate an error (should be a processing error,
+			// since it can be argued that we should handle gigantic
+			// values for this).
+<span class="nc bnc" id="L189" title="All 2 branches missed.">			if (bigTotal.compareTo(bigMaxLong) == 1)</span>
+<span class="nc" id="L190">				throw new IllegalArgumentException(&quot;total number of &quot; + &quot;months &quot;</span>
+						+ &quot;exceeds Long.MAX_VALUE&quot;);
+			// If no overflow, convert to a long.
+<span class="nc" id="L193">			totalMonths = bigTotal.longValue();</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">			if (negative)</span>
+<span class="nc" id="L195">				totalMonths = -totalMonths;</span>
+<span class="nc" id="L196">		} else {</span>
+			// The numbers are small, so do it the fast way.
+<span class="fc bfc" id="L198" title="All 2 branches covered.">			totalMonths = ((years * 12) + months) * (negative ? -1 : 1);</span>
+		}
+<span class="fc" id="L200">	}</span>
+
+	/**
+	 * Returns a new &lt;code&gt;YearMonthDurationAttribute&lt;/code&gt; that represents the
+	 * xf:yearMonthDuration at a particular DOM node.
+	 * 
+	 * @param root the &lt;code&gt;Node&lt;/code&gt; that contains the desired value
+	 * @return a new &lt;code&gt;YearMonthDurationAttribute&lt;/code&gt; representing the appropriate value
+	 * @throws ParsingException if any problems occurred while parsing
+	 */
+	public static YearMonthDurationAttribute getInstance(Node root) throws ParsingException {
+<span class="fc" id="L211">		return getInstance(root.getFirstChild().getNodeValue());</span>
+	}
+
+	/**
+	 * Returns the long value for the capturing group groupNumber. This method takes a Matcher that
+	 * has been used to match a Pattern against a String, fetches the value for the specified
+	 * capturing group, converts that value to an long, and returns the value. If that group did not
+	 * match, 0 is returned. If the matched value is not a valid long, NumberFormatException is
+	 * thrown.
+	 * 
+	 * @param matcher the Matcher from which to fetch the group
+	 * @param groupNumber the group number to fetch
+	 * @return the long value for that groupNumber
+	 * @throws NumberFormatException if the string value for that groupNumber is not a valid long
+	 */
+	private static long parseGroup(Matcher matcher, int groupNumber) throws NumberFormatException {
+<span class="fc" id="L227">		long groupLong = 0;</span>
+
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">		if (matcher.start(groupNumber) != -1) {</span>
+<span class="fc" id="L230">			String groupString = matcher.group(groupNumber);</span>
+<span class="fc" id="L231">			groupLong = Long.parseLong(groupString);</span>
+		}
+<span class="fc" id="L233">		return groupLong;</span>
+	}
+
+	/**
+	 * Returns a new &lt;code&gt;YearMonthDurationAttribute&lt;/code&gt; that represents the
+	 * xf:yearMonthDuration value indicated by the string provided.
+	 * 
+	 * @param value a string representing the desired value
+	 * 
+	 * @return a new &lt;code&gt;YearMonthDurationAttribute&lt;/code&gt; representing the desired value
+	 * 
+	 * @throws ParsingException if any problems occurred while parsing
+	 */
+	public static YearMonthDurationAttribute getInstance(String value) throws ParsingException {
+<span class="fc" id="L247">		boolean negative = false;</span>
+<span class="fc" id="L248">		long years = 0;</span>
+<span class="fc" id="L249">		long months = 0;</span>
+
+		// Compile the pattern, if not already done.
+<span class="fc bfc" id="L252" title="All 2 branches covered.">		if (pattern == null) {</span>
+			try {
+<span class="fc" id="L254">				pattern = Pattern.compile(patternString);</span>
+<span class="nc" id="L255">			} catch (PatternSyntaxException e) {</span>
+				// This should never happen
+<span class="nc" id="L257">				throw new ParsingException(&quot;unexpected pattern syntax error&quot;);</span>
+<span class="fc" id="L258">			}</span>
+		}
+
+		// See if the value matches the pattern.
+<span class="fc" id="L262">		Matcher matcher = pattern.matcher(value);</span>
+<span class="fc" id="L263">		boolean matches = matcher.matches();</span>
+
+		// If not, syntax error!
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">		if (!matches) {</span>
+<span class="nc" id="L267">			throw new ParsingException(&quot;Syntax error in yearMonthDuration&quot;);</span>
+		}
+
+		// If the negative group matched, the value is negative.
+<span class="fc bfc" id="L271" title="All 2 branches covered.">		if (matcher.start(GROUP_SIGN) != -1)</span>
+<span class="fc" id="L272">			negative = true;</span>
+
+		try {
+			// If the years group matched, parse that value.
+<span class="fc" id="L276">			years = parseGroup(matcher, GROUP_YEARS);</span>
+
+			// If the months group matched, parse that value.
+<span class="fc" id="L279">			months = parseGroup(matcher, GROUP_MONTHS);</span>
+<span class="nc" id="L280">		} catch (NumberFormatException e) {</span>
+			// If we run into a number that's too big to be a long
+			// that's an error. Really, it's a processing error,
+			// since one can argue that we should handle that.
+<span class="nc" id="L284">			throw new ParsingException(&quot;Unable to handle number size&quot;);</span>
+<span class="fc" id="L285">		}</span>
+
+		// If parsing went OK, create a new YearMonthDurationAttribute
+		// object and return it.
+<span class="fc" id="L289">		return new YearMonthDurationAttribute(negative, years, months);</span>
+	}
+
+	/**
+	 * Returns true if the duration is negative.
+	 * 
+	 * @return true if the duration is negative, false otherwise
+	 */
+	public boolean isNegative() {
+<span class="fc" id="L298">		return negative;</span>
+	}
+
+	/**
+	 * Gets the number of years.
+	 * 
+	 * @return the number of years
+	 */
+	public long getYears() {
+<span class="fc" id="L307">		return years;</span>
+	}
+
+	/**
+	 * Gets the number of months.
+	 * 
+	 * @return the number of months
+	 */
+	public long getMonths() {
+<span class="fc" id="L316">		return months;</span>
+	}
+
+	/**
+	 * Returns true if the input is an instance of this class and if its value equals the value
+	 * contained in this class.
+	 * 
+	 * @param o the object to compare
+	 * 
+	 * @return true if this object and the input represent the same value
+	 */
+	public boolean equals(Object o) {
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">		if (!(o instanceof YearMonthDurationAttribute))</span>
+<span class="nc" id="L329">			return false;</span>
+
+<span class="fc" id="L331">		YearMonthDurationAttribute other = (YearMonthDurationAttribute) o;</span>
+
+<span class="fc bfc" id="L333" title="All 2 branches covered.">		return (totalMonths == other.totalMonths);</span>
+	}
+
+	/**
+	 * Returns the hashcode value used to index and compare this object with others of the same
+	 * type. Typically this is the hashcode of the backing data object.
+	 * 
+	 * @return the object's hashcode value
+	 */
+	public int hashCode() {
+<span class="nc" id="L343">		return (int) totalMonths ^ (int) (totalMonths &gt;&gt; 32);</span>
+	}
+
+	/**
+	 * Converts to a String representation.
+	 * 
+	 * @return the String representation
+	 */
+	public String toString() {
+<span class="nc" id="L352">		StringBuffer sb = new StringBuffer();</span>
+<span class="nc" id="L353">		sb.append(&quot;YearMonthDurationAttribute: [\n&quot;);</span>
+<span class="nc" id="L354">		sb.append(&quot;  Negative: &quot; + negative);</span>
+<span class="nc" id="L355">		sb.append(&quot;  Years: &quot; + years);</span>
+<span class="nc" id="L356">		sb.append(&quot;  Months: &quot; + months);</span>
+<span class="nc" id="L357">		sb.append(&quot;]&quot;);</span>
+
+<span class="nc" id="L359">		return sb.toString();</span>
+	}
+
+	/**
+	 * Encodes the value in a form suitable for including in XML data like a request or an
+	 * obligation. This must return a value that could in turn be used by the factory to create a
+	 * new instance with the same value.
+	 * 
+	 * @return a &lt;code&gt;String&lt;/code&gt; form of the value
+	 */
+	public String encode() {
+<span class="nc bnc" id="L370" title="All 2 branches missed.">		if (encodedValue != null)</span>
+<span class="nc" id="L371">			return encodedValue;</span>
+
+		// Length is variable
+<span class="nc" id="L374">		StringBuffer buf = new StringBuffer(10);</span>
+
+<span class="nc bnc" id="L376" title="All 2 branches missed.">		if (negative)</span>
+<span class="nc" id="L377">			buf.append('-');</span>
+<span class="nc" id="L378">		buf.append('P');</span>
+<span class="nc bnc" id="L379" title="All 4 branches missed.">		if ((years != 0) || (months == 0)) {</span>
+<span class="nc" id="L380">			buf.append(Long.toString(years));</span>
+<span class="nc" id="L381">			buf.append('Y');</span>
+		}
+<span class="nc bnc" id="L383" title="All 2 branches missed.">		if (months != 0) {</span>
+<span class="nc" id="L384">			buf.append(Long.toString(months));</span>
+<span class="nc" id="L385">			buf.append('M');</span>
+		}
+
+<span class="nc" id="L388">		encodedValue = buf.toString();</span>
+
+<span class="nc" id="L390">		return encodedValue;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

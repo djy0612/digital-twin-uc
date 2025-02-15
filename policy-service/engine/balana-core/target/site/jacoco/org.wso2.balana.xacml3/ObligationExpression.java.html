@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ObligationExpression.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.xacml3</a> &gt; <span class="el_source">ObligationExpression.java</span></div><h1>ObligationExpression.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+package org.wso2.balana.xacml3;
+
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.*;
+import org.wso2.balana.ctx.AbstractResult;
+import org.wso2.balana.ctx.Attribute;
+import org.wso2.balana.ctx.AttributeAssignment;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.xacml2.Result;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Represents ObligationExpressionType in the XACML 3.0 policy schema
+ */
+public class ObligationExpression extends AbstractObligation {
+
+    /**
+     * &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeAssignmentExpression&lt;/code&gt; that contains in
+     * &lt;code&gt;ObligationExpression&lt;/code&gt;
+     *
+     */
+    private List&lt;AttributeAssignmentExpression&gt; expressions;
+
+
+    /**
+     * Constructor that creates a new &lt;code&gt;ObligationExpression&lt;/code&gt; based on
+     * the given elements.
+     *
+     * @param fulfillOn  effect that will cause this obligation to be included in a response 
+     * @param expressions  &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeAssignmentExpression&lt;/code&gt;
+     * @param obligationId Identifier that uniquely identify ObligationExpression element
+     */
+    public ObligationExpression(int fulfillOn, List&lt;AttributeAssignmentExpression&gt; expressions,
+<span class="fc" id="L58">                                URI obligationId) {</span>
+<span class="fc" id="L59">        this.fulfillOn = fulfillOn;</span>
+<span class="fc" id="L60">        this.expressions = expressions;</span>
+<span class="fc" id="L61">        this.obligationId = obligationId;</span>
+<span class="fc" id="L62">    }</span>
+
+    /**
+     *  creates a &lt;code&gt;ObligationExpression&lt;/code&gt; based on its DOM node.
+     *
+     * @param root root the node to parse for the ObligationExpression
+     * @param metaData  meta-date associated with the policy
+     * @return  a new &lt;code&gt;ObligationExpression&lt;/code&gt; constructed by parsing
+     * @throws ParsingException if the DOM node is invalid
+     */
+    public static ObligationExpression getInstance(Node root, PolicyMetaData metaData)
+            throws ParsingException {
+
+<span class="fc" id="L75">        List&lt;AttributeAssignmentExpression&gt; expressions =</span>
+                new ArrayList&lt;AttributeAssignmentExpression&gt;();
+        URI obligationId;
+        int fulfillOn;
+        String effect;
+
+        // First check that we're really parsing an Attribute
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (!DOMHelper.getLocalName(root).equals(&quot;ObligationExpression&quot;)) {</span>
+<span class="nc" id="L83">            throw new ParsingException(&quot;ObligationExpression object cannot be created &quot;</span>
+<span class="nc" id="L84">                    + &quot;with root node of type: &quot; + DOMHelper.getLocalName(root));</span>
+        }
+
+<span class="fc" id="L87">        NamedNodeMap nodeAttributes = root.getAttributes();</span>
+
+        try {
+<span class="fc" id="L90">            obligationId = new URI(nodeAttributes.getNamedItem(&quot;ObligationId&quot;).getNodeValue());</span>
+<span class="nc" id="L91">        } catch (Exception e) {</span>
+<span class="nc" id="L92">            throw new ParsingException(&quot;Error parsing required ObligationId in &quot; +</span>
+                    &quot;ObligationExpressionType&quot;, e);
+<span class="fc" id="L94">        }</span>
+
+        try {
+<span class="fc" id="L97">            effect = nodeAttributes.getNamedItem(&quot;FulfillOn&quot;).getNodeValue();</span>
+<span class="nc" id="L98">        } catch (Exception e) {</span>
+<span class="nc" id="L99">            throw new ParsingException(&quot;Error parsing required FulfillOn in &quot; +</span>
+                    &quot;ObligationExpressionType&quot;, e);
+<span class="fc" id="L101">        }</span>
+
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if(&quot;Permit&quot;.equals(effect)){</span>
+<span class="fc" id="L104">            fulfillOn = Result.DECISION_PERMIT;</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        } else if(&quot;Deny&quot;.equals(effect)){</span>
+<span class="fc" id="L106">            fulfillOn = Result.DECISION_DENY;</span>
+        } else {
+<span class="nc" id="L108">            throw new ParsingException(&quot;Invalid FulfillOn : &quot; + effect);</span>
+        }
+
+<span class="fc" id="L111">        NodeList children = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        for(int i = 0; i &lt; children.getLength(); i ++){</span>
+<span class="fc" id="L114">            Node child = children.item(i);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            if(&quot;AttributeAssignmentExpression&quot;.equals(DOMHelper.getLocalName(child))){</span>
+<span class="fc" id="L116">                expressions.add(AttributeAssignmentExpression.getInstance(child, metaData));</span>
+            }
+        }
+
+<span class="fc" id="L120">        return new ObligationExpression(fulfillOn, expressions, obligationId);</span>
+
+    }
+
+    @Override
+    public ObligationResult evaluate(EvaluationCtx ctx) {
+<span class="fc" id="L126">        List&lt;AttributeAssignment&gt; assignments = new ArrayList&lt;AttributeAssignment&gt;();</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        for(AttributeAssignmentExpression expression : expressions){</span>
+<span class="fc" id="L128">            Set&lt;AttributeAssignment&gt; assignmentSet = expression.evaluate(ctx);</span>
+<span class="pc bpc" id="L129" title="2 of 4 branches missed.">            if(assignmentSet != null &amp;&amp; assignmentSet.size() &gt; 0){</span>
+<span class="fc" id="L130">                assignments.addAll(assignmentSet);    </span>
+            }
+<span class="fc" id="L132">        }</span>
+<span class="fc" id="L133">        return new Obligation(assignments, obligationId);</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;ObligationExpression&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L144">        builder.append(&quot;&lt;ObligationExpression ObligationId=\&quot;&quot;).append(obligationId.toString()).</span>
+<span class="nc" id="L145">                append(&quot;\&quot; FulfillOn=\&quot;&quot;).append(AbstractResult.DECISIONS[fulfillOn]).append(&quot;\&quot;&gt;\n&quot;);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        for (AttributeAssignmentExpression assignment : expressions) {</span>
+<span class="nc" id="L147">            assignment.encode(builder);</span>
+<span class="nc" id="L148">        }</span>
+<span class="nc" id="L149">        builder.append(&quot;&lt;/ObligationExpression&gt;&quot;);</span>
+<span class="nc" id="L150">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

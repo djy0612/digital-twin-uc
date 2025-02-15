@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Attribute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.ctx</a> &gt; <span class="el_source">Attribute.java</span></div><h1>Attribute.java</h1><pre class="source lang-java linenums">/*
+ * @(#)Attribute.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.ctx;
+
+import org.wso2.balana.*;
+import org.wso2.balana.attr.AttributeFactory;
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.DateTimeAttribute;
+
+import java.io.PrintStream;
+import java.io.OutputStream;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * Represents the AttributeType XML type found in the context schema.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class Attribute {
+
+    /**
+     * attribute identifier
+     */
+    private URI id;
+
+    /**
+     * attribute data type,  this is not used in XACML3
+     */
+    private URI type;
+
+    /**
+     * whether to include this attribute in the result. This is useful to correlate requests
+     * with their responses in case of multiple requests.
+     * optional one defined only in XACML3
+     */
+    private boolean includeInResult;
+
+    /**
+     * issuer of the attribute.   optional one
+     */
+<span class="fc" id="L83">    private String issuer = null;</span>
+
+    /**
+     * issue instance of the attribute. this is not used in XACML3
+     */
+<span class="fc" id="L88">    private DateTimeAttribute issueInstant = null;</span>
+
+    /**
+     * a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeValue&lt;/code&gt;  
+     */
+    private List&lt;AttributeValue&gt; attributeValues;
+
+    private int xacmlVersion;
+
+    /**
+     * Creates a new &lt;code&gt;Attribute&lt;/code&gt; of the type specified in the given
+     * &lt;code&gt;AttributeValue&lt;/code&gt;.for XACML 3 with one  &lt;code&gt;AttributeValue&lt;/code&gt;
+     *
+     * @param id the id of the attribute
+     * @param issuer the attribute's issuer or null if there is none
+     * @param issueInstant the moment when the attribute was issued, or null if it's unspecified
+     * @param value the actual value associated with the attribute meta-data
+     * @param includeInResult  whether to include this attribute in the result.
+     * @param version XACML version
+     */
+    public Attribute(URI id, String issuer, DateTimeAttribute issueInstant, AttributeValue value,
+                      boolean includeInResult, int version) {
+<span class="fc" id="L110">        this(id, value.getType(), issuer, issueInstant, Arrays.asList(value), includeInResult,version);</span>
+<span class="fc" id="L111">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;Attribute&lt;/code&gt;  for XACML 2 and XACML 1.X with one &lt;code&gt;AttributeValue&lt;/code&gt;
+     *
+     * @param id the id of the attribute
+     * @param issuer the attribute's issuer or null if there is none
+     * @param issueInstant the moment when the attribute was issued, or null if it's unspecified
+     * @param value actual &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeValue&lt;/code&gt;  associated with
+     * @param version XACML version
+     */
+    public Attribute(URI id, String issuer, DateTimeAttribute issueInstant, AttributeValue value,
+                                                                                    int version) {
+
+<span class="nc" id="L125">        this(id, value.getType(), issuer, issueInstant, Arrays.asList(value), false, version);</span>
+<span class="nc" id="L126">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;Attribute&lt;/code&gt;
+     * 
+     * @param id the id of the attribute
+     * @param type the type of the attribute
+     * @param issuer the attribute's issuer or null if there is none
+     * @param issueInstant the moment when the attribute was issued, or null if it's unspecified
+     * @param attributeValues actual &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeValue&lt;/code&gt;  associated with
+     * @param includeInResult whether to include this attribute in the result.
+     * @param xacmlVersion xacml version
+     */
+    public Attribute(URI id, URI type, String issuer, DateTimeAttribute issueInstant,
+<span class="fc" id="L140">            List&lt;AttributeValue&gt; attributeValues, boolean includeInResult, int xacmlVersion) {</span>
+<span class="fc" id="L141">        this.id = id;</span>
+<span class="fc" id="L142">        this.type = type;</span>
+<span class="fc" id="L143">        this.issuer = issuer;</span>
+<span class="fc" id="L144">        this.issueInstant = issueInstant;</span>
+<span class="fc" id="L145">        this.attributeValues = attributeValues;</span>
+<span class="fc" id="L146">        this.includeInResult = includeInResult;</span>
+<span class="fc" id="L147">        this.xacmlVersion = xacmlVersion;</span>
+<span class="fc" id="L148">    }</span>
+
+
+    /**
+     * Creates an instance of an &lt;code&gt;Attribute&lt;/code&gt; based on the root DOM node of the XML data.
+     *
+     * @param root the DOM root of the AttributeType XML type
+     * @param version XACML version
+     * @return the attribute
+     * @throws ParsingException throws ParsingException if the data is invalid
+     */
+    public static Attribute getInstance(Node root, int version) throws ParsingException {
+<span class="fc" id="L160">        URI id = null;</span>
+<span class="fc" id="L161">        URI type = null;</span>
+<span class="fc" id="L162">        String issuer = null;</span>
+<span class="fc" id="L163">        DateTimeAttribute issueInstant = null;</span>
+<span class="fc" id="L164">        List&lt;AttributeValue&gt; values = new ArrayList&lt;AttributeValue&gt;();</span>
+<span class="fc" id="L165">        boolean includeInResult = false ;</span>
+
+
+<span class="fc" id="L168">        AttributeFactory attributeFactory =  Balana.getInstance().getAttributeFactory();</span>
+
+        // First check that we're really parsing an Attribute
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (!DOMHelper.getLocalName(root).equals(&quot;Attribute&quot;)) {</span>
+<span class="nc" id="L172">            throw new ParsingException(&quot;Attribute object cannot be created &quot;</span>
+<span class="nc" id="L173">                    + &quot;with root node of type: &quot; + DOMHelper.getLocalName(root));</span>
+        }
+
+<span class="fc" id="L176">        NamedNodeMap attrs = root.getAttributes();</span>
+
+        try {
+<span class="fc" id="L179">            id = new URI(attrs.getNamedItem(&quot;AttributeId&quot;).getNodeValue());</span>
+<span class="fc" id="L180">        } catch (Exception e) {</span>
+<span class="fc" id="L181">            throw new ParsingException(&quot;Error parsing required attribute &quot;</span>
+                    + &quot;AttributeId in AttributeType&quot;, e);
+<span class="fc" id="L183">        }</span>
+
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        if(!(version == XACMLConstants.XACML_VERSION_3_0)){</span>
+            try {
+<span class="fc" id="L187">                type = new URI(attrs.getNamedItem(&quot;DataType&quot;).getNodeValue());</span>
+<span class="nc" id="L188">            } catch (Exception e) {</span>
+<span class="nc" id="L189">                throw new ParsingException(&quot;Error parsing required attribute &quot;</span>
+                        + &quot;DataType in AttributeType&quot;, e);
+<span class="fc" id="L191">            }</span>
+        }
+
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if(version == XACMLConstants.XACML_VERSION_3_0){</span>
+            try {
+<span class="fc" id="L196">                String includeInResultString = attrs.getNamedItem(&quot;IncludeInResult&quot;).getNodeValue();</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">                if(&quot;true&quot;.equals(includeInResultString)){</span>
+<span class="fc" id="L198">                    includeInResult = true;</span>
+                }
+<span class="nc" id="L200">            } catch (Exception e) {</span>
+<span class="nc" id="L201">                throw new ParsingException(&quot;Error parsing required attribute &quot;</span>
+                        + &quot;IncludeInResult in AttributeType&quot;, e);
+<span class="fc" id="L203">            }            </span>
+        }
+
+        try {
+<span class="fc" id="L207">            Node issuerNode = attrs.getNamedItem(&quot;Issuer&quot;);</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">            if (issuerNode != null)</span>
+<span class="fc" id="L209">                issuer = issuerNode.getNodeValue();</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">            if(!(version == XACMLConstants.XACML_VERSION_3_0)){</span>
+<span class="fc" id="L211">                Node instantNode = attrs.getNamedItem(&quot;IssueInstant&quot;);</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">                if (instantNode != null){</span>
+<span class="nc" id="L213">                    issueInstant = DateTimeAttribute.getInstance(instantNode.getNodeValue());</span>
+                }
+            }
+<span class="nc" id="L216">        } catch (Exception e) {</span>
+            // shouldn't happen, but just in case...
+<span class="nc" id="L218">            throw new ParsingException(&quot;Error parsing optional AttributeType&quot; + &quot; attribute&quot;, e);</span>
+<span class="fc" id="L219">        }</span>
+
+        // now we get the attribute value
+<span class="fc" id="L222">        NodeList nodes = root.getChildNodes();</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L224">            Node node = nodes.item(i);</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">            if (DOMHelper.getLocalName(node).equals(&quot;AttributeValue&quot;)) {</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">                if(version == XACMLConstants.XACML_VERSION_3_0){</span>
+<span class="fc" id="L227">                    NamedNodeMap dataTypeAttribute = node.getAttributes();</span>
+                    try {
+<span class="fc" id="L229">                        type = new URI(dataTypeAttribute.getNamedItem(&quot;DataType&quot;).getNodeValue());</span>
+<span class="nc" id="L230">                    } catch (Exception e) {</span>
+<span class="nc" id="L231">                        throw new ParsingException(&quot;Error parsing required attribute &quot;</span>
+                                + &quot;DataType in AttributeType&quot;, e);
+<span class="fc" id="L233">                    }</span>
+                }
+
+                try {                    
+<span class="fc" id="L237">                    values.add(attributeFactory.createValue(node, type));</span>
+<span class="fc" id="L238">                } catch (UnknownIdentifierException uie) {</span>
+<span class="fc" id="L239">                    throw new ParsingException(uie.getMessage(), uie);</span>
+<span class="fc" id="L240">                }</span>
+            }
+        }
+
+        // make sure we got a value
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">        if (values.size() &lt; 1){</span>
+<span class="nc" id="L246">            throw new ParsingException(&quot;Attribute must contain a value&quot;);</span>
+        }
+<span class="fc" id="L248">        return new Attribute(id, type, issuer, issueInstant, values, includeInResult, version);</span>
+    }
+
+    /**
+     * Returns the id of this attribute
+     * 
+     * @return the attribute id
+     */
+    public URI getId() {
+<span class="fc" id="L257">        return id;</span>
+    }
+
+    /**
+     * Returns the data type of this attribute
+     * 
+     * @return the attribute's data type
+     */
+    public URI getType() {
+<span class="fc" id="L266">        return type;</span>
+    }
+
+    /**
+     * Returns the issuer of this attribute, or null if no issuer was named
+     * 
+     * @return the issuer or null
+     */
+    public String getIssuer() {
+<span class="fc" id="L275">        return issuer;</span>
+    }
+
+    /**
+     * Returns the moment at which the attribute was issued, or null if no issue time was provided
+     * 
+     * @return the time of issuance or null
+     */
+    public DateTimeAttribute getIssueInstant() {
+<span class="fc" id="L284">        return issueInstant;</span>
+    }
+
+    /**
+     * Returns whether attribute must be present in response or not
+     *
+     * @return  true/false
+     */
+    public boolean isIncludeInResult() {
+<span class="fc" id="L293">        return includeInResult;</span>
+    }
+
+    /**
+     * &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeValue&lt;/code&gt;  of this attribute,
+     * or null if no value was included
+     * 
+     * @return the attribute' s value or null
+     */
+    public List&lt;AttributeValue&gt; getValues() {
+<span class="fc" id="L303">        return attributeValues;</span>
+    }
+
+
+    /**
+     * a &lt;code&gt;AttributeValue&lt;/code&gt;  of this attribute,
+     * or null if no value was included
+     *
+     * @return the attribute' s value or null
+     */
+    public AttributeValue getValue() {
+
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">        if(attributeValues != null){</span>
+<span class="fc" id="L316">            return attributeValues.get(0);</span>
+        }
+<span class="nc" id="L318">        return null;</span>
+    }
+
+
+    /**
+     * Encodes this &lt;code&gt;Attribute&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="nc" id="L328">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L329">        encode(builder);</span>
+<span class="nc" id="L330">        return builder.toString();</span>
+    }
+
+
+    /**
+     * Encodes this &lt;code&gt;Attribute&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="fc" id="L342">        builder.append(&quot;&lt;Attribute AttributeId=\&quot;&quot;).append(id.toString()).append(&quot;\&quot;&quot;);</span>
+
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">        if((xacmlVersion == XACMLConstants.XACML_VERSION_3_0)){</span>
+<span class="fc" id="L345">            builder.append(&quot; IncludeInResult=\&quot;&quot;).append(includeInResult).append(&quot;\&quot;&quot;);</span>
+        } else {
+<span class="nc" id="L347">            builder.append(&quot; DataType=\&quot;&quot;).append(type.toString()).append(&quot;\&quot;&quot;);</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">            if (issueInstant != null){</span>
+<span class="nc" id="L349">                builder.append(&quot; IssueInstant=\&quot;&quot;).append(issueInstant.encode()).append(&quot;\&quot;&quot;);</span>
+            }
+        }
+
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">        if (issuer != null) {</span>
+<span class="nc" id="L354">            builder.append(&quot; Issuer=\&quot;&quot;).append(issuer).append(&quot;\&quot;&quot;);</span>
+        }
+
+<span class="fc" id="L357">        builder.append(&quot;&gt;\n&quot;);</span>
+
+<span class="pc bpc" id="L359" title="2 of 4 branches missed.">        if(attributeValues != null &amp;&amp; attributeValues.size() &gt; 0){</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">            for(AttributeValue value : attributeValues){</span>
+<span class="fc" id="L361">                value.encode(builder);</span>
+<span class="fc" id="L362">            }</span>
+        }
+
+<span class="fc" id="L365">        builder.append(&quot;&lt;/Attribute&gt;\n&quot;);</span>
+<span class="fc" id="L366">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

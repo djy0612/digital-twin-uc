@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Target.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.xacml3</a> &gt; <span class="el_source">Target.java</span></div><h1>Target.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+package org.wso2.balana.xacml3;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.*;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.Status;
+
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * Represents the TargetType XML type in XACML 3.0. This extends the AbstractTarget.
+ * This also stores several other XML type: AnyOf
+ */
+public class Target extends AbstractTarget {
+
+    /**
+     *  AnyOf sections of this target as list of &lt;code&gt;AnyOfSelection&lt;/code&gt; 
+     */
+    List&lt;AnyOfSelection&gt; anyOfSelections;
+
+    /**
+     * Constructor that creates an XACML 3.0 &lt;code&gt;Target&lt;/code&gt;
+     *
+     */
+<span class="nc" id="L47">    public Target() {</span>
+<span class="nc" id="L48">        this.anyOfSelections = new ArrayList&lt;AnyOfSelection&gt;();</span>
+<span class="nc" id="L49">    }</span>
+
+    /**
+     * Constructor that creates an XACML 3.0 &lt;code&gt;Target&lt;/code&gt; from components.
+     *
+     * @param anyOfSelections List of &lt;code&gt;AnyOfSelection&lt;/code&gt; objects that
+     * representing the AnyOf sections of this target
+     */
+<span class="fc" id="L57">    public Target(List&lt;AnyOfSelection&gt; anyOfSelections) {</span>
+<span class="fc" id="L58">        this.anyOfSelections = anyOfSelections;</span>
+<span class="fc" id="L59">    }</span>
+
+    /**
+     * Creates a &lt;code&gt;Target&lt;/code&gt; by parsing a node.
+     *
+     * @param root the node to parse for the &lt;code&gt;Target&lt;/code&gt;
+     * @param metaData the meta-data associated with the policy
+     * @return new &lt;code&gt;Target&lt;/code&gt; constructed by parsing
+     * @throws org.wso2.balana.ParsingException if the DOM node is invalid
+     */
+    public static Target getInstance(Node root, PolicyMetaData metaData)
+                                                                throws ParsingException {
+
+<span class="fc" id="L72">        List&lt;AnyOfSelection&gt; anyOfSelections = new ArrayList&lt;AnyOfSelection&gt;();</span>
+<span class="fc" id="L73">        NodeList children = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        for(int i = 0; i &lt; children.getLength(); i++){</span>
+<span class="fc" id="L76">            Node child = children.item(i);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            if(&quot;AnyOf&quot;.equals(DOMHelper.getLocalName(child))){</span>
+<span class="fc" id="L78">                anyOfSelections.add(AnyOfSelection.getInstance(child, metaData));</span>
+            }
+        }
+
+<span class="fc" id="L82">        return new Target(anyOfSelections);</span>
+    }
+
+    /**
+     * Determines whether this &lt;code&gt;Target&lt;/code&gt; matches the input request (whether it is
+     * applicable).
+     *
+     * @param context the representation of the request
+     *
+     * @return the result of trying to match the target and the request
+     */
+    public MatchResult match(EvaluationCtx context) {
+
+<span class="fc" id="L95">        Status firstIndeterminateStatus = null;</span>
+
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        for (AnyOfSelection anyOfSelection : anyOfSelections) {</span>
+<span class="fc" id="L98">            MatchResult result = anyOfSelection.match(context);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (result.getResult() == MatchResult.NO_MATCH){</span>
+<span class="fc" id="L100">                return result;</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">            } else if(result.getResult() == MatchResult.INDETERMINATE){</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">                if(firstIndeterminateStatus == null){</span>
+<span class="nc" id="L103">                    firstIndeterminateStatus = result.getStatus();    </span>
+                }
+            }
+<span class="fc" id="L106">        }</span>
+
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if(firstIndeterminateStatus == null){</span>
+<span class="fc" id="L109">            return new MatchResult(MatchResult.MATCH);</span>
+        } else {
+<span class="nc" id="L111">            return new MatchResult(MatchResult.INDETERMINATE,</span>
+                                   firstIndeterminateStatus);
+        }
+    }
+
+    public List&lt;AnyOfSelection&gt; getAnyOfSelections() {
+<span class="nc" id="L117">        return anyOfSelections;</span>
+    }
+
+    @Override
+    public String encode() {
+<span class="nc" id="L122">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L123">        encode(sb);</span>
+<span class="nc" id="L124">        return sb.toString();</span>
+    }
+
+    @Override
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L130">        builder.append(&quot;&lt;Target&gt;\n&quot;);</span>
+
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if(anyOfSelections != null){</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">            for(AnyOfSelection anyOfSelection : anyOfSelections){</span>
+<span class="nc" id="L134">                anyOfSelection.encode(builder);</span>
+<span class="nc" id="L135">            }</span>
+        }
+
+<span class="nc" id="L138">        builder.append(&quot;&lt;/Target&gt;\n&quot;);</span>
+<span class="nc" id="L139">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

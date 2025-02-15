@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AttributeDesignator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.attr</a> &gt; <span class="el_source">AttributeDesignator.java</span></div><h1>AttributeDesignator.java</h1><pre class="source lang-java linenums">/*
+ * @(#)AttributeDesignator.java
+ *
+ * Copyright 2003-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.attr;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.wso2.balana.*;
+
+import org.wso2.balana.cond.EvaluationResult;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.MissingAttributeDetail;
+import org.wso2.balana.ctx.Status;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import java.net.URI;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.wso2.balana.ctx.StatusDetail;
+
+/**
+ * Represents all four kinds of Designators in XACML.
+ *
+ * @author Seth Proctor
+ * @since 1.0
+ */
+public class AttributeDesignator extends AbstractDesignator {
+
+    /**
+     * Tells designator to search in the subject section of the request
+     */
+    public static final int SUBJECT_TARGET = 0;
+
+    /**
+     * Tells designator to search in the resource section of the request
+     */
+    public static final int RESOURCE_TARGET = 1;
+
+    /**
+     * Tells designator to search in the action section of the request
+     */
+    public static final int ACTION_TARGET = 2;
+
+    /**
+     * Tells designator to search in the environment section of the request
+     */
+    public static final int ENVIRONMENT_TARGET = 3;
+
+    /**
+     * The standard URI for the default subject category value
+     */
+    public static final String SUBJECT_CATEGORY_DEFAULT = &quot;urn:oasis:names:tc:xacml:1.0:subject-category:access-subject&quot;;
+
+    // helper array of strings
+<span class="fc" id="L95">    static final private String[] targetTypes = {&quot;Subject&quot;, &quot;Resource&quot;, &quot;Action&quot;, &quot;Environment&quot;};</span>
+
+    // the type of designator we are
+    private int target;
+
+    // required attributes
+    private URI type;
+    private URI id;
+
+    // optional attribute
+    private String issuer;
+
+    // must resolution find something
+    private boolean mustBePresent;
+
+    // here we are defined a category
+    // This is used only for Subject in XACML2.
+    // but adding it for all designators
+    private URI category;
+
+    // the logger we'll use for all messages
+<span class="fc" id="L116">    private static final Log logger = LogFactory.getLog(AttributeDesignator.class);</span>
+
+    /**
+     * Creates a new &lt;code&gt;AttributeDesignator&lt;/code&gt; without the optional issuer.
+     *
+     * @param target        the type of designator as specified by the 4 member *_TARGET fields
+     * @param type          the data type resolved by this designator
+     * @param id            the attribute id looked for by this designator
+     * @param mustBePresent whether resolution must find a value
+     */
+    public AttributeDesignator(int target, URI type, URI id, boolean mustBePresent) {
+<span class="nc" id="L127">        this(target, type, id, mustBePresent, null, null);</span>
+<span class="nc" id="L128">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;AttributeDesignator&lt;/code&gt; with the optional issuer.
+     *
+     * @param target        the type of designator as specified by the 4 member *_TARGET fields
+     * @param type          the data type resolved by this designator
+     * @param id            the attribute id looked for by this designator
+     * @param mustBePresent whether resolution must find a value
+     * @param issuer        the issuer of the values to search for or null if no issuer is specified
+     * @throws IllegalArgumentException if the input target isn't a valid value
+     */
+    public AttributeDesignator(int target, URI type, URI id, boolean mustBePresent, String issuer)
+                                    throws IllegalArgumentException {
+<span class="nc" id="L142">        this(target, type, id, mustBePresent, null, null);</span>
+
+<span class="nc" id="L144">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;AttributeDesignator&lt;/code&gt; with the optional issuer.
+     *
+     * @param target        the type of designator as specified by the 4 member *_TARGET fields
+     * @param type          the data type resolved by this designator
+     * @param id            the attribute id looked for by this designator
+     * @param mustBePresent whether resolution must find a value
+     * @param issuer        the issuer of the values to search for or null if no issuer is specified
+     * @throws IllegalArgumentException if the input target isn't a valid value
+     */
+    public AttributeDesignator(int target, URI type, URI id, boolean mustBePresent, String issuer,
+<span class="fc" id="L157">                               URI category) throws IllegalArgumentException {</span>
+
+        // check if input target is a valid value
+<span class="pc bpc" id="L160" title="1 of 8 branches missed.">        if ((target != SUBJECT_TARGET) &amp;&amp; (target != RESOURCE_TARGET) &amp;&amp; (target != ACTION_TARGET)</span>
+                &amp;&amp; (target != ENVIRONMENT_TARGET))
+<span class="nc" id="L162">            throw new IllegalArgumentException(&quot;Input target is not a valid&quot; + &quot;value&quot;);</span>
+<span class="fc" id="L163">        this.target = target;</span>
+<span class="fc" id="L164">        this.type = type;</span>
+<span class="fc" id="L165">        this.id = id;</span>
+<span class="fc" id="L166">        this.mustBePresent = mustBePresent;</span>
+<span class="fc" id="L167">        this.issuer = issuer;</span>
+<span class="fc" id="L168">        this.category = category;</span>
+<span class="fc" id="L169">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;AttributeDesignator&lt;/code&gt; based on the DOM root of the XML data.
+     *
+     * @param root     the DOM root of the AttributeDesignatorType XML type
+     * @return the designator
+     * @throws ParsingException if the AttributeDesignatorType was invalid
+     */
+    public static AttributeDesignator getInstance(Node root) throws ParsingException {
+
+<span class="fc" id="L180">        URI type = null;</span>
+<span class="fc" id="L181">        URI id = null;</span>
+<span class="fc" id="L182">        String issuer = null;</span>
+<span class="fc" id="L183">        boolean mustBePresent = false;</span>
+<span class="fc" id="L184">        URI category = null;</span>
+        int target;
+
+<span class="fc" id="L187">        String tagName = DOMHelper.getLocalName(root);</span>
+
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        if (tagName.equals(&quot;SubjectAttributeDesignator&quot;)) {</span>
+<span class="fc" id="L190">            target = SUBJECT_TARGET;</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        } else if (tagName.equals(&quot;ResourceAttributeDesignator&quot;)) {</span>
+<span class="fc" id="L192">            target = RESOURCE_TARGET;</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        } else if (tagName.equals(&quot;ActionAttributeDesignator&quot;)) {</span>
+<span class="fc" id="L194">            target = ACTION_TARGET;</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        } else if (tagName.equals(&quot;EnvironmentAttributeDesignator&quot;)) {</span>
+<span class="fc" id="L196">            target = ENVIRONMENT_TARGET;</span>
+        } else {
+<span class="nc" id="L198">            throw new ParsingException(&quot;AttributeDesignator cannot be constructed using &quot; + &quot;type: &quot;</span>
+<span class="nc" id="L199">                    + DOMHelper.getLocalName(root));</span>
+        }
+
+<span class="fc" id="L202">        NamedNodeMap attrs = root.getAttributes();</span>
+
+        try {
+            // there's always an Id
+<span class="fc" id="L206">            id = new URI(attrs.getNamedItem(&quot;AttributeId&quot;).getNodeValue());</span>
+<span class="nc" id="L207">        } catch (Exception e) {</span>
+<span class="nc" id="L208">            throw new ParsingException(&quot;Required AttributeId missing in &quot; + &quot;AttributeDesignator&quot;,</span>
+                    e);
+<span class="fc" id="L210">        }</span>
+
+        try {
+            // there's always a data type
+<span class="fc" id="L214">            type = new URI(attrs.getNamedItem(&quot;DataType&quot;).getNodeValue());</span>
+<span class="nc" id="L215">        } catch (Exception e) {</span>
+<span class="nc" id="L216">            throw new ParsingException(&quot;Required DataType missing in &quot; + &quot;AttributeDesignator&quot;, e);</span>
+<span class="fc" id="L217">        }</span>
+
+        try {
+            // there might be an issuer
+<span class="fc" id="L221">            Node node = attrs.getNamedItem(&quot;Issuer&quot;);</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">            if (node != null)</span>
+<span class="fc" id="L223">                issuer = node.getNodeValue();</span>
+
+            // if it's for the Subject section, there's another attr
+<span class="fc bfc" id="L226" title="All 2 branches covered.">            if (target == SUBJECT_TARGET) {</span>
+<span class="fc" id="L227">                Node scnode = attrs.getNamedItem(&quot;SubjectCategory&quot;);</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">                if (scnode != null){</span>
+<span class="fc" id="L229">                    category = new URI(scnode.getNodeValue());</span>
+                } else {
+<span class="fc" id="L231">                    category = new URI(SUBJECT_CATEGORY_DEFAULT);</span>
+                }
+<span class="fc bfc" id="L233" title="All 2 branches covered.">            } else if (target == RESOURCE_TARGET){</span>
+<span class="fc" id="L234">                category = new URI(XACMLConstants.RESOURCE_CATEGORY);</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">            } else if (target == ACTION_TARGET){</span>
+<span class="fc" id="L236">                category = new URI(XACMLConstants.ACTION_CATEGORY);</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">            } else if (target == ENVIRONMENT_TARGET) {</span>
+<span class="fc" id="L238">                category = new URI(XACMLConstants.ENT_CATEGORY);</span>
+            }
+
+            // there might be a mustBePresent flag
+<span class="fc" id="L242">            node = attrs.getNamedItem(&quot;MustBePresent&quot;);</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">            if (node != null)</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">                if (node.getNodeValue().equals(&quot;true&quot;))</span>
+<span class="fc" id="L245">                    mustBePresent = true;</span>
+<span class="nc" id="L246">        } catch (Exception e) {</span>
+            // this shouldn't ever happen, but in theory something could go
+            // wrong in the code in this try block
+<span class="nc" id="L249">            throw new ParsingException(</span>
+                    &quot;Error parsing AttributeDesignator &quot; + &quot;optional attributes&quot;, e);
+<span class="fc" id="L251">        }</span>
+
+<span class="fc" id="L253">        return new AttributeDesignator(target, type, id, mustBePresent, issuer, category);</span>
+    }
+
+    /**
+     * Returns the type of this designator as specified by the *_TARGET fields.
+     *
+     * @return the designator type
+     */
+    public int getDesignatorType() {
+<span class="nc" id="L262">        return target;</span>
+    }
+
+    /**
+     * Returns the type of attribute that is resolved by this designator. While an AD will always
+     * return a bag, this method will always return the type that is stored in the bag.
+     *
+     * @return the attribute type
+     */
+    public URI getType() {
+<span class="fc" id="L272">        return type;</span>
+    }
+
+    /**
+     * Returns the AttributeId of the values resolved by this designator.
+     *
+     * @return identifier for the values to resolve
+     */
+    public URI getId() {
+<span class="nc" id="L281">        return id;</span>
+    }
+
+    /**
+     * Returns the subject category for this designator. If this is not a SubjectAttributeDesignator
+     * then this will always return null.
+     *
+     * @return the subject category or null if this isn't a SubjectAttributeDesignator
+     */
+    public URI getCategory() {
+<span class="nc" id="L291">        return category;</span>
+    }
+
+    /**
+     * Returns the issuer of the values resolved by this designator if specified.
+     *
+     * @return the attribute issuer or null if unspecified
+     */
+    public String getIssuer() {
+<span class="nc" id="L300">        return issuer;</span>
+    }
+
+    /**
+     * Returns whether or not a value is required to be resolved by this designator.
+     *
+     * @return true if a value is required, false otherwise
+     */
+    public boolean mustBePresent() {
+<span class="nc" id="L309">        return mustBePresent;</span>
+    }
+
+    /**
+     * Always returns true, since a designator always returns a bag of attribute values.
+     *
+     * @return true
+     */
+    public boolean returnsBag() {
+<span class="fc" id="L318">        return true;</span>
+    }
+
+    /**
+     * Always returns true, since a designator always returns a bag of attribute values.
+     *
+     * @return true
+     * @deprecated As of 2.0, you should use the &lt;code&gt;returnsBag&lt;/code&gt; method from the
+     *             super-interface &lt;code&gt;Expression&lt;/code&gt;.
+     */
+    public boolean evaluatesToBag() {
+<span class="nc" id="L329">        return true;</span>
+    }
+
+    /**
+     * Always returns an empty list since designators never have children.
+     *
+     * @return an empty &lt;code&gt;List&lt;/code&gt;
+     */
+    public List getChildren() {
+<span class="nc" id="L338">        return Collections.EMPTY_LIST;</span>
+    }
+
+    /**
+     * Evaluates the pre-assigned meta-data against the given context, trying to find some matching
+     * values.
+     *
+     * @param evaluationCtx the representation of the request
+     * @return a result containing a bag either empty because no values were found or containing at
+     *         least one value, or status associated with an Indeterminate result
+     */
+    public EvaluationResult evaluate(EvaluationCtx evaluationCtx) {
+
+<span class="fc" id="L351">        EvaluationResult result = null;</span>
+
+        // look in the right section for some attribute values
+<span class="pc bpc" id="L354" title="1 of 5 branches missed.">        switch (target) {</span>
+            case SUBJECT_TARGET:
+<span class="fc" id="L356">                result = evaluationCtx.getAttribute(type, id, issuer, category);</span>
+<span class="fc" id="L357">                break;</span>
+            case RESOURCE_TARGET:
+<span class="fc" id="L359">                result = evaluationCtx.getAttribute(type, id, issuer, category);</span>
+<span class="fc" id="L360">                break;</span>
+            case ACTION_TARGET:
+<span class="fc" id="L362">                result = evaluationCtx.getAttribute(type, id, issuer, category);</span>
+<span class="fc" id="L363">                break;</span>
+            case ENVIRONMENT_TARGET:
+<span class="fc" id="L365">                result = evaluationCtx.getAttribute(type, id, issuer, category);</span>
+                break;
+        }
+
+        // if the lookup was indeterminate, then we return immediately
+<span class="pc bpc" id="L370" title="1 of 2 branches missed.">        if(result != null){</span>
+<span class="pc bpc" id="L371" title="1 of 2 branches missed.">            if (result.indeterminate())</span>
+<span class="nc" id="L372">                return result;</span>
+
+<span class="fc" id="L374">            BagAttribute bag = (BagAttribute) (result.getAttributeValue());</span>
+
+<span class="fc bfc" id="L376" title="All 2 branches covered.">            if (bag.isEmpty()) {</span>
+                // if it's empty, this may be an error
+<span class="fc bfc" id="L378" title="All 2 branches covered.">                if (mustBePresent) {</span>
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">                    if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L380">                        logger.debug(&quot;AttributeDesignator failed to resolve a &quot;</span>
+<span class="fc" id="L381">                                + &quot;value for a required attribute: &quot; + id.toString());</span>
+                    }
+
+<span class="fc" id="L384">                    ArrayList&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L385">                    code.add(Status.STATUS_MISSING_ATTRIBUTE);</span>
+<span class="fc" id="L386">                    ArrayList&lt;MissingAttributeDetail&gt; missingAttributes = new ArrayList&lt;MissingAttributeDetail&gt;();</span>
+<span class="fc" id="L387">                    MissingAttributeDetail missingAttribute = new MissingAttributeDetail(id, type,</span>
+                                            category, issuer, null, XACMLConstants.XACML_VERSION_3_0);
+<span class="fc" id="L389">                    missingAttributes.add(missingAttribute);</span>
+<span class="fc" id="L390">                    StatusDetail detail = new StatusDetail(missingAttributes);</span>
+<span class="fc" id="L391">                    String message = &quot;Couldn't find &quot; + targetTypes[target]</span>
+                            + &quot;AttributeDesignator attribute&quot;;
+
+                    // Note that there is a bug in the XACML spec. You can't  //TODO
+                    // specify an identifier without specifying acceptable
+                    // values. Until this is fixed, this code will only
+                    // return the status code, and not any hints about what
+                    // was missing
+
+                    /*
+                     * List attrs = new ArrayList(); attrs.add(new Attribute(id, ((issuer == null) ?
+                     * null : issuer.toString()), null, null)); StatusDetail detail = new
+                     * StatusDetail(attrs);
+                     */
+
+<span class="fc" id="L406">                    return new EvaluationResult(new Status(code, message, detail));</span>
+                }
+            }
+<span class="fc" id="L409">        } else {</span>
+<span class="nc" id="L410">            ArrayList&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L411">            code.add(Status.STATUS_MISSING_ATTRIBUTE);</span>
+<span class="nc" id="L412">            ArrayList&lt;MissingAttributeDetail&gt; missingAttributes = new ArrayList&lt;MissingAttributeDetail&gt;();</span>
+<span class="nc" id="L413">            MissingAttributeDetail missingAttribute = new MissingAttributeDetail(id, type,</span>
+                                    category, issuer, null, XACMLConstants.XACML_VERSION_3_0);
+<span class="nc" id="L415">            missingAttributes.add(missingAttribute);</span>
+<span class="nc" id="L416">            StatusDetail detail = new StatusDetail(missingAttributes);</span>
+<span class="nc" id="L417">            String message = &quot;Couldn't find &quot; + targetTypes[target]</span>
+                    + &quot;AttributeDesignator attribute&quot;;
+<span class="nc" id="L419">            return new EvaluationResult(new Status(code, message, detail));  //TODO</span>
+    }
+
+        // if we got here the bag wasn't empty, or mustBePresent was false,
+        // so we just return the result
+<span class="fc" id="L424">        return result;</span>
+    }
+
+
+    /**
+     * Encodes this &lt;code&gt;AttributeDesignator&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L436">        builder.append(&quot;&lt;&quot;).append(targetTypes[target]).append(&quot;AttributeDesignator&quot;);</span>
+
+<span class="nc bnc" id="L438" title="All 4 branches missed.">        if ((target == SUBJECT_TARGET) &amp;&amp; (category != null)){</span>
+<span class="nc" id="L439">            builder.append(&quot; SubjectCategory=\&quot;&quot;).append(category.toString()).append(&quot;\&quot;&quot;);</span>
+        }
+
+<span class="nc" id="L442">        builder.append(&quot; AttributeId=\&quot;&quot;).append(id.toString()).append(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L443">        builder.append(&quot; DataType=\&quot;&quot;).append(type.toString()).append(&quot;\&quot;&quot;);</span>
+
+<span class="nc bnc" id="L445" title="All 2 branches missed.">        if (issuer != null)</span>
+<span class="nc" id="L446">            builder.append(&quot; Issuer=\&quot;&quot;).append(issuer).append(&quot;\&quot;&quot;);</span>
+
+<span class="nc bnc" id="L448" title="All 2 branches missed.">        if (mustBePresent){</span>
+<span class="nc" id="L449">            builder.append(&quot; MustBePresent=\&quot;true\&quot;&quot;);</span>
+        }
+
+<span class="nc" id="L452">        builder.append(&quot;/&gt;\n&quot;);</span>
+<span class="nc" id="L453">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

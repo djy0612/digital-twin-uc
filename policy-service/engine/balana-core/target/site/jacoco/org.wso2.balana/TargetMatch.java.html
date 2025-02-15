@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TargetMatch.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana</a> &gt; <span class="el_source">TargetMatch.java</span></div><h1>TargetMatch.java</h1><pre class="source lang-java linenums">/*
+ * @(#)TargetMatch.java
+ *
+ * Copyright 2003-2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana;
+
+import org.wso2.balana.attr.*;
+
+import org.wso2.balana.cond.Evaluatable;
+import org.wso2.balana.cond.EvaluationResult;
+import org.wso2.balana.cond.Function;
+import org.wso2.balana.cond.FunctionFactory;
+import org.wso2.balana.cond.FunctionTypeException;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.Status;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * Represents the SubjectMatch, ResourceMatch, ActionMatch, or EnvironmentMatch (in XACML 2.0 and
+ * later) XML types in XACML, depending on the value of the type field. This is the part of the
+ * Target that actually evaluates whether the specified attribute values in the Target match the
+ * corresponding attribute values in the request context.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class TargetMatch {
+
+    /**
+     * An integer value indicating that this class represents a SubjectMatch
+     */
+    public static final int SUBJECT = 0;
+
+    /**
+     * An integer value indicating that this class represents a ResourceMatch
+     */
+    public static final int RESOURCE = 1;
+
+    /**
+     * An integer value indicating that this class represents an ActionMatch
+     */
+    public static final int ACTION = 2;
+
+    /**
+     * An integer value indicating that this class represents an EnvironmentMatch
+     */
+    public static final int ENVIRONMENT = 3;
+
+    /**
+     * Mapping from the 4 match types to their string representations
+     */
+<span class="fc" id="L96">    public static final String[] NAMES = { &quot;Subject&quot;, &quot;Resource&quot;, &quot;Action&quot;, &quot;Environment&quot;};</span>
+
+    // the type of this target match
+    // if there is no type, value is zero
+    private int type;
+
+    // the function used for matching
+    private Function function;
+
+    // the designator or selector
+    private Evaluatable eval;
+
+    // the value
+    private AttributeValue attrValue;
+
+    /**
+     * Constructor that creates a &lt;code&gt;TargetMatch&lt;/code&gt; from components.
+     * 
+     * @param type an integer indicating whether this class represents a SubjectMatch,
+     *            ResourceMatch, or ActionMatch
+     * @param function the &lt;code&gt;Function&lt;/code&gt; that represents the MatchId
+     * @param eval the &lt;code&gt;AttributeDesignator&lt;/code&gt; or &lt;code&gt;AttributeSelector&lt;/code&gt; to be used
+     *            to select attributes from the request context
+     * @param attrValue the &lt;code&gt;AttributeValue&lt;/code&gt; to compare against
+     * 
+     * @throws IllegalArgumentException if the input type isn't a valid value
+     */
+    public TargetMatch(int type, Function function, Evaluatable eval, AttributeValue attrValue)
+<span class="fc" id="L124">            throws IllegalArgumentException {</span>
+
+        // check if input type is a valid value
+<span class="pc bpc" id="L127" title="3 of 8 branches missed.">        if ((type != SUBJECT) &amp;&amp; (type != RESOURCE) &amp;&amp; (type != ACTION) &amp;&amp; (type != ENVIRONMENT))</span>
+<span class="nc" id="L128">            throw new IllegalArgumentException(&quot;Unknown TargetMatch type&quot;);</span>
+
+<span class="fc" id="L130">        this.type = type;</span>
+<span class="fc" id="L131">        this.function = function;</span>
+<span class="fc" id="L132">        this.eval = eval;</span>
+<span class="fc" id="L133">        this.attrValue = attrValue;</span>
+<span class="fc" id="L134">    }</span>
+
+
+    /**
+     * Constructor that creates a &lt;code&gt;TargetMatch&lt;/code&gt; from components.
+     *
+     * @param function the &lt;code&gt;Function&lt;/code&gt; that represents the MatchId
+     * @param eval the &lt;code&gt;AttributeDesignator&lt;/code&gt; or &lt;code&gt;AttributeSelector&lt;/code&gt; to be used
+     *            to select attributes from the request context
+     * @param attrValue the &lt;code&gt;AttributeValue&lt;/code&gt; to compare against
+     *
+     * @throws IllegalArgumentException if the input type isn't a valid value
+     */
+    public TargetMatch(Function function, Evaluatable eval, AttributeValue attrValue)
+<span class="fc" id="L148">            throws IllegalArgumentException {</span>
+
+<span class="fc" id="L150">        this.function = function;</span>
+<span class="fc" id="L151">        this.eval = eval;</span>
+<span class="fc" id="L152">        this.attrValue = attrValue;</span>
+<span class="fc" id="L153">    }</span>
+
+
+
+    /**
+     * Creates a &lt;code&gt;TargetMatch&lt;/code&gt; by parsing a node, using the input prefix to determine
+     * whether this is a SubjectMatch, ResourceMatch, or ActionMatch.
+     * 
+     * @deprecated As of 2.0 you should avoid using this method and should instead use the version
+     *             that takes a &lt;code&gt;PolicyMetaData&lt;/code&gt; instance. This method will only work for
+     *             XACML 1.x policies.
+     * 
+     * @param root the node to parse for the &lt;code&gt;TargetMatch&lt;/code&gt;
+     * @param prefix a String indicating what type of &lt;code&gt;TargetMatch&lt;/code&gt; to instantiate
+     *            (Subject, Resource, or Action)
+     * @param xpathVersion the XPath version to use in any selectors, or null if this is unspecified
+     *            (ie, not supplied in the defaults section of the policy)
+     * 
+     * @return a new &lt;code&gt;TargetMatch&lt;/code&gt; constructed by parsing
+     * 
+     * @throws org.wso2.balana.ParsingException if there was an error during parsing
+     * @throws IllegalArgumentException if the input prefix isn't a valid value
+     */
+    public static TargetMatch getInstance(Node root, String prefix, String xpathVersion)
+            throws ParsingException, IllegalArgumentException {
+<span class="nc" id="L178">        int i = 0;</span>
+<span class="nc bnc" id="L179" title="All 4 branches missed.">        while ((i &lt; NAMES.length) &amp;&amp; (!NAMES[i].equals(prefix)))</span>
+<span class="nc" id="L180">            i++;</span>
+
+<span class="nc bnc" id="L182" title="All 2 branches missed.">        if (i == NAMES.length)</span>
+<span class="nc" id="L183">            throw new IllegalArgumentException(&quot;Unknown TargetMatch type&quot;);</span>
+
+<span class="nc" id="L185">        return getInstance(root, i, new PolicyMetaData(XACMLConstants.XACML_1_0_IDENTIFIER,</span>
+                xpathVersion));
+    }
+
+
+    public static TargetMatch getInstance(Node root, PolicyMetaData metaData) throws ParsingException {        
+<span class="fc" id="L191">        return getInstance(root, 0, metaData);</span>
+    }
+
+    /**
+     * Creates a &lt;code&gt;TargetMatch&lt;/code&gt; by parsing a node, using the input prefix to determine
+     * whether this is a SubjectMatch, ResourceMatch, or ActionMatch.
+     * 
+     * @param root the node to parse for the &lt;code&gt;TargetMatch&lt;/code&gt;
+     * @param matchType the type of &lt;code&gt;TargetMatch&lt;/code&gt; as specified by the SUBJECT, RESOURCE,
+     *            ACTION, or ENVIRONMENT fields
+     * @param metaData the policy's meta-data
+     * 
+     * @return a new &lt;code&gt;TargetMatch&lt;/code&gt; constructed by parsing
+     * 
+     * @throws ParsingException if there was an error during parsing
+     */
+    public static TargetMatch getInstance(Node root, int matchType, PolicyMetaData metaData)
+            throws ParsingException {
+
+        Function function;
+<span class="fc" id="L211">        Evaluatable eval = null;</span>
+<span class="fc" id="L212">        AttributeValue attrValue = null;</span>
+
+<span class="fc" id="L214">        AttributeFactory attrFactory = Balana.getInstance().getAttributeFactory();</span>
+
+        // get the function type, making sure that it's really a correct
+        // Target function
+<span class="fc" id="L218">        String funcName = root.getAttributes().getNamedItem(&quot;MatchId&quot;).getNodeValue();</span>
+<span class="fc" id="L219">        FunctionFactory factory = FunctionFactory.getTargetInstance();</span>
+        try {
+<span class="fc" id="L221">            URI funcId = new URI(funcName);</span>
+<span class="fc" id="L222">            function = factory.createFunction(funcId);</span>
+<span class="nc" id="L223">        } catch (URISyntaxException use) {</span>
+<span class="nc" id="L224">            throw new ParsingException(&quot;Error parsing TargetMatch&quot;, use);</span>
+<span class="nc" id="L225">        } catch (UnknownIdentifierException uie) {</span>
+<span class="nc" id="L226">            throw new ParsingException(&quot;Unknown MatchId&quot;, uie);</span>
+<span class="nc" id="L227">        } catch (FunctionTypeException fte) {</span>
+            // try to create an abstract function
+            try {
+<span class="nc" id="L230">                URI funcId = new URI(funcName);</span>
+<span class="nc" id="L231">                function = factory.createAbstractFunction(funcId, root);</span>
+<span class="nc" id="L232">            } catch (Exception e) {</span>
+                // any exception here is an error
+<span class="nc" id="L234">                throw new ParsingException(&quot;invalid abstract function&quot;, e);</span>
+<span class="nc" id="L235">            }</span>
+<span class="fc" id="L236">        }</span>
+
+        // next, get the designator or selector being used, and the attribute
+        // value paired with it
+<span class="fc" id="L240">        NodeList nodes = root.getChildNodes();</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L242">            Node node = nodes.item(i);</span>
+<span class="fc" id="L243">            String name = DOMHelper.getLocalName(node);</span>
+
+<span class="fc bfc" id="L245" title="All 2 branches covered.">            if (XACMLConstants.XACML_VERSION_3_0 == metaData.getXACMLVersion()</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">                    &amp;&amp; &quot;AttributeDesignator&quot;.equals(name)){</span>
+<span class="fc" id="L247">                eval = AttributeDesignatorFactory.getFactory().getAbstractDesignator(node, metaData);</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">            } else if(!(XACMLConstants.XACML_VERSION_3_0 == metaData.getXACMLVersion())</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">                    &amp;&amp; (NAMES[matchType] + &quot;AttributeDesignator&quot;).equals(name)){</span>
+<span class="fc" id="L250">                eval = AttributeDesignatorFactory.getFactory().getAbstractDesignator(node, metaData);</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">            } else if (name.equals(&quot;AttributeSelector&quot;)) {</span>
+<span class="fc" id="L252">                eval = AttributeSelectorFactory.getFactory().getAbstractSelector(node, metaData);</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">            } else if (name.equals(&quot;AttributeValue&quot;)) {</span>
+                try {
+<span class="fc" id="L255">                    attrValue = attrFactory.createValue(node);</span>
+<span class="nc" id="L256">                } catch (UnknownIdentifierException uie) {</span>
+<span class="nc" id="L257">                    throw new ParsingException(&quot;Unknown Attribute Type&quot;, uie);</span>
+<span class="fc" id="L258">                }</span>
+            }
+        }
+
+        // finally, check that the inputs are valid for this function
+<span class="fc" id="L263">        List&lt;Evaluatable&gt; inputs = new ArrayList&lt;Evaluatable&gt;();</span>
+<span class="fc" id="L264">        inputs.add(attrValue);</span>
+<span class="fc" id="L265">        inputs.add(eval);</span>
+<span class="fc" id="L266">        function.checkInputsNoBag(inputs);</span>
+
+<span class="fc bfc" id="L268" title="All 2 branches covered.">        if(XACMLConstants.XACML_VERSION_3_0 == metaData.getXACMLVersion()){</span>
+<span class="fc" id="L269">            return new TargetMatch(function, eval, attrValue);</span>
+        } else {
+<span class="fc" id="L271">            return new TargetMatch(matchType, function, eval, attrValue);</span>
+        }
+    }
+
+    /**
+     * Returns the type of this &lt;code&gt;TargetMatch&lt;/code&gt;, either &lt;code&gt;SUBJECT&lt;/code&gt;,
+     * &lt;code&gt;RESOURCE&lt;/code&gt;, &lt;code&gt;ACTION&lt;/code&gt;, or &lt;code&gt;ENVIRONMENT&lt;/code&gt;.
+     * 
+     * @return the type
+     */
+    public int getType() {
+<span class="nc" id="L282">        return type;</span>
+    }
+
+    /**
+     * Returns the &lt;code&gt;Function&lt;/code&gt; used to do the matching.
+     * 
+     * @return the match function
+     */
+    public Function getMatchFunction() {
+<span class="nc" id="L291">        return function;</span>
+    }
+
+    /**
+     * Returns the &lt;code&gt;AttributeValue&lt;/code&gt; used by the matching function.
+     * 
+     * @return the &lt;code&gt;AttributeValue&lt;/code&gt; for the match
+     */
+    public AttributeValue getMatchValue() {
+<span class="nc" id="L300">        return attrValue;</span>
+    }
+
+    /**
+     * Returns the &lt;code&gt;AttributeDesignator&lt;/code&gt; or &lt;code&gt;AttributeSelector&lt;/code&gt; used by the
+     * matching function.
+     * 
+     * @return the designator or selector for the match
+     */
+    public Evaluatable getMatchEvaluatable() {
+<span class="nc" id="L310">        return eval;</span>
+    }
+
+    /**
+     * Determines whether this &lt;code&gt;TargetMatch&lt;/code&gt; matches the input request (whether it is
+     * applicable)
+     * 
+     * @param context the representation of the request
+     * 
+     * @return the result of trying to match the TargetMatch and the request
+     */
+    public MatchResult match(EvaluationCtx context) {
+        // start by evaluating the AD/AS
+<span class="fc" id="L323">        EvaluationResult result = eval.evaluate(context);</span>
+
+<span class="fc bfc" id="L325" title="All 2 branches covered.">        if (result.indeterminate()) {</span>
+            // in this case, we don't ask the function for anything, and we
+            // simply return INDETERMINATE
+<span class="fc" id="L328">            return new MatchResult(MatchResult.INDETERMINATE, result.getStatus());</span>
+        }
+
+        // an AD/AS will always return a bag
+<span class="fc" id="L332">        BagAttribute bag = (BagAttribute) (result.getAttributeValue());</span>
+
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        if (!bag.isEmpty()) {</span>
+            // we got back a set of attributes, so we need to iterate through
+            // them, seeing if at least one matches
+<span class="fc" id="L337">            Iterator it = bag.iterator();</span>
+<span class="fc" id="L338">            boolean atLeastOneError = false;</span>
+<span class="fc" id="L339">            Status firstIndeterminateStatus = null;</span>
+
+<span class="fc bfc" id="L341" title="All 2 branches covered.">            while (it.hasNext()) {</span>
+<span class="fc" id="L342">                ArrayList&lt;Evaluatable&gt; inputs = new ArrayList&lt;Evaluatable&gt;();</span>
+
+<span class="fc" id="L344">                inputs.add(attrValue);</span>
+<span class="fc" id="L345">                inputs.add((Evaluatable)it.next());</span>
+
+                // do the evaluation
+<span class="fc" id="L348">                MatchResult match = evaluateMatch(inputs, context);</span>
+
+                // we only need one match for this whole thing to match
+<span class="fc bfc" id="L351" title="All 2 branches covered.">                if (match.getResult() == MatchResult.MATCH) {</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">                    if (attrValue instanceof StringAttribute) {</span>
+<span class="fc" id="L353">                        match.setPolicyValue(((StringAttribute) attrValue).getValue());</span>
+                    }
+<span class="fc" id="L355">                    return match;</span>
+
+                }
+
+                // if it was INDETERMINATE, we want to remember for later
+<span class="pc bpc" id="L360" title="1 of 2 branches missed.">                if (match.getResult() == MatchResult.INDETERMINATE) {</span>
+<span class="nc" id="L361">                    atLeastOneError = true;</span>
+
+                    // there are no rules about exactly what status data
+                    // should be returned here, so like in the combining
+                    // algs, we'll just track the first error
+<span class="nc bnc" id="L366" title="All 2 branches missed.">                    if (firstIndeterminateStatus == null)</span>
+<span class="nc" id="L367">                        firstIndeterminateStatus = match.getStatus();</span>
+                }
+<span class="fc" id="L369">            }</span>
+
+            // if we got here, then nothing matched, so we'll either return
+            // INDETERMINATE or NO_MATCH
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">            if (atLeastOneError)</span>
+<span class="nc" id="L374">                return new MatchResult(MatchResult.INDETERMINATE, firstIndeterminateStatus);</span>
+            else
+<span class="fc" id="L376">                return new MatchResult(MatchResult.NO_MATCH);</span>
+
+        } else {
+            // this is just an optimization, since the loop above will
+            // actually handle this case, but this is just a little
+            // quicker way to handle an empty bag
+<span class="fc" id="L382">            return new MatchResult(MatchResult.NO_MATCH);</span>
+        }
+    }
+
+    /**
+     * Private helper that evaluates an individual match.
+     *
+     * @param inputs  &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt;
+     * @param context  &lt;code&gt;EvaluationCtx&lt;/code&gt;
+     * @return  match result as &lt;code&gt;MatchResult&lt;/code&gt;
+     */
+    private MatchResult evaluateMatch(List inputs, EvaluationCtx context) {
+        // first off, evaluate the function
+<span class="fc" id="L395">        EvaluationResult result = function.evaluate(inputs, context);</span>
+
+        // if it was indeterminate, then that's what we return immediately
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">        if (result.indeterminate())</span>
+<span class="nc" id="L399">            return new MatchResult(MatchResult.INDETERMINATE, result.getStatus());</span>
+
+        // otherwise, we figure out if it was a match
+<span class="fc" id="L402">        BooleanAttribute bool = (BooleanAttribute) (result.getAttributeValue());</span>
+
+<span class="fc bfc" id="L404" title="All 2 branches covered.">        if (bool.getValue())</span>
+<span class="fc" id="L405">            return new MatchResult(MatchResult.MATCH);</span>
+        else
+<span class="fc" id="L407">            return new MatchResult(MatchResult.NO_MATCH);</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;TargetMatch&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L418">        String tagName = &quot;Match&quot;;</span>
+
+<span class="nc bnc" id="L420" title="All 2 branches missed.">        if(type != 0){</span>
+<span class="nc" id="L421">            tagName = NAMES[type] + &quot;Match&quot;;    </span>
+        }
+
+<span class="nc" id="L424">        builder.append(&quot;&lt;&quot;).append(tagName).append(&quot; MatchId=\&quot;&quot;).</span>
+<span class="nc" id="L425">                append(function.getIdentifier().toString()).append(&quot;\&quot;&gt;\n&quot;);</span>
+        
+<span class="nc" id="L427">        attrValue.encode(builder);</span>
+<span class="nc" id="L428">        eval.encode(builder);</span>
+
+<span class="nc" id="L430">        builder.append(&quot;&lt;/&quot;).append(tagName).append(&quot;&gt;\n&quot;);</span>
+<span class="nc" id="L431">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

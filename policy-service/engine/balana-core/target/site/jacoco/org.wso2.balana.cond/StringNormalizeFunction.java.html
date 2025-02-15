@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StringNormalizeFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">StringNormalizeFunction.java</span></div><h1>StringNormalizeFunction.java</h1><pre class="source lang-java linenums">/*
+ * @(#)StringNormalizeFunction.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.StringAttribute;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * A class that implements all the string conversion functions (string-normalize-space and
+ * string-normalize-to-lower-case). It takes string argument, normalizes that value, and returns the
+ * result. If the argument is indeterminate, an indeterminate result is returned.
+ * 
+ * @since 1.0
+ * @author Steve Hanna
+ * @author Seth Proctor
+ */
+public class StringNormalizeFunction extends FunctionBase {
+
+    /**
+     * Standard identifier for the string-normalize-space function.
+     */
+    public static final String NAME_STRING_NORMALIZE_SPACE = FUNCTION_NS + &quot;string-normalize-space&quot;;
+
+    /**
+     * Standard identifier for the string-normalize-to-lower-case function.
+     */
+    public static final String NAME_STRING_NORMALIZE_TO_LOWER_CASE = FUNCTION_NS
+            + &quot;string-normalize-to-lower-case&quot;;
+
+    // private identifiers for the supported functions
+    private static final int ID_STRING_NORMALIZE_SPACE = 0;
+    private static final int ID_STRING_NORMALIZE_TO_LOWER_CASE = 1;
+
+    /**
+     * Creates a new &lt;code&gt;StringNormalizeFunction&lt;/code&gt; object.
+     * 
+     * @param functionName the standard XACML name of the function to be handled by this object,
+     *            including the full namespace
+     * 
+     * @throws IllegalArgumentException if the function is unknown
+     */
+    public StringNormalizeFunction(String functionName) {
+<span class="fc" id="L82">        super(functionName, getId(functionName), StringAttribute.identifier, false, 1,</span>
+                StringAttribute.identifier, false);
+<span class="fc" id="L84">    }</span>
+
+    /**
+     * Private helper that returns the internal identifier used for the given standard function.
+     */
+    private static int getId(String functionName) {
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (functionName.equals(NAME_STRING_NORMALIZE_SPACE))</span>
+<span class="fc" id="L91">            return ID_STRING_NORMALIZE_SPACE;</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        else if (functionName.equals(NAME_STRING_NORMALIZE_TO_LOWER_CASE))</span>
+<span class="fc" id="L93">            return ID_STRING_NORMALIZE_TO_LOWER_CASE;</span>
+        else
+<span class="nc" id="L95">            throw new IllegalArgumentException(&quot;unknown normalize function &quot; + functionName);</span>
+    }
+
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public static Set getSupportedIdentifiers() {
+<span class="fc" id="L104">        Set set = new HashSet();</span>
+
+<span class="fc" id="L106">        set.add(NAME_STRING_NORMALIZE_SPACE);</span>
+<span class="fc" id="L107">        set.add(NAME_STRING_NORMALIZE_TO_LOWER_CASE);</span>
+
+<span class="fc" id="L109">        return set;</span>
+    }
+
+    /**
+     * Evaluate the function, using the specified parameters.
+     * 
+     * @param inputs a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt; objects representing the
+     *            arguments passed to the function
+     * @param context an &lt;code&gt;EvaluationCtx&lt;/code&gt; so that the &lt;code&gt;Evaluatable&lt;/code&gt; objects can
+     *            be evaluated
+     * @return an &lt;code&gt;EvaluationResult&lt;/code&gt; representing the function's result
+     */
+    public EvaluationResult evaluate(List inputs, EvaluationCtx context) {
+        // Evaluate the arguments
+<span class="fc" id="L123">        AttributeValue[] argValues = new AttributeValue[inputs.size()];</span>
+<span class="fc" id="L124">        EvaluationResult result = evalArgs(inputs, context, argValues);</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (result != null)</span>
+<span class="nc" id="L126">            return result;</span>
+
+        // Now that we have real values, perform the numeric conversion
+        // operation in the manner appropriate for this function.
+<span class="pc bpc" id="L130" title="1 of 3 branches missed.">        switch (getFunctionId()) {</span>
+        case ID_STRING_NORMALIZE_SPACE: {
+<span class="fc" id="L132">            String str = ((StringAttribute) argValues[0]).getValue();</span>
+
+            // Trim whitespace from start and end of string
+<span class="fc" id="L135">            int startIndex = 0;</span>
+<span class="fc" id="L136">            int endIndex = str.length() - 1;</span>
+<span class="pc bpc" id="L137" title="1 of 4 branches missed.">            while ((startIndex &lt;= endIndex) &amp;&amp; Character.isWhitespace(str.charAt(startIndex)))</span>
+<span class="fc" id="L138">                startIndex++;</span>
+<span class="pc bpc" id="L139" title="1 of 4 branches missed.">            while ((startIndex &lt;= endIndex) &amp;&amp; Character.isWhitespace(str.charAt(endIndex)))</span>
+<span class="fc" id="L140">                endIndex--;</span>
+<span class="fc" id="L141">            String strResult = str.substring(startIndex, endIndex + 1);</span>
+
+<span class="fc" id="L143">            result = new EvaluationResult(new StringAttribute(strResult));</span>
+<span class="fc" id="L144">            break;</span>
+        }
+        case ID_STRING_NORMALIZE_TO_LOWER_CASE: {
+<span class="fc" id="L147">            String str = ((StringAttribute) argValues[0]).getValue();</span>
+
+            // Convert string to lower case
+<span class="fc" id="L150">            String strResult = str.toLowerCase();</span>
+
+<span class="fc" id="L152">            result = new EvaluationResult(new StringAttribute(strResult));</span>
+<span class="fc" id="L153">            break;</span>
+        }
+        }
+
+<span class="fc" id="L157">        return result;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

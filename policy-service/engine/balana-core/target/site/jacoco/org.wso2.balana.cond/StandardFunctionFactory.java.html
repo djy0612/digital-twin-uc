@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StandardFunctionFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">StandardFunctionFactory.java</span></div><h1>StandardFunctionFactory.java</h1><pre class="source lang-java linenums">/*
+ * @(#)StandardFunctionFactory.java
+ *
+ * Copyright 2004-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ *
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.wso2.balana.UnknownIdentifierException;
+
+import org.wso2.balana.cond.cluster.AbsFunctionCluster;
+import org.wso2.balana.cond.cluster.AddFunctionCluster;
+import org.wso2.balana.cond.cluster.ComparisonFunctionCluster;
+import org.wso2.balana.cond.cluster.ConditionBagFunctionCluster;
+import org.wso2.balana.cond.cluster.ConditionSetFunctionCluster;
+import org.wso2.balana.cond.cluster.DateMathFunctionCluster;
+import org.wso2.balana.cond.cluster.DivideFunctionCluster;
+import org.wso2.balana.cond.cluster.EqualFunctionCluster;
+import org.wso2.balana.cond.cluster.FloorFunctionCluster;
+import org.wso2.balana.cond.cluster.GeneralBagFunctionCluster;
+import org.wso2.balana.cond.cluster.GeneralSetFunctionCluster;
+import org.wso2.balana.cond.cluster.HigherOrderFunctionCluster;
+import org.wso2.balana.cond.cluster.LogicalFunctionCluster;
+import org.wso2.balana.cond.cluster.MatchFunctionCluster;
+import org.wso2.balana.cond.cluster.ModFunctionCluster;
+import org.wso2.balana.cond.cluster.MultiplyFunctionCluster;
+import org.wso2.balana.cond.cluster.NOfFunctionCluster;
+import org.wso2.balana.cond.cluster.NotFunctionCluster;
+import org.wso2.balana.cond.cluster.NumericConvertFunctionCluster;
+import org.wso2.balana.cond.cluster.RoundFunctionCluster;
+import org.wso2.balana.cond.cluster.StringFunctionCluster;
+import org.wso2.balana.cond.cluster.StringNormalizeFunctionCluster;
+import org.wso2.balana.cond.cluster.SubtractFunctionCluster;
+import org.wso2.balana.cond.cluster.xacml3.StringComparingFunctionCluster;
+import org.wso2.balana.cond.cluster.xacml3.StringConversionFunctionCluster;
+import org.wso2.balana.cond.cluster.xacml3.StringCreationFunctionCluster;
+import org.wso2.balana.cond.cluster.xacml3.SubStringFunctionCluster;
+import org.wso2.balana.cond.cluster.xacml3.XACML3HigherOrderFunctionCluster;
+import org.wso2.balana.cond.cluster.xacml3.XPathFunctionCluster;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * This factory supports the standard set of functions specified in XACML 1.x and 2.0. It is the
+ * default factory used by the system, and imposes a singleton pattern insuring that there is only
+ * ever one instance of this class.
+ * &lt;p&gt;
+ * Note that because this supports only the standard functions, this factory does not allow the
+ * addition of any other functions. If you call &lt;code&gt;addFunction&lt;/code&gt; on an instance of this
+ * class, an exception will be thrown. If you need a standard factory that is modifiable, you can
+ * either create a new &lt;code&gt;BaseFunctionFactory&lt;/code&gt; (or some other implementation of
+ * &lt;code&gt;FunctionFactory&lt;/code&gt;) populated with the standard functions from
+ * &lt;code&gt;getStandardFunctions&lt;/code&gt; or you can use &lt;code&gt;getNewFactoryProxy&lt;/code&gt; to get a proxy
+ * containing a new, modifiable set of factories.
+ *
+ * @since 1.2
+ * @author Seth Proctor
+ */
+public class StandardFunctionFactory extends BaseFunctionFactory {
+
+    // the three singleton instances
+<span class="fc" id="L99">    private static volatile StandardFunctionFactory targetFactory = null;</span>
+<span class="fc" id="L100">    private static volatile StandardFunctionFactory conditionFactory = null;</span>
+<span class="fc" id="L101">    private static volatile StandardFunctionFactory generalFactory = null;</span>
+
+    // the three function sets/maps that we use internally
+<span class="fc" id="L104">    private static Set&lt;Function&gt; targetFunctions = null;</span>
+<span class="fc" id="L105">    private static Set&lt;Function&gt; conditionFunctions = null;</span>
+<span class="fc" id="L106">    private static Set&lt;Function&gt; generalFunctions = null;</span>
+
+<span class="fc" id="L108">    private static Map&lt;URI, FunctionProxy&gt; targetAbstractFunctions = null;</span>
+<span class="fc" id="L109">    private static Map&lt;URI, FunctionProxy&gt; conditionAbstractFunctions = null;</span>
+<span class="fc" id="L110">    private static Map&lt;URI, FunctionProxy&gt; generalAbstractFunctions = null;</span>
+
+    // the static sets of supported identifiers for each XACML version
+    private static Set supportedV1Functions;
+    private static Set supportedV2Functions;
+
+    // the set/map used by each singleton factory instance
+<span class="fc" id="L117">    private Set supportedFunctions = null;</span>
+<span class="fc" id="L118">    private Map supportedAbstractFunctions = null;</span>
+
+    // the logger we'll use for all messages
+<span class="fc" id="L121">    private static final Log logger = LogFactory.getLog(StandardFunctionFactory.class);</span>
+
+    /**
+     * Creates a new StandardFunctionFactory, making sure that the default maps are initialized
+     * correctly. Standard factories can't be modified, so there is no notion of supersetting since
+     * that's only used for correctly propagating new functions.
+     */
+    private StandardFunctionFactory(Set supportedFunctions, Map supportedAbstractFunctions) {
+<span class="fc" id="L129">        super(supportedFunctions, supportedAbstractFunctions);</span>
+
+<span class="fc" id="L131">        this.supportedFunctions = supportedFunctions;</span>
+<span class="fc" id="L132">        this.supportedAbstractFunctions = supportedAbstractFunctions;</span>
+<span class="fc" id="L133">    }</span>
+
+    /**
+     * Private initializer for the target functions. This is only ever called once.
+     */
+    private static void initTargetFunctions() {
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">        if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L140">            logger.debug(&quot;Initializing standard Target functions&quot;);</span>
+        }
+
+<span class="fc" id="L143">        targetFunctions = new HashSet&lt;Function&gt;();</span>
+
+        // add EqualFunction
+<span class="fc" id="L146">        targetFunctions.addAll((new EqualFunctionCluster()).getSupportedFunctions());</span>
+        // add LogicalFunction
+<span class="fc" id="L148">        targetFunctions.addAll((new LogicalFunctionCluster()).getSupportedFunctions());</span>
+        // add NOfFunction
+<span class="fc" id="L150">        targetFunctions.addAll((new NOfFunctionCluster()).getSupportedFunctions());</span>
+        // add NotFunction
+<span class="fc" id="L152">        targetFunctions.addAll((new NotFunctionCluster()).getSupportedFunctions());</span>
+        // add ComparisonFunction
+<span class="fc" id="L154">        targetFunctions.addAll((new ComparisonFunctionCluster()).getSupportedFunctions());</span>
+        // add MatchFunction
+<span class="fc" id="L156">        targetFunctions.addAll((new MatchFunctionCluster()).getSupportedFunctions());</span>
+        // add 3.0 Comparison Functions
+<span class="fc" id="L158">        targetFunctions.addAll((new StringComparingFunctionCluster().getSupportedFunctions()));</span>
+
+<span class="fc" id="L160">        targetAbstractFunctions = new HashMap();            // TODO ??</span>
+<span class="fc" id="L161">    }</span>
+
+    /**
+     * Private initializer for the condition functions. This is only ever called once.
+     */
+    private static void initConditionFunctions() {
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L168">            logger.debug(&quot;Initializing standard Condition functions&quot;);</span>
+        }
+
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (targetFunctions == null)</span>
+<span class="fc" id="L172">            initTargetFunctions();</span>
+
+<span class="fc" id="L174">        conditionFunctions = new HashSet&lt;Function&gt;(targetFunctions);</span>
+
+        // add condition function TimeInRange
+<span class="fc" id="L177">        conditionFunctions.add(new TimeInRangeFunction());</span>
+        // add condition function IPInRange
+<span class="fc" id="L179">        conditionFunctions.add(new IPInRangeFunction());</span>
+        // add condition functions from BagFunction
+<span class="fc" id="L181">        conditionFunctions.addAll((new ConditionBagFunctionCluster()).getSupportedFunctions());</span>
+        // add condition functions from SetFunction
+<span class="fc" id="L183">        conditionFunctions.addAll((new ConditionSetFunctionCluster()).getSupportedFunctions());</span>
+        // add condition functions from HigherOrderFunction
+<span class="fc" id="L185">        conditionFunctions.addAll((new HigherOrderFunctionCluster()).getSupportedFunctions());</span>
+<span class="fc" id="L186">        conditionFunctions.addAll((new XACML3HigherOrderFunctionCluster()).getSupportedFunctions());</span>
+
+<span class="fc" id="L188">        conditionAbstractFunctions = new HashMap&lt;URI, FunctionProxy&gt;(targetAbstractFunctions);// TODO ??</span>
+<span class="fc" id="L189">    }</span>
+
+    /**
+     * Private initializer for the general functions. This is only ever called once.
+     */
+    private static void initGeneralFunctions() {
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L196">            logger.debug(&quot;Initializing standard General functions&quot;);</span>
+        }
+
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">        if (conditionFunctions == null)</span>
+<span class="fc" id="L200">            initConditionFunctions();</span>
+
+<span class="fc" id="L202">        generalFunctions = new HashSet&lt;Function&gt;(conditionFunctions);</span>
+
+        // add AddFunction
+<span class="fc" id="L205">        generalFunctions.addAll((new AddFunctionCluster()).getSupportedFunctions());</span>
+        // add SubtractFunction
+<span class="fc" id="L207">        generalFunctions.addAll((new SubtractFunctionCluster()).getSupportedFunctions());</span>
+        // add MultiplyFunction
+<span class="fc" id="L209">        generalFunctions.addAll((new MultiplyFunctionCluster()).getSupportedFunctions());</span>
+        // add DivideFunction
+<span class="fc" id="L211">        generalFunctions.addAll((new DivideFunctionCluster()).getSupportedFunctions());</span>
+        // add ModFunction
+<span class="fc" id="L213">        generalFunctions.addAll((new ModFunctionCluster()).getSupportedFunctions());</span>
+        // add AbsFunction
+<span class="fc" id="L215">        generalFunctions.addAll((new AbsFunctionCluster()).getSupportedFunctions());</span>
+        // add RoundFunction
+<span class="fc" id="L217">        generalFunctions.addAll((new RoundFunctionCluster()).getSupportedFunctions());</span>
+        // add FloorFunction
+<span class="fc" id="L219">        generalFunctions.addAll((new FloorFunctionCluster()).getSupportedFunctions());</span>
+        // add DateMathFunction
+<span class="fc" id="L221">        generalFunctions.addAll((new DateMathFunctionCluster()).getSupportedFunctions());</span>
+        // add general functions from BagFunction
+<span class="fc" id="L223">        generalFunctions.addAll((new GeneralBagFunctionCluster()).getSupportedFunctions());</span>
+        // add NumericConvertFunction
+<span class="fc" id="L225">        generalFunctions.addAll((new NumericConvertFunctionCluster()).getSupportedFunctions());</span>
+        // add StringNormalizeFunction
+<span class="fc" id="L227">        generalFunctions.addAll((new StringNormalizeFunctionCluster()).getSupportedFunctions());</span>
+        // add general functions from SetFunction
+<span class="fc" id="L229">        generalFunctions.addAll((new GeneralSetFunctionCluster()).getSupportedFunctions());</span>
+        // add the XACML 2.0 string functions
+<span class="fc" id="L231">        generalFunctions.addAll((new StringFunctionCluster()).getSupportedFunctions());</span>
+        // add the XACML 3.0 start with functions
+<span class="fc" id="L233">        generalFunctions.addAll((new StringComparingFunctionCluster()).getSupportedFunctions());</span>
+        // add the XACML 3.0 start with functions
+<span class="fc" id="L235">        generalFunctions.addAll((new StringConversionFunctionCluster()).getSupportedFunctions());</span>
+        // add the XACML 3.0 start with functions
+<span class="fc" id="L237">        generalFunctions.addAll((new SubStringFunctionCluster()).getSupportedFunctions());</span>
+        // add the XACML 3.0 start with functions
+<span class="fc" id="L239">        generalFunctions.addAll((new StringCreationFunctionCluster()).getSupportedFunctions());</span>
+        // add the XACML 3.0 start with functions
+<span class="fc" id="L241">        generalFunctions.addAll((new XPathFunctionCluster()).getSupportedFunctions());</span>
+
+<span class="fc" id="L243">        generalAbstractFunctions = new HashMap&lt;URI, FunctionProxy&gt;(conditionAbstractFunctions); // TODO</span>
+
+        // add the map function's proxy
+        try {
+<span class="fc" id="L247">            generalAbstractFunctions.put(new URI(MapFunction.NAME_MAP), new MapFunctionProxy());</span>
+<span class="nc" id="L248">        } catch (URISyntaxException e) {</span>
+            // this shouldn't ever happen, but just in case...
+<span class="nc" id="L250">            throw new IllegalArgumentException(&quot;invalid function name&quot;);</span>
+<span class="fc" id="L251">        }</span>
+<span class="fc" id="L252">    }</span>
+
+    /**
+     * Returns a FunctionFactory that will only provide those functions that are usable in Target
+     * matching. This method enforces a singleton model, meaning that this always returns the same
+     * instance, creating the factory if it hasn't been requested before. This is the default model
+     * used by the &lt;code&gt;FunctionFactory&lt;/code&gt;, ensuring quick access to this factory.
+     *
+     * @return a &lt;code&gt;FunctionFactory&lt;/code&gt; for target functions
+     */
+    public static StandardFunctionFactory getTargetFactory() {
+<span class="nc bnc" id="L263" title="All 2 branches missed.">        if (targetFactory == null) {</span>
+<span class="nc" id="L264">            synchronized (StandardFunctionFactory.class) {</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">                if (targetFunctions == null)</span>
+<span class="nc" id="L266">                    initTargetFunctions();</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">                if (targetFactory == null)</span>
+<span class="nc" id="L268">                    targetFactory = new StandardFunctionFactory(targetFunctions,</span>
+                            targetAbstractFunctions);
+<span class="nc" id="L270">            }</span>
+        }
+
+<span class="nc" id="L273">        return targetFactory;</span>
+    }
+
+    /**
+     * Returns a FuntionFactory that will only provide those functions that are usable in the root
+     * of the Condition. These Functions are a superset of the Target functions. This method
+     * enforces a singleton model, meaning that this always returns the same instance, creating the
+     * factory if it hasn't been requested before. This is the default model used by the
+     * &lt;code&gt;FunctionFactory&lt;/code&gt;, ensuring quick access to this factory.
+     *
+     * @return a &lt;code&gt;FunctionFactory&lt;/code&gt; for condition functions
+     */
+    public static StandardFunctionFactory getConditionFactory() {
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        if (conditionFactory == null) {</span>
+<span class="nc" id="L287">            synchronized (StandardFunctionFactory.class) {</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">                if (conditionFunctions == null)</span>
+<span class="nc" id="L289">                    initConditionFunctions();</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">                if (conditionFactory == null)</span>
+<span class="nc" id="L291">                    conditionFactory = new StandardFunctionFactory(conditionFunctions,</span>
+                            conditionAbstractFunctions);
+<span class="nc" id="L293">            }</span>
+        }
+
+<span class="nc" id="L296">        return conditionFactory;</span>
+    }
+
+    /**
+     * Returns a FunctionFactory that provides access to all the functions. These Functions are a
+     * superset of the Condition functions. This method enforces a singleton model, meaning that
+     * this always returns the same instance, creating the factory if it hasn't been requested
+     * before. This is the default model used by the &lt;code&gt;FunctionFactory&lt;/code&gt;, ensuring quick
+     * access to this factory.
+     *
+     * @return a &lt;code&gt;FunctionFactory&lt;/code&gt; for all functions
+     */
+    public static StandardFunctionFactory getGeneralFactory() {
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        if (generalFactory == null) {</span>
+<span class="fc" id="L310">            synchronized (StandardFunctionFactory.class) {</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">                if (generalFunctions == null) {</span>
+<span class="fc" id="L312">                    initGeneralFunctions();</span>
+<span class="fc" id="L313">                    generalFactory = new StandardFunctionFactory(generalFunctions,</span>
+                            generalAbstractFunctions);
+                }
+<span class="pc" id="L316">            }</span>
+        }
+
+<span class="fc" id="L319">        return generalFactory;</span>
+    }
+
+    /**
+     * Returns the identifiers supported for the given version of XACML. Because this factory
+     * supports identifiers from all versions of the XACML specifications, this method is useful for
+     * getting a list of which specific identifiers are supported by a given version of XACML.
+     *
+     * @param xacmlVersion a standard XACML identifier string, as provided in
+     *            &lt;code&gt;PolicyMetaData&lt;/code&gt;
+     *
+     * @return a &lt;code&gt;Set&lt;/code&gt; of identifiers
+     *
+     * @throws UnknownIdentifierException if the version string is unknown
+     */
+    public static Set getStandardFunctions(String xacmlVersion) {
+        // FIXME: collecting the identifiers needs to be implemented..
+<span class="nc" id="L336">        throw new RuntimeException(&quot;This method isn't implemented yet.&quot;);</span>
+    }
+
+    /**
+     * Returns the set of abstract functions that this standard factory supports as a mapping of
+     * identifier to proxy.
+     *
+     * @return a &lt;code&gt;Map&lt;/code&gt; mapping &lt;code&gt;URI&lt;/code&gt;s to &lt;code&gt;FunctionProxy&lt;/code&gt;s
+     */
+    public static Map getStandardAbstractFunctions(String xacmlVersion) {
+        // FIXME: collecting the identifiers needs to be implemented..
+<span class="nc" id="L347">        throw new RuntimeException(&quot;This method isn't implemented yet.&quot;);</span>
+    }
+
+    /**
+     * A convenience method that returns a proxy containing newly created instances of
+     * &lt;code&gt;BaseFunctionFactory&lt;/code&gt;s that are correctly supersetted and contain the standard
+     * functions and abstract functions. These factories allow adding support for new functions.
+     *
+     * @return a new proxy containing new factories supporting the standard functions
+     */
+    public static FunctionFactoryProxy getNewFactoryProxy() {
+        // first off, make sure everything's been initialized
+<span class="fc" id="L359">        getGeneralFactory();</span>
+
+        // now create the new instances
+<span class="fc" id="L362">        FunctionFactory newGeneral = new BaseFunctionFactory(generalFunctions,</span>
+                generalAbstractFunctions);
+
+<span class="fc" id="L365">        FunctionFactory newCondition = new BaseFunctionFactory(newGeneral, conditionFunctions,</span>
+                conditionAbstractFunctions);
+
+<span class="fc" id="L368">        FunctionFactory newTarget = new BaseFunctionFactory(newCondition, targetFunctions,</span>
+                targetAbstractFunctions);
+
+<span class="fc" id="L371">        return new BasicFunctionFactoryProxy(newTarget, newCondition, newGeneral);</span>
+    }
+
+    /**
+     * Always throws an exception, since support for new functions may not be added to a standard
+     * factory.
+     *
+     * @param function the &lt;code&gt;Function&lt;/code&gt; to add to the factory
+     *
+     * @throws UnsupportedOperationException always
+     */
+    public void addFunction(Function function) throws IllegalArgumentException {
+<span class="nc" id="L383">        throw new UnsupportedOperationException(&quot;a standard factory cannot &quot;</span>
+                + &quot;support new functions&quot;);
+    }
+
+    /**
+     * Always throws an exception, since support for new functions may not be added to a standard
+     * factory.
+     *
+     * @param proxy the &lt;code&gt;FunctionProxy&lt;/code&gt; to add to the factory
+     * @param identity the function's identifier
+     *
+     * @throws UnsupportedOperationException always
+     */
+    public void addAbstractFunction(FunctionProxy proxy, URI identity)
+            throws IllegalArgumentException {
+<span class="nc" id="L398">        throw new UnsupportedOperationException(&quot;a standard factory cannot &quot;</span>
+                + &quot;support new functions&quot;);
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

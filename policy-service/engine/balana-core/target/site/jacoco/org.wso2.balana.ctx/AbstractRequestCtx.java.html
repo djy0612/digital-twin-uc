@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractRequestCtx.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.ctx</a> &gt; <span class="el_source">AbstractRequestCtx.java</span></div><h1>AbstractRequestCtx.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+package org.wso2.balana.ctx;
+
+import org.w3c.dom.Node;
+import org.wso2.balana.Indenter;
+import org.wso2.balana.xacml3.Attributes;
+
+import java.io.OutputStream;
+import java.util.Set;
+
+/**
+ * Represents a XACML request made to the PDP. This is the class that contains all the data used to start
+ * a policy evaluation.abstract class has been defined to give a unique interface for both XACML 2.0
+ * and XACML 3.0 RequestCtx
+ */
+<span class="fc" id="L33">public abstract class AbstractRequestCtx {</span>
+
+    //XACML version of the request
+    protected int xacmlVersion;
+
+    // Hold onto the root of the document for XPath searches
+<span class="fc" id="L39">    protected Node documentRoot = null;</span>
+
+    /**
+     * XACML3 attributes as &lt;code&gt;Attributes&lt;/code&gt; objects
+     */
+<span class="fc" id="L44">    protected Set&lt;Attributes&gt; attributesSet = null;</span>
+
+    protected boolean isSearch;
+
+    /**
+     * Returns the root DOM node of the document used to create this object, or null if this object
+     * was created by hand (ie, not through the &lt;code&gt;getInstance&lt;/code&gt; method) or if the root node
+     * was not provided to the constructor.
+     *
+     * @return the root DOM node or null
+     */
+    public Node getDocumentRoot() {
+<span class="nc" id="L56">        return documentRoot;</span>
+    }    
+
+    public void setSearch(boolean isSearch) {
+<span class="nc" id="L60">        this.isSearch = isSearch;</span>
+<span class="nc" id="L61">    }</span>
+
+    public boolean isSearch() {
+<span class="nc" id="L64">        return isSearch;</span>
+    }
+
+    public int getXacmlVersion() {
+<span class="fc" id="L68">        return xacmlVersion;</span>
+    }
+
+    public void setXacmlVersion(int xacmlVersion) {
+<span class="nc" id="L72">        this.xacmlVersion = xacmlVersion;</span>
+<span class="nc" id="L73">    }</span>
+
+    /**
+     *  Returns a &lt;code&gt;Set&lt;/code&gt; containing &lt;code&gt;Attribute&lt;/code&gt; objects.
+     *
+     * @return  the request' s all attributes as &lt;code&gt;Set&lt;/code&gt;
+     */
+    public Set&lt;Attributes&gt; getAttributesSet() {
+<span class="fc" id="L81">        return attributesSet;</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;AbstractRequestCtx&lt;/code&gt; into its XML representation and writes this encoding to the given
+     * &lt;code&gt;OutputStream&lt;/code&gt; with indentation.
+     *
+     * @param output a stream into which the XML-encoded data is written
+     * @param indenter an object that creates indentation strings
+     */
+    public abstract void encode(OutputStream output, Indenter indenter);
+
+    /**
+     * Encodes this &lt;code&gt;AbstractRequestCtx&lt;/code&gt;  into its XML representation and writes this encoding to the given
+     * &lt;code&gt;OutputStream&lt;/code&gt;. No indentation is used.
+     *
+     * @param output a stream into which the XML-encoded data is written
+     */
+    public abstract void encode(OutputStream output);    
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Indenter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana</a> &gt; <span class="el_source">Indenter.java</span></div><h1>Indenter.java</h1><pre class="source lang-java linenums">/*
+ * @(#)Indenter.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana;
+
+import java.util.Arrays;
+
+/**
+ * Provides flexible indenting for XML encoding. This class generates strings of spaces to be
+ * prepended to lines of XML. The strings are formed according to a specified indent width and the
+ * given depth.
+ * 
+ * @since 1.0
+ * @author Marco Barreno
+ * @author Seth Proctor
+ */
+public class Indenter {
+
+	/**
+	 * The default indentation width
+	 */
+	public static final int DEFAULT_WIDTH = 2;
+
+	// The width of one indentation level
+	private int width;
+
+	// the current depth
+	private int depth;
+
+	/**
+	 * Constructs an &lt;code&gt;Indenter&lt;/code&gt; with the default indent width.
+	 */
+	public Indenter() {
+<span class="nc" id="L66">		this(DEFAULT_WIDTH);</span>
+<span class="nc" id="L67">	}</span>
+
+	/**
+	 * Constructs an &lt;code&gt;Indenter&lt;/code&gt; with a user-supplied indent width.
+	 * 
+	 * @param userWidth the number of spaces to use for each indentation level
+	 */
+<span class="nc" id="L74">	public Indenter(int userWidth) {</span>
+<span class="nc" id="L75">		width = userWidth;</span>
+<span class="nc" id="L76">		depth = 0;</span>
+<span class="nc" id="L77">	}</span>
+
+	/**
+	 * Move in one width.
+	 */
+	public void in() {
+<span class="nc" id="L83">		depth += width;</span>
+<span class="nc" id="L84">	}</span>
+
+	/**
+	 * Move out one width.
+	 */
+	public void out() {
+<span class="nc" id="L90">		depth -= width;</span>
+<span class="nc" id="L91">	}</span>
+
+	/**
+	 * Create a &lt;code&gt;String&lt;/code&gt; of spaces for indentation based on the current depth.
+	 * 
+	 * @return an indent string to prepend to lines of XML
+	 */
+	public String makeString() {
+		// Return quickly if no indenting
+<span class="nc bnc" id="L100" title="All 2 branches missed.">		if (depth &lt;= 0) {</span>
+<span class="nc" id="L101">			return &quot;&quot;;</span>
+		}
+
+		// Make a char array and fill it with spaces
+<span class="nc" id="L105">		char[] array = new char[depth];</span>
+<span class="nc" id="L106">		Arrays.fill(array, ' ');</span>
+
+		// Now return a string built from that char array
+<span class="nc" id="L109">		return new String(array);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

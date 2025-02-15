@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AdviceExpression.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.xacml3</a> &gt; <span class="el_source">AdviceExpression.java</span></div><h1>AdviceExpression.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+package org.wso2.balana.xacml3;
+
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.*;
+import org.wso2.balana.ctx.AbstractResult;
+import org.wso2.balana.ctx.AttributeAssignment;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.xacml2.Result;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Represents the AdviceExpressionType XML type in XACML. Advice are introduced with XACML 3   
+ */
+public class AdviceExpression {
+
+    /**
+     * The value of the advice identifier may be interpreted by the PEP.
+     */
+    private URI adviceId;
+
+    /**
+     * The effect for which this advice must be provided to the PEP.
+     */
+    private int appliesTo;
+
+    /**
+     * Advice arguments in the form of expressions; &lt;code&gt;AttributeAssignmentExpression&lt;/code&gt;
+     */
+    private List&lt;AttributeAssignmentExpression&gt; attributeAssignmentExpressions;
+
+
+    /**
+     * Constructor that takes all the data associated with an AdviceExpression
+     * .
+     * @param adviceId the advice's id
+     * @param appliesTo the effect for which this advice must be provided
+     * @param attributeAssignmentExpressions a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AttributeAssignmentExpression&lt;/code&gt;s
+     */
+    public AdviceExpression(URI adviceId, int appliesTo,
+<span class="fc" id="L66">                            List&lt;AttributeAssignmentExpression&gt; attributeAssignmentExpressions) {</span>
+<span class="fc" id="L67">        this.adviceId = adviceId;</span>
+<span class="fc" id="L68">        this.appliesTo = appliesTo;</span>
+<span class="fc" id="L69">        this.attributeAssignmentExpressions = attributeAssignmentExpressions;</span>
+<span class="fc" id="L70">    }</span>
+
+    /**
+     *  Creates an instance of &lt;code&gt;AdviceExpression&lt;/code&gt; based on the DOM root node.
+     *
+     * @param root  the DOM root of the AdviceExpressionType XML type
+     * @param metaData policy meta data
+     * @return an instance of an &lt;code&gt;AdviceExpression&lt;/code&gt;
+     * @throws ParsingException  if the structure isn't valid
+     */
+    public static AdviceExpression getInstance(Node root, PolicyMetaData metaData) throws ParsingException {
+
+        URI adviceId;
+        int appliesTo;
+        String effect;
+<span class="fc" id="L85">        List&lt;AttributeAssignmentExpression&gt; expressions = new ArrayList&lt;AttributeAssignmentExpression&gt;();</span>
+<span class="fc" id="L86">        NamedNodeMap attrs = root.getAttributes();</span>
+
+        try {
+<span class="fc" id="L89">            adviceId = new URI(attrs.getNamedItem(&quot;AdviceId&quot;).getNodeValue());</span>
+<span class="nc" id="L90">        } catch (Exception e) {</span>
+<span class="nc" id="L91">            throw new ParsingException(&quot;Error parsing required attribute AdviceId &quot; +</span>
+                    &quot;in AdviceExpressionType&quot;, e);
+<span class="fc" id="L93">        }</span>
+
+        try {
+<span class="fc" id="L96">            effect = attrs.getNamedItem(&quot;AppliesTo&quot;).getNodeValue();</span>
+<span class="nc" id="L97">        } catch (Exception e) {</span>
+<span class="nc" id="L98">            throw new ParsingException(&quot;Error parsing required attribute AppliesTo &quot; +</span>
+                    &quot;in AdviceExpressionType&quot;, e);
+<span class="fc" id="L100">        }</span>
+
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        if (effect.equals(&quot;Permit&quot;)) {</span>
+<span class="fc" id="L103">            appliesTo = AbstractResult.DECISION_PERMIT;</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        } else if (effect.equals(&quot;Deny&quot;)) {</span>
+<span class="fc" id="L105">            appliesTo = AbstractResult.DECISION_DENY;</span>
+        } else {
+<span class="nc" id="L107">            throw new ParsingException(&quot;Invalid Effect type: &quot; + effect);</span>
+        }
+
+<span class="fc" id="L110">        NodeList nodes = root.getChildNodes();</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L112">            Node node = nodes.item(i);</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            if (DOMHelper.getLocalName(node).equals(&quot;AttributeAssignmentExpression&quot;)) {</span>
+                try {
+<span class="fc" id="L115">                    AttributeAssignmentExpression expression = AttributeAssignmentExpression.</span>
+<span class="fc" id="L116">                            getInstance(node, metaData);</span>
+<span class="fc" id="L117">                    expressions.add(expression);</span>
+<span class="nc" id="L118">                } catch (Exception e) {</span>
+<span class="nc" id="L119">                    throw new ParsingException(&quot;Error parsing attribute assignments &quot; +</span>
+                            &quot;in AdviceExpressionType&quot;, e);
+<span class="fc" id="L121">                }</span>
+            }
+        }
+
+<span class="fc" id="L125">        return new AdviceExpression(adviceId, appliesTo, expressions);</span>
+    }
+
+    /**
+     * returns whether this is applied for permit or deny
+     *
+     * @return permit/deny
+     */
+    public int getAppliesTo() {
+<span class="fc" id="L134">        return appliesTo;</span>
+    }
+
+    /**
+     * returns advice id
+     *
+     * @return advice id
+     */
+    public URI getAdviceId() {
+<span class="nc" id="L143">        return adviceId;</span>
+    }
+
+    /**
+     * return  evaluation result of the advice expression
+     *
+     * @param ctx  &lt;code&gt;EvaluationCtx&lt;/code&gt;
+     * @return  result as &lt;code&gt;Advice&lt;/code&gt; Object
+     */
+    public Advice evaluate(EvaluationCtx ctx) {
+<span class="fc" id="L153">        List&lt;AttributeAssignment&gt; assignments = new ArrayList&lt;AttributeAssignment&gt;();</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        for(AttributeAssignmentExpression expression : attributeAssignmentExpressions){</span>
+<span class="fc" id="L155">            Set&lt;AttributeAssignment&gt; assignmentSet = expression.evaluate(ctx);</span>
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">            if(assignmentSet != null &amp;&amp; assignmentSet.size() &gt; 0){</span>
+<span class="fc" id="L157">                assignments.addAll(assignmentSet);</span>
+            }
+<span class="fc" id="L159">        }</span>
+<span class="fc" id="L160">        return new Advice(adviceId, assignments);</span>
+    }
+
+
+    /**
+     * Encodes this &lt;code&gt;ObligationExpression&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L172">        builder.append(&quot;&lt;AdviceExpression AdviceId=\&quot;&quot; + adviceId + &quot;\&quot; AppliesTo=\&quot;&quot;</span>
+                + AbstractResult.DECISIONS[appliesTo] + &quot;\&quot;&gt;&quot;);
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        for (AttributeAssignmentExpression assignment : attributeAssignmentExpressions) {</span>
+<span class="nc" id="L175">            assignment.encode(builder);</span>
+<span class="nc" id="L176">        }</span>
+<span class="nc" id="L177">        builder.append(&quot;&lt;/AdviceExpression&gt;&quot;);</span>
+<span class="nc" id="L178">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

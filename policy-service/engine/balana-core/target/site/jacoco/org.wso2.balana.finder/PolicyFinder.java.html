@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PolicyFinder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.finder</a> &gt; <span class="el_source">PolicyFinder.java</span></div><h1>PolicyFinder.java</h1><pre class="source lang-java linenums">/*
+ * @(#)PolicyFinder.java
+ *
+ * Copyright 2003-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.finder;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.wso2.balana.*;
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.ctx.Status;
+
+import java.net.URI;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
+/**
+ * This class is used by the PDP to find all policies used in evaluation. A PDP is given a
+ * pre-configured &lt;code&gt;PolicyFinder&lt;/code&gt; on construction. The &lt;code&gt;PolicyFinder&lt;/code&gt; provides
+ * the functionality both to find policies based on a request (ie, retrieve policies and match
+ * against the target) and based on an idReference (as can be included in a PolicySet).
+ * &lt;p&gt;
+ * While this class is typically used by the PDP, it is intentionally designed to support
+ * stand-alone use, so it could be the base for a distributed service, or for some application that
+ * needs just this functionality. There is nothing in the &lt;code&gt;PolicyFinder&lt;/code that relies on
+ * the functionality in the PDP. An example of this is a PDP that offloads all policy work by
+ * passing requests to another server that does all the retrieval, and passes back the applicable
+ * policy. This would require custom code undefined in the XACML spec, but it would free up the
+ * server to focus on core policy processing.
+ * &lt;p&gt;
+ * Note that it is an error to have more than one top-level policy (as explained in the
+ * OnlyOneApplicable combining algorithm), so any module that is added to this finder will be
+ * evaluated each time a policy is requested. This means that you should think carefully about how
+ * many modules you include, and how they can cache policy data.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class PolicyFinder {
+
+    /**
+     * all modules in this finder
+     */
+    private Set allModules;
+
+    /**
+     * all the request modules
+     */
+    private Set requestModules;
+
+    /**
+     * all the reference modules
+     */
+    private Set referenceModules;
+
+    /**
+     * the logger we'll use for all messages
+     */
+<span class="fc" id="L94">    private static final Log logger = LogFactory.getLog(PolicyFinder.class);</span>
+
+    /**
+     * Default constructor that creates a &lt;code&gt;PDPConfig&lt;/code&gt; from components.
+     */
+<span class="fc" id="L99">    public PolicyFinder() {</span>
+
+<span class="fc" id="L101">    }</span>
+
+    /**
+     * Returns the unordered &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;PolicyFinderModule&lt;/code&gt;s used by this class
+     * to find policies.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;PolicyFinderModule&lt;/code&gt;s
+     */
+    public Set getModules() {
+<span class="nc" id="L110">        return new HashSet(allModules);</span>
+    }
+
+    /**
+     * Sets the unordered &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;PolicyFinderModule&lt;/code&gt;s used by this class to
+     * find policies.
+     * 
+     * @param modules a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;PolicyFinderModule&lt;/code&gt;s
+     */
+    public void setModules(Set modules) {
+<span class="fc" id="L120">        Iterator it = modules.iterator();</span>
+
+<span class="fc" id="L122">        allModules = new HashSet(modules);</span>
+<span class="fc" id="L123">        requestModules = new HashSet();</span>
+<span class="fc" id="L124">        referenceModules = new HashSet();</span>
+
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+<span class="fc" id="L127">            PolicyFinderModule module = (PolicyFinderModule) (it.next());</span>
+
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">            if (module.isRequestSupported())</span>
+<span class="fc" id="L130">                requestModules.add(module);</span>
+
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">            if (module.isIdReferenceSupported())</span>
+<span class="fc" id="L133">                referenceModules.add(module);</span>
+<span class="fc" id="L134">        }</span>
+<span class="fc" id="L135">    }</span>
+
+    /**
+     * Initializes all modules in this finder.
+     */
+    public void init() {
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L142">            logger.debug(&quot;Initializing PolicyFinder&quot;);</span>
+        }
+
+<span class="fc" id="L145">        Iterator it = allModules.iterator();</span>
+
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+<span class="fc" id="L148">            PolicyFinderModule module = (PolicyFinderModule) (it.next());</span>
+<span class="fc" id="L149">            module.init(this);</span>
+<span class="fc" id="L150">        }</span>
+<span class="fc" id="L151">    }</span>
+
+    /**
+     * Finds a policy based on a request's context. This may involve using the request data as
+     * indexing data to lookup a policy. This will always do a Target match to make sure that the
+     * given policy applies. If more than one applicable policy is found, this will return an error.
+     * 
+     * @param context the representation of the request data
+     * 
+     * @return the result of trying to find an applicable policy
+     */
+    public PolicyFinderResult findPolicy(EvaluationCtx context) {
+<span class="fc" id="L163">        PolicyFinderResult result = null;</span>
+<span class="fc" id="L164">        Iterator it = requestModules.iterator();</span>
+
+        // look through all of the modules
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+<span class="fc" id="L168">            PolicyFinderModule module = (PolicyFinderModule) (it.next());</span>
+<span class="fc" id="L169">            PolicyFinderResult newResult = module.findPolicy(context);</span>
+
+            // if there was an error, we stop right away
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">            if (newResult.indeterminate()) {</span>
+<span class="nc" id="L173">                logger.error(&quot;An error occured while trying to find a &quot;</span>
+                        + &quot;single applicable policy for a request: &quot;
+<span class="nc" id="L175">                        + newResult.getStatus().getMessage());</span>
+
+<span class="nc" id="L177">                return newResult;</span>
+            }
+
+            // if we found a policy...
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            if (!newResult.notApplicable()) {</span>
+                // ...if we already had found a policy, this is an error...
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">                if (result != null) {</span>
+<span class="nc" id="L184">                    logger.error(&quot;More than one top-level applicable policy &quot; + &quot;for the request&quot;);</span>
+
+<span class="nc" id="L186">                    ArrayList code = new ArrayList();</span>
+<span class="nc" id="L187">                    code.add(Status.STATUS_PROCESSING_ERROR);</span>
+<span class="nc" id="L188">                    Status status = new Status(code, &quot;too many applicable &quot; + &quot;top-level policies&quot;);</span>
+<span class="nc" id="L189">                    return new PolicyFinderResult(status);</span>
+                }
+
+                // ...otherwise we remember the result
+<span class="fc" id="L193">                result = newResult;</span>
+            }
+<span class="fc" id="L195">        }</span>
+
+        // if we got here then we didn't have any errors, so the only
+        // question is whether or not we found anything
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        if (result != null) {</span>
+<span class="fc" id="L200">            return result;</span>
+        } else {
+<span class="fc" id="L202">            logger.debug(&quot;No applicable policies were found for the request&quot;);</span>
+
+<span class="fc" id="L204">            return new PolicyFinderResult();</span>
+        }
+    }
+
+    /**
+     * Finds a policy based on an id reference. This may involve using the reference as indexing
+     * data to lookup a policy. This will always do a Target match to make sure that the given
+     * policy applies. If more than one applicable policy is found, this will return an error.
+     * 
+     * @param idReference the identifier used to resolve a policy
+     * @param type type of reference (policy or policySet) as identified by the fields in
+     *            &lt;code&gt;PolicyReference&lt;/code&gt;
+     * @param constraints any optional constraints on the version of the referenced policy
+     * @param parentMetaData the meta-data from the parent policy, which provides XACML version,
+     *            factories, etc.
+     * 
+     * @return the result of trying to find an applicable policy
+     * 
+     * @throws IllegalArgumentException if &lt;code&gt;type&lt;/code&gt; is invalid
+     */
+    public PolicyFinderResult findPolicy(URI idReference, int type, VersionConstraints constraints,
+            PolicyMetaData parentMetaData) throws IllegalArgumentException {
+<span class="nc" id="L226">        PolicyFinderResult result = null;</span>
+<span class="nc" id="L227">        Iterator it = referenceModules.iterator();</span>
+
+<span class="nc bnc" id="L229" title="All 4 branches missed.">        if ((type != PolicyReference.POLICY_REFERENCE)</span>
+                &amp;&amp; (type != PolicyReference.POLICYSET_REFERENCE))
+<span class="nc" id="L231">            throw new IllegalArgumentException(&quot;Unknown reference type&quot;);</span>
+
+        // look through all of the modules
+<span class="nc bnc" id="L234" title="All 2 branches missed.">        while (it.hasNext()) {</span>
+<span class="nc" id="L235">            PolicyFinderModule module = (PolicyFinderModule) (it.next());</span>
+<span class="nc" id="L236">            PolicyFinderResult newResult = module.findPolicy(idReference, type, constraints,</span>
+                    parentMetaData);
+
+            // if there was an error, we stop right away
+<span class="nc bnc" id="L240" title="All 2 branches missed.">            if (newResult.indeterminate()) {</span>
+<span class="nc" id="L241">                logger.error(&quot;An error occured while trying to find the &quot; + &quot;referenced policy &quot;</span>
+<span class="nc" id="L242">                        + idReference.toString() + &quot;: &quot; + newResult.getStatus().getMessage());</span>
+
+<span class="nc" id="L244">                return newResult;</span>
+            }
+
+            // if we found a policy...
+<span class="nc bnc" id="L248" title="All 2 branches missed.">            if (!newResult.notApplicable()) {</span>
+                // ...if we already had found a policy, this is an error...
+<span class="nc bnc" id="L250" title="All 2 branches missed.">                if (result != null) {</span>
+<span class="nc" id="L251">                    logger.error(&quot;More than one policy applies for the &quot; + &quot;reference: &quot;</span>
+<span class="nc" id="L252">                            + idReference.toString());</span>
+<span class="nc" id="L253">                    ArrayList code = new ArrayList();</span>
+<span class="nc" id="L254">                    code.add(Status.STATUS_PROCESSING_ERROR);</span>
+<span class="nc" id="L255">                    Status status = new Status(code, &quot;too many applicable &quot; + &quot;top-level policies&quot;);</span>
+<span class="nc" id="L256">                    return new PolicyFinderResult(status);</span>
+                }
+
+                // ...otherwise we remember the result
+<span class="nc" id="L260">                result = newResult;</span>
+            }
+<span class="nc" id="L262">        }</span>
+
+        // if we got here then we didn't have any errors, so the only
+        // question is whether or not we found anything
+<span class="nc bnc" id="L266" title="All 2 branches missed.">        if (result != null) {</span>
+<span class="nc" id="L267">            return result;</span>
+        } else {
+<span class="nc" id="L269">            logger.debug(&quot;No policies were resolved for the reference: &quot; + idReference.toString());</span>
+<span class="nc" id="L270">            return new PolicyFinderResult();</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StatusDetail.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.ctx</a> &gt; <span class="el_source">StatusDetail.java</span></div><h1>StatusDetail.java</h1><pre class="source lang-java linenums">/*
+ * @(#)StatusDetail.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.ctx;
+
+import org.wso2.balana.Balana;
+import org.wso2.balana.DOMHelper;
+import org.wso2.balana.ParsingException;
+
+import java.io.ByteArrayInputStream;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.List;
+
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.wso2.balana.utils.Utils;
+import org.xml.sax.SAXException;
+
+/**
+ * This class represents the StatusDetailType in the context schema. Because status detail is
+ * defined as a sequence of xs:any XML type, the data in this class must be generic, and it is up to
+ * the application developer to interpret the data appropriately.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class StatusDetail {
+
+    // the text version, if it's avilable already
+<span class="pc" id="L75">    private String detailText = null;</span>
+
+    /**
+     * a List of MissingAttributeDetail 
+     */
+    private  List&lt;MissingAttributeDetail&gt; missingAttributeDetails;
+
+    /**
+     * Constructor that uses a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;MissingAttributeDetail&lt;/code&gt;s to define the status
+     * detail. This is a common form of detail data, and can be used for things like providing the
+     * information included with the missing-attribute status code.
+     * 
+     * @param missingAttributeDetails a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;MissingAttributeDetail&lt;/code&gt;s
+     * 
+     * @throws IllegalArgumentException if there is a problem encoding the &lt;code&gt;MissingAttributeDetail&lt;/code&gt;s
+     */
+    public StatusDetail(List&lt;MissingAttributeDetail&gt; missingAttributeDetails)
+<span class="fc" id="L92">                                                                throws IllegalArgumentException {</span>
+
+<span class="fc" id="L94">        this.missingAttributeDetails = missingAttributeDetails;</span>
+        try {
+<span class="fc" id="L96">            detailText = &quot;&lt;StatusDetail&gt;\n&quot;;</span>
+
+<span class="fc bfc" id="L98" title="All 2 branches covered.">            for (MissingAttributeDetail attribute : missingAttributeDetails) {</span>
+<span class="fc" id="L99">                detailText += attribute.getEncoded() + &quot;\n&quot;;</span>
+<span class="fc" id="L100">            }</span>
+
+<span class="fc" id="L102">            detailText += &quot;&lt;/StatusDetail&gt;&quot;;</span>
+<span class="nc" id="L103">        } catch (ParsingException pe) {</span>
+            // really, this should never happen, since we just made sure that
+            // we're working with valid text, but it's possible that encoding
+            // the attribute could have caused problems...
+
+<span class="nc" id="L108">            throw new IllegalArgumentException(&quot;Invalid MissingAttributeDetail data, caused by &quot; +</span>
+<span class="nc" id="L109">                                                                                pe.getMessage());</span>
+<span class="fc" id="L110">        }</span>
+<span class="fc" id="L111">    }</span>
+
+    /**
+     * Constructor that takes the text-encoded form of the XML to use as the status data. The
+     * encoded text will be wrapped with the &lt;code&gt;StatusDetail&lt;/code&gt; XML tag, and the resulting
+     * text must be valid XML or a &lt;code&gt;ParsingException&lt;/code&gt; will be thrown.
+     * 
+     * @param encoded a non-null &lt;code&gt;String&lt;/code&gt; that encodes the status detail
+     * 
+     * @throws ParsingException if the encoded text is invalid XML
+     */
+<span class="nc" id="L122">    public StatusDetail(String encoded) throws ParsingException {</span>
+<span class="nc" id="L123">        detailText = &quot;&lt;StatusDetail&gt;\n&quot; + encoded + &quot;\n&lt;/StatusDetail&gt;&quot;;</span>
+<span class="nc" id="L124">    }</span>
+
+
+    /**
+     * Private constructor that just sets the root node. This interface is provided publically
+     * through the getInstance method.
+     *
+     * @param root  the DOM root of StatusDetail element
+     */
+<span class="nc" id="L133">    private StatusDetail(Node root) {</span>
+        try{
+<span class="nc" id="L135">            detailText = nodeToText(root);</span>
+<span class="nc" id="L136">        } catch (ParsingException e) {</span>
+            // just ignore as this is not a must to convert this to text
+<span class="nc" id="L138">        }</span>
+<span class="nc" id="L139">    }</span>
+
+    /**
+     * Private helper routine that converts text into a node
+     * 
+     * @param encoded
+     * @return
+     * @throws ParsingException
+     */
+    private Node textToNode(String encoded) throws ParsingException {
+        try {
+<span class="nc" id="L150">            String text = &quot;&lt;?xml version=\&quot;1.0\&quot;?&gt;\n&quot;;</span>
+<span class="nc" id="L151">            byte[] bytes = (text + encoded).getBytes();</span>
+<span class="nc" id="L152">            DocumentBuilderFactory documentBuilderFactory = Utils.getSecuredDocumentBuilderFactory();</span>
+<span class="nc" id="L153">            DocumentBuilder db = documentBuilderFactory.newDocumentBuilder();</span>
+<span class="nc" id="L154">            Document doc = db.parse(new ByteArrayInputStream(bytes));</span>
+<span class="nc" id="L155">            return doc.getDocumentElement();</span>
+<span class="nc" id="L156">        } catch (ParserConfigurationException | SAXException | IOException e) {</span>
+<span class="nc" id="L157">            throw new ParsingException(&quot;invalid XML for status detail&quot;, e);</span>
+        }
+    }
+
+    /**
+     * Private helper routine that converts text into a node
+     * 
+     * @param node
+     * @return
+     * @throws ParsingException
+     */
+    private String nodeToText(Node node) throws ParsingException {
+
+<span class="nc" id="L170">        StringWriter sw = new StringWriter();</span>
+        try {
+<span class="nc" id="L172">            TransformerFactory factory = TransformerFactory.newInstance();</span>
+<span class="nc" id="L173">            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);</span>
+<span class="nc" id="L174">            Transformer transformer = factory.newTransformer();</span>
+<span class="nc" id="L175">            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, &quot;yes&quot;);</span>
+<span class="nc" id="L176">            transformer.setOutputProperty(OutputKeys.INDENT, &quot;yes&quot;);</span>
+<span class="nc" id="L177">            transformer.transform(new DOMSource(node), new StreamResult(sw));</span>
+<span class="nc" id="L178">        } catch (TransformerException te) {</span>
+<span class="nc" id="L179">            throw new ParsingException(&quot;invalid XML for status detail&quot;);</span>
+<span class="nc" id="L180">        }</span>
+<span class="nc" id="L181">        return sw.toString();</span>
+    }
+
+    /**
+     * Creates an instance of a &lt;code&gt;StatusDetail&lt;/code&gt; object based on the given DOM root node.
+     * The node must be a valid StatusDetailType root, or else a &lt;code&gt;ParsingException&lt;/code&gt; is
+     * thrown.
+     * 
+     * @param root the DOM root of the StatusDetailType XML type
+     *
+     * @return a new &lt;code&gt;StatusDetail&lt;/code&gt; object
+     * 
+     * @throws ParsingException if the root node is invalid
+     */
+    public static StatusDetail getInstance(Node root) throws ParsingException {
+        // check that it's really a StatusDetailType root
+<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (!DOMHelper.getLocalName(root).equals(&quot;StatusDetail&quot;)){</span>
+<span class="nc" id="L198">            throw new ParsingException(&quot;not a StatusDetail node&quot;);</span>
+        }
+<span class="nc" id="L200">        return new StatusDetail(root);</span>
+    }
+
+
+    /**
+     * Gets List of &lt;code&gt;MissingAttributeDetail&lt;/code&gt; elements
+     *
+     * @return  a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;MissingAttributeDetail&lt;/code&gt; 
+     */
+    public List&lt;MissingAttributeDetail&gt; getMissingAttributeDetails() {
+<span class="nc" id="L210">        return missingAttributeDetails;</span>
+    }
+
+    /**
+     * Returns the text-encoded version of this data, if possible. If the &lt;code&gt;String&lt;/code&gt; form
+     * constructor was used, this will just be the original text wrapped with the StatusData tag. If
+     * the &lt;code&gt;List&lt;/code&gt; form constructor was used, it will be the encoded attribute data. If
+     * this was created using the &lt;code&gt;getInstance&lt;/code&gt; method, then &lt;code&gt;getEncoded&lt;/code&gt; will
+     * throw an exception.
+     * 
+     * @return the encoded form of this data
+     * 
+     * @throws IllegalStateException if this object was created using the &lt;code&gt;getInstance&lt;/code&gt;
+     *             method
+     */
+    public String getEncoded() throws IllegalStateException {
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">        if (detailText == null){</span>
+<span class="nc" id="L227">            throw new IllegalStateException(&quot;no encoded form available&quot;);</span>
+        }
+<span class="fc" id="L229">        return detailText;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

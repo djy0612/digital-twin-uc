@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConditionSetFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">ConditionSetFunction.java</span></div><h1>ConditionSetFunction.java</h1><pre class="source lang-java linenums">/*
+ * @(#)ConditionSetFunction.java
+ *
+ * Copyright 2004-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.BagAttribute;
+import org.wso2.balana.attr.BooleanAttribute;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Specific &lt;code&gt;SetFunction&lt;/code&gt; class that supports all of the condition set functions:
+ * type-at-least-one-member-of, type-subset, and type-set-equals.
+ * 
+ * @since 1.2
+ * @author Seth Proctor
+ */
+public class ConditionSetFunction extends SetFunction {
+
+	// private identifiers for the supported functions
+	private static final int ID_BASE_AT_LEAST_ONE_MEMBER_OF = 0;
+	private static final int ID_BASE_SUBSET = 1;
+	private static final int ID_BASE_SET_EQUALS = 2;
+
+	// mapping of function name to its associated id and parameter type
+	private static HashMap&lt;String, Integer&gt; idMap;
+	private static HashMap&lt;String, String&gt; typeMap;
+
+	// the actual supported ids
+	private static Set&lt;String&gt; supportedIds;
+
+	/**
+	 * Static initializer that sets up the paramater info for all the supported functions.
+	 */
+	static {
+<span class="fc" id="L76">		idMap = new HashMap&lt;String, Integer&gt;();</span>
+<span class="fc" id="L77">		typeMap = new HashMap&lt;String, String&gt;();</span>
+
+<span class="fc bfc" id="L79" title="All 2 branches covered.">		for (int i = 0; i &lt; baseTypes.length; i++) {</span>
+<span class="fc" id="L80">			String baseName = FUNCTION_NS + simpleTypes[i];</span>
+<span class="fc" id="L81">			String baseType = baseTypes[i];</span>
+
+<span class="fc" id="L83">			idMap.put(baseName + NAME_BASE_AT_LEAST_ONE_MEMBER_OF,</span>
+<span class="fc" id="L84">					Integer.valueOf(ID_BASE_AT_LEAST_ONE_MEMBER_OF));</span>
+<span class="fc" id="L85">			idMap.put(baseName + NAME_BASE_SUBSET, Integer.valueOf(ID_BASE_SUBSET));</span>
+<span class="fc" id="L86">			idMap.put(baseName + NAME_BASE_SET_EQUALS, Integer.valueOf(ID_BASE_SET_EQUALS));</span>
+
+<span class="fc" id="L88">			typeMap.put(baseName + NAME_BASE_AT_LEAST_ONE_MEMBER_OF, baseType);</span>
+<span class="fc" id="L89">			typeMap.put(baseName + NAME_BASE_SUBSET, baseType);</span>
+<span class="fc" id="L90">			typeMap.put(baseName + NAME_BASE_SET_EQUALS, baseType);</span>
+		}
+
+<span class="fc bfc" id="L93" title="All 2 branches covered.">		for (int i = 0; i &lt; baseTypes2.length; i++) {</span>
+<span class="fc" id="L94">			String baseName = FUNCTION_NS_2 + simpleTypes2[i];</span>
+<span class="fc" id="L95">			String baseType = baseTypes2[i];</span>
+
+<span class="fc" id="L97">			idMap.put(baseName + NAME_BASE_AT_LEAST_ONE_MEMBER_OF,</span>
+<span class="fc" id="L98">					Integer.valueOf(ID_BASE_AT_LEAST_ONE_MEMBER_OF));</span>
+<span class="fc" id="L99">			idMap.put(baseName + NAME_BASE_SUBSET, Integer.valueOf(ID_BASE_SUBSET));</span>
+<span class="fc" id="L100">			idMap.put(baseName + NAME_BASE_SET_EQUALS, Integer.valueOf(ID_BASE_SET_EQUALS));</span>
+
+<span class="fc" id="L102">			typeMap.put(baseName + NAME_BASE_AT_LEAST_ONE_MEMBER_OF, baseType);</span>
+<span class="fc" id="L103">			typeMap.put(baseName + NAME_BASE_SUBSET, baseType);</span>
+<span class="fc" id="L104">			typeMap.put(baseName + NAME_BASE_SET_EQUALS, baseType);</span>
+		}
+
+<span class="fc" id="L107">		supportedIds = Collections.unmodifiableSet(new HashSet&lt;String&gt;(idMap.keySet()));</span>
+
+<span class="fc" id="L109">		idMap.put(NAME_BASE_AT_LEAST_ONE_MEMBER_OF, Integer.valueOf(ID_BASE_AT_LEAST_ONE_MEMBER_OF));</span>
+<span class="fc" id="L110">		idMap.put(NAME_BASE_SUBSET, Integer.valueOf(ID_BASE_SUBSET));</span>
+<span class="fc" id="L111">		idMap.put(NAME_BASE_SET_EQUALS, Integer.valueOf(ID_BASE_SET_EQUALS));</span>
+<span class="fc" id="L112">	};</span>
+
+	/**
+	 * Constructor that is used to create one of the condition standard set functions. The name
+	 * supplied must be one of the standard XACML functions supported by this class, including the
+	 * full namespace, otherwise an exception is thrown. Look in &lt;code&gt;SetFunction&lt;/code&gt; for
+	 * details about the supported names.
+	 * 
+	 * @param functionName the name of the function to create
+	 * 
+	 * @throws IllegalArgumentException if the function is unknown
+	 */
+	public ConditionSetFunction(String functionName) {
+<span class="fc" id="L125">		super(functionName, getId(functionName), getArgumentType(functionName),</span>
+				BooleanAttribute.identifier, false);
+<span class="fc" id="L127">	}</span>
+
+	/**
+	 * Constructor that is used to create instances of condition set functions for new
+	 * (non-standard) datatypes. This is equivalent to using the &lt;code&gt;getInstance&lt;/code&gt; methods in
+	 * &lt;code&gt;SetFunction&lt;/code&gt; and is generally only used by the run-time configuration code.
+	 * 
+	 * @param functionName the name of the new function
+	 * @param datatype the full identifier for the supported datatype
+	 * @param functionType which kind of Set function, based on the &lt;code&gt;NAME_BASE_*&lt;/code&gt; fields
+	 */
+	public ConditionSetFunction(String functionName, String datatype, String functionType) {
+<span class="nc" id="L139">		super(functionName, getId(functionName), datatype, BooleanAttribute.identifier, false);</span>
+<span class="nc" id="L140">	}</span>
+
+	/**
+	 * Private helper that returns the internal identifier used for the given standard function.
+	 */
+	private static int getId(String functionName) {
+<span class="fc" id="L146">		Integer id = (Integer) (idMap.get(functionName));</span>
+
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">		if (id == null)</span>
+<span class="nc" id="L149">			throw new IllegalArgumentException(&quot;unknown set function &quot; + functionName);</span>
+
+<span class="fc" id="L151">		return id.intValue();</span>
+	}
+
+	/**
+	 * Private helper that returns the argument type for the given standard function. Note that this
+	 * doesn't check on the return value since the method always is called after getId, so we assume
+	 * that the function is present.
+	 */
+	private static String getArgumentType(String functionName) {
+<span class="fc" id="L160">		return (String) (typeMap.get(functionName));</span>
+	}
+
+	/**
+	 * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+	 * 
+	 * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+	 */
+	public static Set getSupportedIdentifiers() {
+<span class="fc" id="L169">		return supportedIds;</span>
+	}
+
+	/**
+	 * Evaluates the function, using the specified parameters.
+	 * 
+	 * @param inputs a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt; objects representing the
+	 *            arguments passed to the function
+	 * @param context an &lt;code&gt;EvaluationCtx&lt;/code&gt; so that the &lt;code&gt;Evaluatable&lt;/code&gt; objects can
+	 *            be evaluated
+	 * @return an &lt;code&gt;EvaluationResult&lt;/code&gt; representing the function's result
+	 */
+	public EvaluationResult evaluate(List inputs, EvaluationCtx context) {
+
+		// Evaluate the arguments
+<span class="fc" id="L184">		AttributeValue[] argValues = new AttributeValue[inputs.size()];</span>
+<span class="fc" id="L185">		EvaluationResult evalResult = evalArgs(inputs, context, argValues);</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		if (evalResult != null)</span>
+<span class="nc" id="L187">			return evalResult;</span>
+
+		// setup the two bags we'll be using
+<span class="fc" id="L190">		BagAttribute[] bags = new BagAttribute[2];</span>
+<span class="fc" id="L191">		bags[0] = (BagAttribute) (argValues[0]);</span>
+<span class="fc" id="L192">		bags[1] = (BagAttribute) (argValues[1]);</span>
+
+<span class="fc" id="L194">		AttributeValue result = null;</span>
+
+<span class="pc bpc" id="L196" title="1 of 4 branches missed.">		switch (getFunctionId()) {</span>
+		// *-at-least-one-member-of takes two bags of the same type and
+		// returns a boolean
+		case ID_BASE_AT_LEAST_ONE_MEMBER_OF:
+			// true if at least one element in the first argument is in the
+			// second argument (using the *-is-in semantics)
+
+<span class="fc" id="L203">			result = BooleanAttribute.getFalseInstance();</span>
+<span class="fc" id="L204">			Iterator it = bags[0].iterator();</span>
+
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">			while (it.hasNext()) {</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">				if (bags[1].contains((AttributeValue) (it.next()))) {</span>
+<span class="fc" id="L208">					result = BooleanAttribute.getTrueInstance();</span>
+<span class="fc" id="L209">					break;</span>
+				}
+			}
+
+			break;
+
+		// *-set-equals takes two bags of the same type and returns
+		// a boolean
+		case ID_BASE_SUBSET:
+			// returns true if the first argument is a subset of the second
+			// argument (ie, all the elements in the first bag appear in
+			// the second bag) ... ignore all duplicate values in both
+			// input bags
+
+<span class="fc" id="L223">			boolean subset = bags[1].containsAll(bags[0]);</span>
+<span class="fc" id="L224">			result = BooleanAttribute.getInstance(subset);</span>
+
+<span class="fc" id="L226">			break;</span>
+
+		// *-set-equals takes two bags of the same type and returns
+		// a boolean
+		case ID_BASE_SET_EQUALS:
+
+			// returns true if the two inputs contain the same elements
+			// discounting any duplicates in either input ... this is the same
+			// as applying the and function on the subset function with
+			// the two inputs, and then the two inputs reversed (ie, are the
+			// two inputs subsets of each other)
+
+<span class="pc bpc" id="L238" title="2 of 4 branches missed.">			boolean equals = (bags[1].containsAll(bags[0]) &amp;&amp; bags[0].containsAll(bags[1]));</span>
+<span class="fc" id="L239">			result = BooleanAttribute.getInstance(equals);</span>
+
+			break;
+		}
+
+<span class="fc" id="L244">		return new EvaluationResult(result);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

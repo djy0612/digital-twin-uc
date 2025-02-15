@@ -1,0 +1,993 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConfigurationStore.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana</a> &gt; <span class="el_source">ConfigurationStore.java</span></div><h1>ConfigurationStore.java</h1><pre class="source lang-java linenums">/*
+ * @(#)ConfigurationStore.java
+ *
+ * Copyright 2004-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.wso2.balana.attr.AttributeFactory;
+import org.wso2.balana.attr.AttributeFactoryProxy;
+import org.wso2.balana.attr.AttributeProxy;
+import org.wso2.balana.attr.BaseAttributeFactory;
+import org.wso2.balana.attr.StandardAttributeFactory;
+
+import org.wso2.balana.combine.BaseCombiningAlgFactory;
+import org.wso2.balana.combine.CombiningAlgFactory;
+import org.wso2.balana.combine.CombiningAlgFactoryProxy;
+import org.wso2.balana.combine.CombiningAlgorithm;
+import org.wso2.balana.combine.StandardCombiningAlgFactory;
+
+import org.wso2.balana.cond.BaseFunctionFactory;
+import org.wso2.balana.cond.BasicFunctionFactoryProxy;
+import org.wso2.balana.cond.Function;
+import org.wso2.balana.cond.FunctionProxy;
+import org.wso2.balana.cond.FunctionFactory;
+import org.wso2.balana.cond.FunctionFactoryProxy;
+import org.wso2.balana.cond.StandardFunctionFactory;
+
+import org.wso2.balana.cond.cluster.FunctionCluster;
+
+import org.wso2.balana.finder.AttributeFinder;
+import org.wso2.balana.finder.PolicyFinder;
+import org.wso2.balana.finder.ResourceFinder;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+
+import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.wso2.balana.utils.Utils;
+import org.xml.sax.SAXException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * This class supports run-time loading of configuration data. It loads the configurations from an
+ * XML file that conforms to the configuration schema. By design this class does not get used
+ * automatically, nor does it change the state of the system directly. A programmer must choose to
+ * support this mechanism in their program, and then must explicitly use loaded elements. This way,
+ * the programmer still has full control over their security model, but also has the convenience of
+ * re-using a common configuration mechanism. See
+ * http://sunxacml.sourceforge.net/schema/config-0.4.xsd for the valid schema.
+ * &lt;p&gt;
+ * Note that becuase this doesn't tie directly into the rest of the code, you are still free to
+ * design your own run-time configuration mechanisms. This is simply provided as a convenience, and
+ * so that all programmers can start from a common point.
+ * 
+ * @since 1.2
+ * @author Seth Proctor
+ */
+public class ConfigurationStore {
+
+    /**
+     * Property used to specify the configuration file.
+     */
+    public static final String PDP_CONFIG_PROPERTY = &quot;org.wso2.balana.PDPConfigFile&quot;;
+
+    // pdp elements
+    private PDPConfig defaultPDPConfig;
+    private HashMap pdpConfigMap;
+
+    // attribute factory elements
+    private AttributeFactoryProxy defaultAttributeFactoryProxy;
+    private HashMap attributeMap;
+
+    // combining algorithm factory elements
+    private CombiningAlgFactoryProxy defaultCombiningFactoryProxy;
+    private HashMap combiningMap;
+
+    // function factory elements
+    private FunctionFactoryProxy defaultFunctionFactoryProxy;
+    private HashMap functionMap;
+
+    // the classloader we'll use for loading classes
+    private ClassLoader loader;
+
+    // the logger we'll use for all messages
+<span class="fc" id="L141">    private static final Log logger = LogFactory.getLog(ConfigurationStore.class);</span>
+
+    /**
+     * Default constructor. This constructor uses the &lt;code&gt;PDP_CONFIG_PROPERTY&lt;/code&gt; property to
+     * load the configuration. If the property isn't set, if it names a file that can't be accessed,
+     * or if the file is invalid, then an exception is thrown.
+     * 
+     * @throws ParsingException if anything goes wrong during the parsing of the configuration file,
+     *             the class loading, or the factory and pdp setup
+     */
+<span class="nc" id="L151">    public ConfigurationStore() throws ParsingException {</span>
+<span class="nc" id="L152">        String configFile = System.getProperty(PDP_CONFIG_PROPERTY);</span>
+
+        // make sure that the right property was set
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (configFile == null) {</span>
+<span class="nc" id="L156">            logger.error(&quot;A property defining a config file was expected, &quot;</span>
+                    + &quot;but none was provided&quot;);
+
+<span class="nc" id="L159">            throw new ParsingException(&quot;Config property &quot; + PDP_CONFIG_PROPERTY</span>
+                    + &quot; needs to be set&quot;);
+        }
+
+        try {
+<span class="nc" id="L164">            setupConfig(new File(configFile));</span>
+<span class="nc" id="L165">        } catch (ParsingException pe) {</span>
+<span class="nc" id="L166">            logger.error(&quot;Runtime config file couldn't be loaded&quot;</span>
+                    + &quot; so no configurations will be available&quot;, pe);
+<span class="nc" id="L168">            throw pe;</span>
+<span class="nc" id="L169">        }</span>
+<span class="nc" id="L170">    }</span>
+
+    /**
+     * Constructor that explicitly specifies the configuration file to load. This is useful if your
+     * security model doesn't allow the use of properties, if you don't want to use a property to
+     * specify a configuration file, or if you want to use more then one configuration file. If the
+     * file can't be accessed, or if the file is invalid, then an exception is thrown.
+     * 
+     * @throws ParsingException if anything goes wrong during the parsing of the configuration file,
+     *             the class loading, or the factory and pdp setup
+     */
+<span class="fc" id="L181">    public ConfigurationStore(File configFile) throws ParsingException {</span>
+        try {
+<span class="fc" id="L183">            setupConfig(configFile);</span>
+<span class="nc" id="L184">        } catch (ParsingException pe) {</span>
+<span class="nc" id="L185">            logger.error(&quot;Runtime config file couldn't be loaded&quot;</span>
+                    + &quot; so no configurations will be available&quot;, pe);
+<span class="nc" id="L187">            throw pe;</span>
+<span class="fc" id="L188">        }</span>
+<span class="fc" id="L189">    }</span>
+
+    /**
+     * Private helper function used by both constructors to actually load the configuration data.
+     * This is the root of several private methods used to setup all the pdps and factories.
+     */
+    private void setupConfig(File configFile) throws ParsingException {
+<span class="fc" id="L196">        logger.info(&quot;Loading runtime configuration&quot;);</span>
+
+        // load our classloader
+<span class="fc" id="L199">        loader = getClass().getClassLoader();</span>
+
+        // get the root node from the configuration file
+<span class="fc" id="L202">        Node root = getRootNode(configFile);</span>
+
+        // initialize all the maps
+<span class="fc" id="L205">        pdpConfigMap = new HashMap();</span>
+<span class="fc" id="L206">        attributeMap = new HashMap();</span>
+<span class="fc" id="L207">        combiningMap = new HashMap();</span>
+<span class="fc" id="L208">        functionMap = new HashMap();</span>
+
+        // get the default names
+<span class="fc" id="L211">        NamedNodeMap attrs = root.getAttributes();</span>
+<span class="fc" id="L212">        String defaultPDP = attrs.getNamedItem(&quot;defaultPDP&quot;).getNodeValue();</span>
+<span class="fc" id="L213">        String defaultAF = getDefaultFactory(attrs, &quot;defaultAttributeFactory&quot;);</span>
+<span class="fc" id="L214">        String defaultCAF = getDefaultFactory(attrs, &quot;defaultCombiningAlgFactory&quot;);</span>
+<span class="fc" id="L215">        String defaultFF = getDefaultFactory(attrs, &quot;defaultFunctionFactory&quot;);</span>
+
+        // loop through all the root-level elements, for each one getting its
+        // name and then loading the right kind of element
+<span class="fc" id="L219">        NodeList children = root.getChildNodes();</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L221">            Node child = children.item(i);</span>
+<span class="fc" id="L222">            String childName = DOMHelper.getLocalName(child);</span>
+<span class="fc" id="L223">            String elementName = null;</span>
+
+            // get the element's name
+<span class="fc bfc" id="L226" title="All 2 branches covered.">            if (child.getNodeType() == Node.ELEMENT_NODE)</span>
+<span class="fc" id="L227">                elementName = child.getAttributes().getNamedItem(&quot;name&quot;).getNodeValue();</span>
+
+            // see if this is a pdp or a factory, and load accordingly,
+            // putting the new element into the respective map...make sure
+            // that we're never loading something with the same name twice
+<span class="fc bfc" id="L232" title="All 2 branches covered.">            if (childName.equals(&quot;pdp&quot;)) {</span>
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">                if (logger.isDebugEnabled())</span>
+<span class="fc" id="L234">                    logger.debug(&quot;Loading PDP: &quot; + elementName);</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">                if (pdpConfigMap.containsKey(elementName))</span>
+<span class="nc" id="L236">                    throw new ParsingException(&quot;more that one pdp with &quot; + &quot;name \&quot;&quot; + elementName</span>
+                            + &quot;\&quot;&quot;);
+<span class="fc" id="L238">                pdpConfigMap.put(elementName, parsePDPConfig(child));</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">            } else if (childName.equals(&quot;attributeFactory&quot;)) {</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">                if (logger.isDebugEnabled())</span>
+<span class="fc" id="L241">                    logger.debug(&quot;Loading AttributeFactory: &quot; + elementName);</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">                if (attributeMap.containsKey(elementName))</span>
+<span class="nc" id="L243">                    throw new ParsingException(&quot;more that one &quot; + &quot;attributeFactory with name &quot;</span>
+                            + elementName + &quot;\&quot;&quot;);
+<span class="fc" id="L245">                attributeMap.put(elementName, parseAttributeFactory(child));</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">            } else if (childName.equals(&quot;combiningAlgFactory&quot;)) {</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">                if (logger.isDebugEnabled())</span>
+<span class="fc" id="L248">                    logger.debug(&quot;Loading CombiningAlgFactory: &quot; + elementName);</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">                if (combiningMap.containsKey(elementName))</span>
+<span class="nc" id="L250">                    throw new ParsingException(&quot;more that one &quot; + &quot;combiningAlgFactory with &quot;</span>
+                            + &quot;name \&quot;&quot; + elementName + &quot;\&quot;&quot;);
+<span class="fc" id="L252">                combiningMap.put(elementName, parseCombiningAlgFactory(child));</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">            } else if (childName.equals(&quot;functionFactory&quot;)) {</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">                if (logger.isDebugEnabled())</span>
+<span class="fc" id="L255">                    logger.debug(&quot;Loading FunctionFactory: &quot; + elementName);</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">                if (functionMap.containsKey(elementName))</span>
+<span class="nc" id="L257">                    throw new ParsingException(&quot;more that one functionFactory&quot; + &quot; with name \&quot;&quot;</span>
+                            + elementName + &quot;\&quot;&quot;);
+<span class="fc" id="L259">                functionMap.put(elementName, parseFunctionFactory(child));</span>
+            }
+        }
+
+        // finally, extract the default elements
+<span class="fc" id="L264">        defaultPDPConfig = (PDPConfig) (pdpConfigMap.get(defaultPDP));</span>
+
+<span class="fc" id="L266">        defaultAttributeFactoryProxy = (AttributeFactoryProxy) (attributeMap.get(defaultAF));</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">        if (defaultAttributeFactoryProxy == null) {</span>
+            try {
+<span class="nc" id="L269">                defaultAttributeFactoryProxy = new AFProxy(AttributeFactory.getInstance(defaultAF));</span>
+<span class="nc" id="L270">            } catch (Exception e) {</span>
+<span class="nc" id="L271">                throw new ParsingException(&quot;Unknown AttributeFactory&quot;, e);</span>
+<span class="nc" id="L272">            }</span>
+        }
+
+<span class="fc" id="L275">        defaultCombiningFactoryProxy = (CombiningAlgFactoryProxy) (combiningMap.get(defaultCAF));</span>
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">        if (defaultCombiningFactoryProxy == null) {</span>
+            try {
+<span class="nc" id="L278">                defaultCombiningFactoryProxy = new CAFProxy(CombiningAlgFactory.getInstance(defaultCAF));</span>
+<span class="nc" id="L279">            } catch (Exception e) {</span>
+<span class="nc" id="L280">                throw new ParsingException(&quot;Unknown CombininAlgFactory&quot;, e);</span>
+<span class="nc" id="L281">            }</span>
+        }
+
+<span class="fc" id="L284">        defaultFunctionFactoryProxy = (FunctionFactoryProxy) (functionMap.get(defaultFF));</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">        if (defaultFunctionFactoryProxy == null) {</span>
+            try {
+<span class="nc" id="L287">                defaultFunctionFactoryProxy = FunctionFactory.getInstance(defaultFF);</span>
+<span class="nc" id="L288">            } catch (Exception e) {</span>
+<span class="nc" id="L289">                throw new ParsingException(&quot;Unknown FunctionFactory&quot;, e);</span>
+<span class="nc" id="L290">            }</span>
+        }
+<span class="fc" id="L292">    }</span>
+
+    /**
+     * Private helper that gets a default factory identifier, or fills in the default value if no
+     * identifier is provided.
+     */
+    private String getDefaultFactory(NamedNodeMap attrs, String factoryName) {
+<span class="fc" id="L299">        Node node = attrs.getNamedItem(factoryName);</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">        if (node != null)</span>
+<span class="fc" id="L301">            return node.getNodeValue();</span>
+        else
+<span class="nc" id="L303">            return XACMLConstants.XACML_1_0_IDENTIFIER;</span>
+    }
+
+    /**
+     * Private helper that parses the file and sets up the DOM tree.
+     */
+    private Node getRootNode(File configFile) throws ParsingException {
+<span class="fc" id="L310">        DocumentBuilderFactory dbFactory = Utils.getSecuredDocumentBuilderFactory();</span>
+
+<span class="fc" id="L312">        dbFactory.setIgnoringComments(true);</span>
+<span class="fc" id="L313">        dbFactory.setNamespaceAware(false);</span>
+<span class="fc" id="L314">        dbFactory.setValidating(false);</span>
+
+<span class="fc" id="L316">        DocumentBuilder db = null;</span>
+        try {
+<span class="fc" id="L318">            db = dbFactory.newDocumentBuilder();</span>
+<span class="nc" id="L319">        } catch (ParserConfigurationException pce) {</span>
+<span class="nc" id="L320">            throw new ParsingException(&quot;couldn't get a document builder&quot;, pce);</span>
+<span class="fc" id="L321">        }</span>
+
+<span class="fc" id="L323">        Document doc = null;</span>
+<span class="fc" id="L324">        InputStream stream = null;</span>
+        try {
+<span class="fc" id="L326">            stream = new FileInputStream(configFile);</span>
+<span class="fc" id="L327">            doc = db.parse(stream);</span>
+<span class="nc" id="L328">        } catch (IOException ioe) {</span>
+<span class="nc" id="L329">            throw new ParsingException(&quot;failed to load the file &quot;, ioe);</span>
+<span class="nc" id="L330">        } catch (SAXException saxe) {</span>
+<span class="nc" id="L331">            throw new ParsingException(&quot;error parsing the XML tree&quot;, saxe);</span>
+<span class="nc" id="L332">        } catch (IllegalArgumentException iae) {</span>
+<span class="nc" id="L333">            throw new ParsingException(&quot;no data to parse&quot;, iae);</span>
+        } finally {
+<span class="pc bpc" id="L335" title="3 of 4 branches missed.">            if(stream != null){</span>
+                try {
+<span class="pc" id="L337">                    stream.close();</span>
+<span class="nc" id="L338">                } catch (IOException e) {</span>
+<span class="nc" id="L339">                    logger.error(&quot;Error while closing input stream&quot;);</span>
+<span class="pc" id="L340">                }</span>
+            }
+<span class="nc" id="L342">        }</span>
+
+<span class="fc" id="L344">        Element root = doc.getDocumentElement();</span>
+
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">        if (!root.getTagName().equals(&quot;config&quot;))</span>
+<span class="nc" id="L347">            throw new ParsingException(&quot;unknown document type: &quot; + root.getTagName());</span>
+
+<span class="fc" id="L349">        return root;</span>
+    }
+
+    /**
+     * Private helper that handles the pdp elements.
+     */
+    private PDPConfig parsePDPConfig(Node root) throws ParsingException {
+<span class="fc" id="L356">        ArrayList attrModules = new ArrayList();</span>
+<span class="fc" id="L357">        HashSet policyModules = new HashSet();</span>
+<span class="fc" id="L358">        ArrayList rsrcModules = new ArrayList();</span>
+
+        // go through all elements of the pdp, loading the specified modules
+<span class="fc" id="L361">        NodeList children = root.getChildNodes();</span>
+<span class="fc bfc" id="L362" title="All 2 branches covered.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L363">            Node child = children.item(i);</span>
+<span class="fc" id="L364">            String name = DOMHelper.getLocalName(child);</span>
+
+<span class="fc bfc" id="L366" title="All 2 branches covered.">            if (name.equals(&quot;policyFinderModule&quot;)) {</span>
+<span class="fc" id="L367">                policyModules.add(loadClass(&quot;module&quot;, child));</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">            } else if (name.equals(&quot;attributeFinderModule&quot;)) {</span>
+<span class="fc" id="L369">                attrModules.add(loadClass(&quot;module&quot;, child));</span>
+<span class="pc bpc" id="L370" title="1 of 2 branches missed.">            } else if (name.equals(&quot;resourceFinderModule&quot;)) {</span>
+<span class="nc" id="L371">                rsrcModules.add(loadClass(&quot;module&quot;, child));</span>
+            }
+        }
+
+        // after loading the modules, use the collections to setup a
+        // PDPConfig based on this pdp element
+
+<span class="fc" id="L378">        AttributeFinder attrFinder = new AttributeFinder();</span>
+<span class="fc" id="L379">        attrFinder.setModules(attrModules);</span>
+
+<span class="fc" id="L381">        PolicyFinder policyFinder = new PolicyFinder();</span>
+<span class="fc" id="L382">        policyFinder.setModules(policyModules);</span>
+
+<span class="fc" id="L384">        ResourceFinder rsrcFinder = new ResourceFinder();</span>
+<span class="fc" id="L385">        rsrcFinder.setModules(rsrcModules);</span>
+
+<span class="fc" id="L387">        return new PDPConfig(attrFinder, policyFinder, rsrcFinder);</span>
+    }
+
+    /**
+     * Private helper that handles the attributeFactory elements.
+     */
+    private AttributeFactoryProxy parseAttributeFactory(Node root) throws ParsingException {
+<span class="fc" id="L394">        AttributeFactory factory = null;</span>
+
+        // check if we're starting with the standard factory setup
+<span class="pc bpc" id="L397" title="1 of 2 branches missed.">        if (useStandard(root, &quot;useStandardDatatypes&quot;)) {</span>
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">            if (logger.isDebugEnabled())</span>
+<span class="fc" id="L399">                logger.debug(&quot;Starting with standard Datatypes&quot;);</span>
+
+<span class="fc" id="L401">            factory = StandardAttributeFactory.getNewFactory();</span>
+        } else {
+<span class="nc" id="L403">            factory = new BaseAttributeFactory();</span>
+        }
+
+        // now look for all datatypes specified for this factory, adding
+        // them as we go
+<span class="fc" id="L408">        NodeList children = root.getChildNodes();</span>
+<span class="pc bpc" id="L409" title="1 of 2 branches missed.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="nc" id="L410">            Node child = children.item(i);</span>
+
+<span class="nc bnc" id="L412" title="All 2 branches missed.">            if (DOMHelper.getLocalName(child).equals(&quot;datatype&quot;)) {</span>
+                // a datatype is a class with an identifier
+<span class="nc" id="L414">                String identifier = child.getAttributes().getNamedItem(&quot;identifier&quot;).getNodeValue();</span>
+<span class="nc" id="L415">                AttributeProxy proxy = (AttributeProxy) (loadClass(&quot;datatype&quot;, child));</span>
+
+                try {
+<span class="nc" id="L418">                    factory.addDatatype(identifier, proxy);</span>
+<span class="nc" id="L419">                } catch (IllegalArgumentException iae) {</span>
+<span class="nc" id="L420">                    throw new ParsingException(&quot;duplicate datatype: &quot; + identifier, iae);</span>
+<span class="nc" id="L421">                }</span>
+            }
+        }
+
+<span class="fc" id="L425">        return new AFProxy(factory);</span>
+    }
+
+    /**
+     * Private helper that handles the combiningAlgFactory elements.
+     */
+    private CombiningAlgFactoryProxy parseCombiningAlgFactory(Node root) throws ParsingException {
+<span class="fc" id="L432">        CombiningAlgFactory factory = null;</span>
+
+        // check if we're starting with the standard factory setup
+<span class="pc bpc" id="L435" title="1 of 2 branches missed.">        if (useStandard(root, &quot;useStandardAlgorithms&quot;)) {</span>
+<span class="pc bpc" id="L436" title="1 of 2 branches missed.">            if (logger.isDebugEnabled())</span>
+<span class="fc" id="L437">                logger.debug(&quot;Starting with standard Combining Algorithms&quot;);</span>
+<span class="fc" id="L438">            factory = StandardCombiningAlgFactory.getNewFactory();</span>
+        } else {
+<span class="nc" id="L440">            factory = new BaseCombiningAlgFactory();</span>
+        }
+
+        // now look for all algorithms specified for this factory, adding
+        // them as we go
+<span class="fc" id="L445">        NodeList children = root.getChildNodes();</span>
+<span class="fc bfc" id="L446" title="All 2 branches covered.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L447">            Node child = children.item(i);</span>
+
+<span class="pc bpc" id="L449" title="1 of 2 branches missed.">            if (DOMHelper.getLocalName(child).equals(&quot;algorithm&quot;)) {</span>
+                // an algorithm is a simple class element
+<span class="nc" id="L451">                CombiningAlgorithm alg = (CombiningAlgorithm) (loadClass(&quot;algorithm&quot;, child));</span>
+                try {
+<span class="nc" id="L453">                    factory.addAlgorithm(alg);</span>
+<span class="nc" id="L454">                } catch (IllegalArgumentException iae) {</span>
+<span class="nc" id="L455">                    throw new ParsingException(&quot;duplicate combining &quot; + &quot;algorithm: &quot;</span>
+<span class="nc" id="L456">                            + alg.getIdentifier().toString(), iae);</span>
+<span class="nc" id="L457">                }</span>
+            }
+        }
+
+<span class="fc" id="L461">        return new CAFProxy(factory);</span>
+    }
+
+    /**
+     * Private helper that handles the functionFactory elements. This one is a little more complex
+     * than the other two factory helper methods, since it consists of three factories (target,
+     * condition, and general).
+     */
+    private FunctionFactoryProxy parseFunctionFactory(Node root) throws ParsingException {
+<span class="fc" id="L470">        FunctionFactoryProxy proxy = null;</span>
+<span class="fc" id="L471">        FunctionFactory generalFactory = null;</span>
+<span class="fc" id="L472">        FunctionFactory conditionFactory = null;</span>
+<span class="fc" id="L473">        FunctionFactory targetFactory = null;</span>
+
+        // check if we're starting with the standard factory setup, and
+        // make sure that the proxy is pre-configured
+<span class="pc bpc" id="L477" title="1 of 2 branches missed.">        if (useStandard(root, &quot;useStandardFunctions&quot;)) {</span>
+<span class="pc bpc" id="L478" title="1 of 2 branches missed.">            if (logger.isDebugEnabled())</span>
+<span class="fc" id="L479">                logger.debug(&quot;Starting with standard Functions&quot;);</span>
+
+<span class="fc" id="L481">            proxy = StandardFunctionFactory.getNewFactoryProxy();</span>
+
+<span class="fc" id="L483">            targetFactory = proxy.getTargetFactory();</span>
+<span class="fc" id="L484">            conditionFactory = proxy.getConditionFactory();</span>
+<span class="fc" id="L485">            generalFactory = proxy.getGeneralFactory();</span>
+        } else {
+<span class="nc" id="L487">            generalFactory = new BaseFunctionFactory();</span>
+<span class="nc" id="L488">            conditionFactory = new BaseFunctionFactory(generalFactory);</span>
+<span class="nc" id="L489">            targetFactory = new BaseFunctionFactory(conditionFactory);</span>
+
+        }
+
+        // go through and load the three sections, putting the loaded
+        // functions into the appropriate factory
+<span class="fc" id="L495">        NodeList children = root.getChildNodes();</span>
+<span class="pc bpc" id="L496" title="1 of 2 branches missed.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="nc" id="L497">            Node child = children.item(i);</span>
+<span class="nc" id="L498">            String name = DOMHelper.getLocalName(child);</span>
+
+<span class="nc bnc" id="L500" title="All 2 branches missed.">            if (name.equals(&quot;target&quot;)) {</span>
+<span class="nc bnc" id="L501" title="All 2 branches missed.">                if (logger.isDebugEnabled()) {</span>
+<span class="nc" id="L502">                    logger.debug(&quot;Loading [TARGET] functions&quot;);</span>
+                }
+<span class="nc" id="L504">                functionParserHelper(child, targetFactory);</span>
+<span class="nc bnc" id="L505" title="All 2 branches missed.">            } else if (name.equals(&quot;condition&quot;)) {</span>
+<span class="nc bnc" id="L506" title="All 2 branches missed.">                if (logger.isDebugEnabled()) {</span>
+<span class="nc" id="L507">                    logger.debug(&quot;Loading [CONDITION] functions&quot;);</span>
+                }
+<span class="nc" id="L509">                functionParserHelper(child, conditionFactory);</span>
+<span class="nc bnc" id="L510" title="All 2 branches missed.">            } else if (name.equals(&quot;general&quot;)) {</span>
+<span class="nc bnc" id="L511" title="All 2 branches missed.">                if (logger.isDebugEnabled()) {</span>
+<span class="nc" id="L512">                    logger.debug(&quot;Loading [GENERAL] functions&quot;);</span>
+                }
+<span class="nc" id="L514">                functionParserHelper(child, generalFactory);</span>
+            }
+        }
+
+<span class="fc" id="L518">        proxy = new BasicFunctionFactoryProxy(targetFactory, conditionFactory, generalFactory);</span>
+<span class="fc" id="L519">        FunctionFactory.setDefaultFactory(proxy);</span>
+
+<span class="fc" id="L521">        return proxy;</span>
+    }
+
+    /**
+     * Private helper used by the function factory code to load a specific target, condition, or
+     * general section.
+     */
+    private void functionParserHelper(Node root, FunctionFactory factory) throws ParsingException {
+        // go through all elements in the section
+<span class="nc" id="L530">        NodeList children = root.getChildNodes();</span>
+<span class="nc bnc" id="L531" title="All 2 branches missed.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="nc" id="L532">            Node child = children.item(i);</span>
+<span class="nc" id="L533">            String name = DOMHelper.getLocalName(child);</span>
+
+<span class="nc bnc" id="L535" title="All 2 branches missed.">            if (name.equals(&quot;function&quot;)) {</span>
+                // a function section is a simple class element
+<span class="nc" id="L537">                Function function = (Function) (loadClass(&quot;function&quot;, child));</span>
+                try {
+<span class="nc" id="L539">                    factory.addFunction(function);</span>
+<span class="nc" id="L540">                } catch (IllegalArgumentException iae) {</span>
+<span class="nc" id="L541">                    throw new ParsingException(&quot;duplicate function&quot;, iae);</span>
+<span class="nc" id="L542">                }</span>
+<span class="nc bnc" id="L543" title="All 2 branches missed.">            } else if (name.equals(&quot;abstractFunction&quot;)) {</span>
+                // an abstract function is a class with an identifier
+<span class="nc" id="L545">                URI identifier = null;</span>
+                try {
+<span class="nc" id="L547">                    identifier = new URI(child.getAttributes().getNamedItem(&quot;identifier&quot;)</span>
+<span class="nc" id="L548">                            .getNodeValue());</span>
+<span class="nc" id="L549">                } catch (URISyntaxException urise) {</span>
+<span class="nc" id="L550">                    throw new ParsingException(&quot;invalid function identifier&quot;, urise);</span>
+<span class="nc" id="L551">                }</span>
+
+<span class="nc" id="L553">                FunctionProxy proxy = (FunctionProxy) (loadClass(&quot;abstract function&quot;, child));</span>
+                try {
+<span class="nc" id="L555">                    factory.addAbstractFunction(proxy, identifier);</span>
+<span class="nc" id="L556">                } catch (IllegalArgumentException iae) {</span>
+<span class="nc" id="L557">                    throw new ParsingException(&quot;duplicate abstract function&quot;, iae);</span>
+<span class="nc" id="L558">                }</span>
+<span class="nc bnc" id="L559" title="All 2 branches missed.">            } else if (name.equals(&quot;functionCluster&quot;)) {</span>
+                // a cluster is a class that will give us a collection of
+                // functions that need to be added one by one into the factory
+<span class="nc" id="L562">                FunctionCluster cluster = (FunctionCluster) (loadClass(&quot;function cluster&quot;, child));</span>
+
+<span class="nc" id="L564">                Iterator it = cluster.getSupportedFunctions().iterator();</span>
+<span class="nc bnc" id="L565" title="All 2 branches missed.">                while (it.hasNext()) {</span>
+                    try {
+<span class="nc" id="L567">                        factory.addFunction((Function) (it.next()));</span>
+<span class="nc" id="L568">                    } catch (IllegalArgumentException iae) {</span>
+<span class="nc" id="L569">                        throw new ParsingException(&quot;duplicate function&quot;, iae);</span>
+<span class="nc" id="L570">                    }</span>
+                }
+            }
+        }
+<span class="nc" id="L574">    }</span>
+
+    /**
+     * Private helper that is used by all the code to load an instance of the given class...this
+     * assumes that the class is in the classpath, both for simplicity and for stronger security
+     */
+    private Object loadClass(String prefix, Node root) throws ParsingException {
+        // get the name of the class
+<span class="fc" id="L582">        String className = root.getAttributes().getNamedItem(&quot;class&quot;).getNodeValue();</span>
+
+<span class="pc bpc" id="L584" title="1 of 2 branches missed.">        if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L585">            logger.debug(&quot;Loading [ &quot; + prefix + &quot;: &quot; + className + &quot; ]&quot;);</span>
+        }
+
+        // load the given class using the local classloader
+<span class="fc" id="L589">        Class c = null;</span>
+        try {
+<span class="fc" id="L591">            c = loader.loadClass(className);</span>
+<span class="nc" id="L592">        } catch (ClassNotFoundException cnfe) {</span>
+<span class="nc" id="L593">            throw new ParsingException(&quot;couldn't load class &quot; + className, cnfe);</span>
+<span class="fc" id="L594">        }</span>
+<span class="fc" id="L595">        Object instance = null;</span>
+
+        // figure out if there are any parameters to the constructor
+<span class="fc bfc" id="L598" title="All 2 branches covered.">        if (!root.hasChildNodes()) {</span>
+            // we're using a null constructor, so this is easy
+            try {
+<span class="fc" id="L601">                instance = c.newInstance();</span>
+<span class="nc" id="L602">            } catch (InstantiationException ie) {</span>
+<span class="nc" id="L603">                throw new ParsingException(&quot;couldn't instantiate &quot; + className</span>
+                        + &quot; with empty constructor&quot;, ie);
+<span class="nc" id="L605">            } catch (IllegalAccessException iae) {</span>
+<span class="nc" id="L606">                throw new ParsingException(&quot;couldn't get access to instance &quot; + &quot;of &quot; + className,</span>
+                        iae);
+<span class="fc" id="L608">            }</span>
+        } else {
+            // parse the arguments to the constructor
+<span class="fc" id="L611">            Set&lt;Object&gt; args = null;</span>
+            try {
+<span class="fc" id="L613">                args = getArgs(root);</span>
+<span class="nc" id="L614">            } catch (IllegalArgumentException iae) {</span>
+<span class="nc" id="L615">                throw new ParsingException(&quot;illegal class arguments&quot;, iae);</span>
+<span class="fc" id="L616">            }</span>
+<span class="fc" id="L617">            int argLength = args.size();</span>
+
+            // next we need to see if there's a constructor that matches the
+            // arguments provided...this has to be done by hand since
+            // Class.getConstructor(Class []) doesn't handle sub-classes and
+            // generic types (for instance, a constructor taking List won't
+            // match a parameter list containing ArrayList)
+
+            // get the list of all available constructors
+<span class="fc" id="L626">            Constructor[] cons = c.getConstructors();</span>
+<span class="fc" id="L627">            Constructor constructor = null;</span>
+
+<span class="pc bpc" id="L629" title="1 of 2 branches missed.">            for (int i = 0; i &lt; cons.length; i++) {</span>
+                // get the parameters for this constructor
+<span class="fc" id="L631">                Class[] params = cons[i].getParameterTypes();</span>
+<span class="fc bfc" id="L632" title="All 2 branches covered.">                if (params.length == argLength) {</span>
+<span class="fc" id="L633">                    Iterator it = args.iterator();</span>
+<span class="fc" id="L634">                    int j = 0;</span>
+
+                    // loop through the parameters and see if each one is
+                    // assignable from the coresponding input argument
+<span class="fc bfc" id="L638" title="All 2 branches covered.">                    while (it.hasNext()) {</span>
+<span class="pc bpc" id="L639" title="1 of 2 branches missed.">                        if (!params[j].isAssignableFrom(it.next().getClass()))</span>
+<span class="nc" id="L640">                            break;</span>
+<span class="fc" id="L641">                        j++;</span>
+                    }
+
+                    // if we looked at all the parameters, then this
+                    // constructor matches the input
+<span class="pc bpc" id="L646" title="1 of 2 branches missed.">                    if (j == argLength)</span>
+<span class="fc" id="L647">                        constructor = cons[i];</span>
+                }
+
+                // if we've found a matching constructor then stop looping
+<span class="fc bfc" id="L651" title="All 2 branches covered.">                if (constructor != null)</span>
+<span class="fc" id="L652">                    break;</span>
+            }
+
+            // make sure we found a matching constructor
+<span class="pc bpc" id="L656" title="1 of 2 branches missed.">            if (constructor == null)</span>
+<span class="nc" id="L657">                throw new ParsingException(&quot;couldn't find a matching &quot; + &quot;constructor&quot;);</span>
+
+            // finally, instantiate the class
+            try {
+<span class="fc" id="L661">                instance = constructor.newInstance(args.toArray());</span>
+<span class="nc" id="L662">            } catch (InstantiationException ie) {</span>
+<span class="nc" id="L663">                throw new ParsingException(&quot;couldn't instantiate &quot; + className, ie);</span>
+<span class="nc" id="L664">            } catch (IllegalAccessException iae) {</span>
+<span class="nc" id="L665">                throw new ParsingException(&quot;couldn't get access to instance &quot; + &quot;of &quot; + className,</span>
+                        iae);
+<span class="nc" id="L667">            } catch (InvocationTargetException ite) {</span>
+<span class="nc" id="L668">                throw new ParsingException(&quot;couldn't create &quot; + className, ite);</span>
+<span class="fc" id="L669">            }</span>
+        }
+
+<span class="fc" id="L672">        return instance;</span>
+    }
+
+    /**
+     * Private helper that gets the constructor arguments for a given class. Right now this just
+     * supports String and Set, but it's trivial to add support for other types should that be
+     * needed. Right now, it's not clear that there's any need for other types.
+     */
+    private Set&lt;Object&gt; getArgs(Node root) {
+<span class="fc" id="L681">        Set&lt;Object&gt; args = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L682">        NodeList children = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L684" title="All 2 branches covered.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L685">            Node child = children.item(i);</span>
+<span class="fc" id="L686">            String name = DOMHelper.getLocalName(child);</span>
+
+<span class="fc bfc" id="L688" title="All 2 branches covered.">            if (child.getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="fc bfc" id="L689" title="All 2 branches covered.">                if (name.equals(&quot;string&quot;)) {</span>
+<span class="fc" id="L690">                    args.add(child.getFirstChild().getNodeValue());</span>
+<span class="pc bpc" id="L691" title="1 of 2 branches missed.">                } else if (name.equals(&quot;set&quot;)) {</span>
+<span class="fc" id="L692">                    args.add(getArgs(child));</span>
+                } else {
+<span class="nc" id="L694">                    throw new IllegalArgumentException(&quot;unkown arg type: &quot; + name);</span>
+                }
+            }
+        }
+
+<span class="fc" id="L699">        return args;</span>
+    }
+
+    /**
+     * Private helper used by the three factory routines to see if the given factory should be based
+     * on the standard setup
+     */
+    private boolean useStandard(Node node, String attributeName) {
+<span class="fc" id="L707">        NamedNodeMap map = node.getAttributes();</span>
+<span class="pc bpc" id="L708" title="1 of 2 branches missed.">        if (map == null)</span>
+<span class="nc" id="L709">            return true;</span>
+
+<span class="fc" id="L711">        Node attrNode = map.getNamedItem(attributeName);</span>
+<span class="pc bpc" id="L712" title="1 of 2 branches missed.">        if (attrNode == null)</span>
+<span class="nc" id="L713">            return true;</span>
+
+<span class="fc" id="L715">        return attrNode.getNodeValue().equals(&quot;true&quot;);</span>
+    }
+
+    /**
+     * Returns the default PDP configuration. If no default was specified then this throws an
+     * exception.
+     * 
+     * @return the default PDP configuration
+     * 
+     * @throws UnknownIdentifierException if there is no default config
+     */
+    public PDPConfig getDefaultPDPConfig() throws UnknownIdentifierException {
+<span class="pc bpc" id="L727" title="1 of 2 branches missed.">        if (defaultPDPConfig == null)</span>
+<span class="nc" id="L728">            throw new UnknownIdentifierException(&quot;no default available&quot;);</span>
+
+<span class="fc" id="L730">        return defaultPDPConfig;</span>
+    }
+
+    /**
+     * Returns the PDP configuration with the given name. If no such configuration exists then an
+     * exception is thrown.
+     * 
+     * @return the matching PDP configuation
+     * 
+     * @throws UnknownIdentifierException if the name is unknown
+     */
+    public PDPConfig getPDPConfig(String name) throws UnknownIdentifierException {
+<span class="nc" id="L742">        Object object = pdpConfigMap.get(name);</span>
+
+<span class="nc bnc" id="L744" title="All 2 branches missed.">        if (object == null)</span>
+<span class="nc" id="L745">            throw new UnknownIdentifierException(&quot;unknown pdp: &quot; + name);</span>
+
+<span class="nc" id="L747">        return (PDPConfig) object;</span>
+    }
+
+    /**
+     * Returns a set of identifiers representing each PDP configuration available.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public Set getSupportedPDPConfigurations() {
+<span class="nc" id="L756">        return Collections.unmodifiableSet(pdpConfigMap.keySet());</span>
+    }
+
+    /**
+     * Returns the default attribute factory.
+     * 
+     * @return the default attribute factory
+     */
+    public AttributeFactoryProxy getDefaultAttributeFactoryProxy() {
+<span class="fc" id="L765">        return defaultAttributeFactoryProxy;</span>
+    }
+
+    /**
+     * Returns the attribute factory with the given name. If no such factory exists then an
+     * exception is thrown.
+     * 
+     * @return the matching attribute factory
+     * 
+     * @throws UnknownIdentifierException if the name is unknown
+     */
+    public AttributeFactory getAttributeFactory(String name) throws UnknownIdentifierException {
+<span class="nc" id="L777">        Object object = attributeMap.get(name);</span>
+
+<span class="nc bnc" id="L779" title="All 2 branches missed.">        if (object == null)</span>
+<span class="nc" id="L780">            throw new UnknownIdentifierException(&quot;unknown factory: &quot; + name);</span>
+
+<span class="nc" id="L782">        return (AttributeFactory) object;</span>
+    }
+
+    /**
+     * Returns a set of identifiers representing each attribute factory available.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public Set getSupportedAttributeFactories() {
+<span class="nc" id="L791">        return Collections.unmodifiableSet(attributeMap.keySet());</span>
+    }
+
+    /**
+     * Registers all the supported factories with the given identifiers. If a given identifier is
+     * already in use, then that factory is not registered. This method is provided only as a
+     * convenience, and any registration that may involve identifier clashes should be done by
+     * registering each factory individually.
+     */
+    public void registerAttributeFactories() {
+<span class="nc" id="L801">        Iterator it = attributeMap.keySet().iterator();</span>
+
+<span class="nc bnc" id="L803" title="All 2 branches missed.">        while (it.hasNext()) {</span>
+<span class="nc" id="L804">            String id = (String) (it.next());</span>
+<span class="nc" id="L805">            AttributeFactory af = (AttributeFactory) (attributeMap.get(id));</span>
+
+            try {
+<span class="nc" id="L808">                AttributeFactory.registerFactory(id, new AFProxy(af));</span>
+<span class="nc" id="L809">            } catch (IllegalArgumentException iae) {</span>
+<span class="nc bnc" id="L810" title="All 2 branches missed.">                if (logger.isWarnEnabled()) {</span>
+<span class="nc" id="L811">                    logger.warn(&quot;Couldn't register AttributeFactory:&quot; + id + &quot; (already in use)&quot;,</span>
+                            iae);
+                }
+<span class="nc" id="L814">            }</span>
+<span class="nc" id="L815">        }</span>
+<span class="nc" id="L816">    }</span>
+
+    /**
+     * Returns the default combiningAlg factory.
+     * 
+     * @return the default combiningAlg factory
+     */
+    public CombiningAlgFactoryProxy getDefaultCombiningFactoryProxy() {
+<span class="fc" id="L824">        return defaultCombiningFactoryProxy;</span>
+    }
+
+    /**
+     * Returns the combiningAlg factory with the given name. If no such factory exists then an
+     * exception is thrown.
+     * 
+     * @return the matching combiningAlg factory
+     * 
+     * @throws UnknownIdentifierException if the name is unknown
+     */
+    public CombiningAlgFactory getCombiningAlgFactory(String name)
+            throws UnknownIdentifierException {
+<span class="nc" id="L837">        Object object = combiningMap.get(name);</span>
+
+<span class="nc bnc" id="L839" title="All 2 branches missed.">        if (object == null)</span>
+<span class="nc" id="L840">            throw new UnknownIdentifierException(&quot;unknown factory: &quot; + name);</span>
+
+<span class="nc" id="L842">        return (CombiningAlgFactory) object;</span>
+    }
+
+    /**
+     * Returns a set of identifiers representing each combiningAlg factory available.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public Set getSupportedCombiningAlgFactories() {
+<span class="nc" id="L851">        return Collections.unmodifiableSet(combiningMap.keySet());</span>
+    }
+
+    /**
+     * Registers all the supported factories with the given identifiers. If a given identifier is
+     * already in use, then that factory is not registered. This method is provided only as a
+     * convenience, and any registration that may involve identifier clashes should be done by
+     * registering each factory individually.
+     */
+    public void registerCombiningAlgFactories() {
+<span class="nc" id="L861">        Iterator it = combiningMap.keySet().iterator();</span>
+
+<span class="nc bnc" id="L863" title="All 2 branches missed.">        while (it.hasNext()) {</span>
+<span class="nc" id="L864">            String id = (String) (it.next());</span>
+<span class="nc" id="L865">            CombiningAlgFactory cf = (CombiningAlgFactory) (combiningMap.get(id));</span>
+
+            try {
+<span class="nc" id="L868">                CombiningAlgFactory.registerFactory(id, new CAFProxy(cf));</span>
+<span class="nc" id="L869">            } catch (IllegalArgumentException iae) {</span>
+<span class="nc bnc" id="L870" title="All 2 branches missed.">                if (logger.isWarnEnabled())</span>
+<span class="nc" id="L871">                    logger.warn(&quot;Couldn't register &quot; + &quot;CombiningAlgFactory: &quot; + id</span>
+                            + &quot; (already in use)&quot;, iae);
+<span class="nc" id="L873">            }</span>
+<span class="nc" id="L874">        }</span>
+<span class="nc" id="L875">    }</span>
+
+    /**
+     * Returns the default function factory proxy.
+     * 
+     * @return the default function factory proxy
+     */
+    public FunctionFactoryProxy getDefaultFunctionFactoryProxy() {
+<span class="fc" id="L883">        return defaultFunctionFactoryProxy;</span>
+    }
+
+    /**
+     * Returns the function factory proxy with the given name. If no such proxy exists then an
+     * exception is thrown.
+     * 
+     * @return the matching function factory proxy
+     * 
+     * @throws UnknownIdentifierException if the name is unknown
+     */
+    public FunctionFactoryProxy getFunctionFactoryProxy(String name)
+            throws UnknownIdentifierException {
+<span class="nc" id="L896">        Object object = functionMap.get(name);</span>
+
+<span class="nc bnc" id="L898" title="All 2 branches missed.">        if (object == null)</span>
+<span class="nc" id="L899">            throw new UnknownIdentifierException(&quot;unknown factory: &quot; + name);</span>
+
+<span class="nc" id="L901">        return (FunctionFactoryProxy) object;</span>
+    }
+
+    /**
+     * Returns a set of identifiers representing each function factory proxy available.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public Set getSupportedFunctionFactories() {
+<span class="nc" id="L910">        return Collections.unmodifiableSet(functionMap.keySet());</span>
+    }
+
+    /**
+     * Registers all the supported factories with the given identifiers. If a given identifier is
+     * already in use, then that factory is not registered. This method is provided only as a
+     * convenience, and any registration that may involve identifier clashes should be done by
+     * registering each factory individually.
+     */
+    public void registerFunctionFactories() {
+<span class="nc" id="L920">        Iterator it = functionMap.keySet().iterator();</span>
+
+<span class="nc bnc" id="L922" title="All 2 branches missed.">        while (it.hasNext()) {</span>
+<span class="nc" id="L923">            String id = (String) (it.next());</span>
+<span class="nc" id="L924">            FunctionFactoryProxy ffp = (FunctionFactoryProxy) (functionMap.get(id));</span>
+
+            try {
+<span class="nc" id="L927">                FunctionFactory.registerFactory(id, ffp);</span>
+<span class="nc" id="L928">            } catch (IllegalArgumentException iae) {</span>
+<span class="nc bnc" id="L929" title="All 2 branches missed.">                if (logger.isWarnEnabled()) {</span>
+<span class="nc" id="L930">                    logger.warn(&quot;Couldn't register FunctionFactory: &quot; + id + &quot; (already in use)&quot;,</span>
+                            iae);
+                }
+<span class="nc" id="L933">            }</span>
+<span class="nc" id="L934">        }</span>
+<span class="nc" id="L935">    }</span>
+
+    /**
+     * Uses the default configuration to re-set the default factories used by the system (attribute,
+     * combining algorithm, and function). If a default is not provided for a given factory, then
+     * that factory will not be set as the system's default.
+     */
+    public void useDefaultFactories() {
+<span class="nc bnc" id="L943" title="All 2 branches missed.">        if (logger.isDebugEnabled()) {</span>
+<span class="nc" id="L944">            logger.debug(&quot;Switching to default factories from configuration&quot;);</span>
+        }
+
+        // set the default attribute factory, if it exists here
+<span class="nc bnc" id="L948" title="All 2 branches missed.">        if (defaultAttributeFactoryProxy != null) {</span>
+<span class="nc" id="L949">            AttributeFactory.setDefaultFactory(defaultAttributeFactoryProxy);</span>
+        }
+
+        // set the default combining algorithm factory, if it exists here
+<span class="nc bnc" id="L953" title="All 2 branches missed.">        if (defaultCombiningFactoryProxy != null) {</span>
+<span class="nc" id="L954">            CombiningAlgFactory.setDefaultFactory(defaultCombiningFactoryProxy);</span>
+        }
+
+        // set the default function factories, if they exists here
+<span class="nc bnc" id="L958" title="All 2 branches missed.">        if (defaultFunctionFactoryProxy != null)</span>
+<span class="nc" id="L959">            FunctionFactory.setDefaultFactory(defaultFunctionFactoryProxy);</span>
+<span class="nc" id="L960">    }</span>
+
+    /**
+     *
+     */
+    static class AFProxy implements AttributeFactoryProxy {
+        private AttributeFactory factory;
+
+<span class="fc" id="L968">        public AFProxy(AttributeFactory factory) {</span>
+<span class="fc" id="L969">            this.factory = factory;</span>
+<span class="fc" id="L970">        }</span>
+
+        public AttributeFactory getFactory() {
+<span class="fc" id="L973">            return factory;</span>
+        }
+    }
+
+    /**
+     *
+     */
+    static class CAFProxy implements CombiningAlgFactoryProxy {
+        private CombiningAlgFactory factory;
+
+<span class="fc" id="L983">        public CAFProxy(CombiningAlgFactory factory) {</span>
+<span class="fc" id="L984">            this.factory = factory;</span>
+<span class="fc" id="L985">        }</span>
+
+        public CombiningAlgFactory getFactory() {
+<span class="fc" id="L988">            return factory;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

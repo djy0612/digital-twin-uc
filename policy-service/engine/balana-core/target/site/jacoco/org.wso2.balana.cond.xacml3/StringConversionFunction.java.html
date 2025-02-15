@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StringConversionFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond.xacml3</a> &gt; <span class="el_source">StringConversionFunction.java</span></div><h1>StringConversionFunction.java</h1><pre class="source lang-java linenums">/*
+ *  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  WSO2 Inc. licenses this file to you under the Apache License,
+ *  Version 2.0 (the &quot;License&quot;); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.wso2.balana.cond.xacml3;
+
+import org.wso2.balana.Balana;
+import org.wso2.balana.ParsingException;
+import org.wso2.balana.UnknownIdentifierException;
+import org.wso2.balana.attr.*;
+import org.wso2.balana.cond.Evaluatable;
+import org.wso2.balana.cond.EvaluationResult;
+import org.wso2.balana.cond.FunctionBase;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.Status;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
+
+/**
+ * String conversion functions that creates different data-types from String type
+ */
+public class StringConversionFunction extends FunctionBase{
+
+    /**
+     *  Standard identifier for the boolean-from-string function.
+     */
+    public static final String NAME_BOOLEAN_FROM_STRING = FUNCTION_NS_3 + &quot;boolean-from-string&quot;;
+
+    /**
+     *  Standard identifier for the integer-from-boolean function.
+     */
+    public static final String NAME_INTEGER_FROM_STRING = FUNCTION_NS_3 + &quot;integer-from-string&quot;;
+
+    /**
+     *  Standard identifier for the integer-from-boolean function.
+     */
+    public static final String NAME_DOUBLE_FROM_STRING = FUNCTION_NS_3 + &quot;double-from-string&quot;;
+
+    /**
+     *  Standard identifier for the integer-from-boolean function.
+     */
+    public static final String NAME_TIME_FROM_STRING = FUNCTION_NS_3 + &quot;time-from-string&quot;;
+
+    /**
+     *  Standard identifier for the integer-from-boolean function.
+     */
+    public static final String NAME_DATE_FROM_STRING = FUNCTION_NS_3 + &quot;date-from-string&quot;;
+
+    /**
+     *  Standard identifier for the integer-from-boolean function.
+     */
+    public static final String NAME_DATE_TIME_FROM_STRING = FUNCTION_NS_3 + &quot;dateTime-from-string&quot;;
+
+    /**
+     *  Standard identifier for the integer-from-boolean function.
+     */
+    public static final String NAME_URI_FROM_STRING = FUNCTION_NS_3 + &quot;anyURI-from-string&quot;;
+
+    /**
+     *  Standard identifier for the integer-from-boolean function.
+     */
+    public static final String NAME_DAYTIME_DURATION_FROM_STRING = FUNCTION_NS_3 + &quot;dayTimeDuration-from-string&quot;;
+
+    /**
+     *  Standard identifier for the integer-from-boolean function.
+     */
+    public static final String NAME_YEAR_MONTH_DURATION_FROM_STRING = FUNCTION_NS_3 + &quot;yearMonthDuration-from-string&quot;;
+
+    /**
+     *  Standard identifier for the integer-from-boolean function.
+     */
+    public static final String NAME_X500NAME_FROM_STRING = FUNCTION_NS_3 + &quot;x500Name-from-string&quot;;
+
+    /**
+     *  Standard identifier for the integer-from-boolean function.
+     */
+    public static final String NAME_RFC822_FROM_STRING = FUNCTION_NS_3 + &quot;rfc822Name-from-string&quot;;
+
+    /**
+     *  Standard identifier for the integer-from-boolean function.
+     */
+    public static final String NAME_IP_ADDRESS_FROM_STRING = FUNCTION_NS_3 + &quot;ipAddress-from-string&quot;;
+
+    /**
+     *  Standard identifier for the integer-from-boolean function.
+     */
+    public static final String NAME_DNS_FROM_STRING = FUNCTION_NS_3 + &quot;dnsName-from-string&quot;;
+
+
+    private static Map&lt;String, String&gt; dataTypeMap;
+
+    /**
+     * Static initializer sets up a map of standard function names to their associated return 
+     * data types
+     */
+    static {
+
+<span class="fc" id="L114">        dataTypeMap = new HashMap&lt;String, String&gt;();</span>
+
+<span class="fc" id="L116">        dataTypeMap.put(NAME_BOOLEAN_FROM_STRING, BooleanAttribute.identifier);</span>
+<span class="fc" id="L117">        dataTypeMap.put(NAME_INTEGER_FROM_STRING, IntegerAttribute.identifier);</span>
+<span class="fc" id="L118">        dataTypeMap.put(NAME_DOUBLE_FROM_STRING, DoubleAttribute.identifier);</span>
+<span class="fc" id="L119">        dataTypeMap.put(NAME_DATE_FROM_STRING, DateAttribute.identifier);</span>
+<span class="fc" id="L120">        dataTypeMap.put(NAME_TIME_FROM_STRING, TimeAttribute.identifier);</span>
+<span class="fc" id="L121">        dataTypeMap.put(NAME_DATE_TIME_FROM_STRING, DateTimeAttribute.identifier);</span>
+<span class="fc" id="L122">        dataTypeMap.put(NAME_DAYTIME_DURATION_FROM_STRING, DayTimeDurationAttribute.identifier);</span>
+<span class="fc" id="L123">        dataTypeMap.put(NAME_YEAR_MONTH_DURATION_FROM_STRING, YearMonthDurationAttribute.identifier);</span>
+<span class="fc" id="L124">        dataTypeMap.put(NAME_URI_FROM_STRING, AnyURIAttribute.identifier);</span>
+<span class="fc" id="L125">        dataTypeMap.put(NAME_X500NAME_FROM_STRING, X500NameAttribute.identifier);</span>
+<span class="fc" id="L126">        dataTypeMap.put(NAME_RFC822_FROM_STRING, RFC822NameAttribute.identifier);</span>
+<span class="fc" id="L127">        dataTypeMap.put(NAME_IP_ADDRESS_FROM_STRING, IPAddressAttribute.identifier);</span>
+<span class="fc" id="L128">        dataTypeMap.put(NAME_DNS_FROM_STRING, DNSNameAttribute.identifier);</span>
+<span class="fc" id="L129">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;EqualFunction&lt;/code&gt; object.
+     *
+     * @param functionName the standard XACML name of the function to be handled by this object,
+     *            including the full namespace
+     */
+    public StringConversionFunction(String functionName) {
+<span class="fc" id="L138">        super(functionName, 0, StringAttribute.identifier, false, 1, getReturnType(functionName), false);</span>
+<span class="fc" id="L139">    }</span>
+
+    /**
+     * Private helper that returns the return type used for the given standard function.
+     *
+     * @param functionName function name
+     * @return identifier of the Data type
+     */
+    private static String getReturnType(String functionName) {
+<span class="fc" id="L148">        return dataTypeMap.get(functionName);</span>
+    }
+
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+     *
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public static Set&lt;String&gt; getSupportedIdentifiers() {
+<span class="fc" id="L157">        return Collections.unmodifiableSet(dataTypeMap.keySet());</span>
+    }
+
+    public EvaluationResult evaluate(List&lt;Evaluatable&gt; inputs, EvaluationCtx context) {
+        // Evaluate the arguments
+<span class="fc" id="L162">        AttributeValue[] argValues = new AttributeValue[inputs.size()];</span>
+<span class="fc" id="L163">        EvaluationResult result = evalArgs(inputs, context, argValues);</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">        if (result != null){</span>
+<span class="nc" id="L165">            return result;</span>
+        }
+
+        try {
+<span class="fc" id="L169">            URI dataType = new URI (dataTypeMap.get(getFunctionName()));</span>
+<span class="fc" id="L170">            AttributeValue value = Balana.getInstance().getAttributeFactory().createValue(dataType, </span>
+<span class="fc" id="L171">                                                                            argValues[0].encode());</span>
+<span class="fc" id="L172">            return new EvaluationResult(value);</span>
+<span class="nc" id="L173">        } catch (URISyntaxException e) {</span>
+<span class="nc" id="L174">			List&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L175">			code.add(Status.STATUS_PROCESSING_ERROR);</span>
+<span class="nc" id="L176">			return new EvaluationResult(new Status(code, e.getMessage()));</span>
+<span class="fc" id="L177">        } catch (ParsingException e) {</span>
+<span class="fc" id="L178">			List&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L179">			code.add(Status.STATUS_PROCESSING_ERROR);</span>
+<span class="fc" id="L180">			return new EvaluationResult(new Status(code, e.getMessage()));</span>
+<span class="nc" id="L181">        } catch (UnknownIdentifierException e) {</span>
+<span class="nc" id="L182">			List&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L183">			code.add(Status.STATUS_PROCESSING_ERROR);</span>
+<span class="nc" id="L184">			return new EvaluationResult(new Status(code, e.getMessage()));</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InputParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.ctx</a> &gt; <span class="el_source">InputParser.java</span></div><h1>InputParser.java</h1><pre class="source lang-java linenums">/*
+ * @(#)InputParser.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.ctx;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.wso2.balana.ParsingException;
+
+import java.io.File;
+import java.io.InputStream;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import org.wso2.balana.utils.Utils;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+
+/**
+ * A package-private helper that provides a single static routine for parsing input based on the
+ * context schema.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class InputParser implements ErrorHandler {
+
+    // the schema file, if provided
+    private File schemaFile;
+
+    // the single reference, which is null unless a schema file is provided
+<span class="nc" id="L70">    private static InputParser ipReference = null;</span>
+
+    // the property string to set to turn on validation
+    private static final String CONTEXT_SCHEMA_PROPERTY = &quot;com.sun.xacml.ContextSchema&quot;;
+
+    // the logger we'll use for all messages
+<span class="nc" id="L76">    private static final Log logger = LogFactory.getLog(InputParser.class);</span>
+
+    // standard strings for setting validation
+
+    private static final String JAXP_SCHEMA_LANGUAGE = &quot;http://java.sun.com/xml/jaxp/properties/schemaLanguage&quot;;
+
+    private static final String W3C_XML_SCHEMA = &quot;http://www.w3.org/2001/XMLSchema&quot;;
+
+    private static final String JAXP_SCHEMA_SOURCE = &quot;http://java.sun.com/xml/jaxp/properties/schemaSource&quot;;
+
+    /**
+     * Look for the property that names the schema, and if it exists get the file name and create a
+     * single InputParser instance
+     */
+    static {
+<span class="nc" id="L91">        String schemaName = System.getProperty(CONTEXT_SCHEMA_PROPERTY);</span>
+
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (schemaName != null)</span>
+<span class="nc" id="L94">            ipReference = new InputParser(new File(schemaName));</span>
+<span class="nc" id="L95">    };</span>
+
+    /**
+     * Constructor that takes the schema file.
+     */
+<span class="nc" id="L100">    private InputParser(File schemaFile) {</span>
+<span class="nc" id="L101">        this.schemaFile = schemaFile;</span>
+<span class="nc" id="L102">    }</span>
+
+    /**
+     * Tries to Parse the given output as a Context document.
+     * 
+     * @param input the stream to parse
+     * @param rootTage either &quot;Request&quot; or &quot;Response&quot;
+     * 
+     * @return the root node of the request/response
+     * 
+     * @throws ParsingException if a problem occurred parsing the document
+     */
+    public static Node parseInput(InputStream input, String rootTag) throws ParsingException {
+<span class="nc" id="L115">        NodeList nodes = null;</span>
+
+        try {
+<span class="nc" id="L118">            DocumentBuilderFactory factory = Utils.getSecuredDocumentBuilderFactory();</span>
+<span class="nc" id="L119">            factory.setIgnoringComments(true);</span>
+
+<span class="nc" id="L121">            DocumentBuilder builder = null;</span>
+
+            // as of 1.2, we always are namespace aware
+<span class="nc" id="L124">            factory.setNamespaceAware(true);</span>
+
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            if (ipReference == null) {</span>
+                // we're not validating
+<span class="nc" id="L128">                factory.setValidating(false);</span>
+
+<span class="nc" id="L130">                builder = factory.newDocumentBuilder();</span>
+            } else {
+                // we are validating
+<span class="nc" id="L133">                factory.setValidating(true);</span>
+
+<span class="nc" id="L135">                factory.setAttribute(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);</span>
+<span class="nc" id="L136">                factory.setAttribute(JAXP_SCHEMA_SOURCE, ipReference.schemaFile);</span>
+
+<span class="nc" id="L138">                builder = factory.newDocumentBuilder();</span>
+<span class="nc" id="L139">                builder.setErrorHandler(ipReference);</span>
+            }
+
+<span class="nc" id="L142">            Document doc = builder.parse(input);</span>
+<span class="nc" id="L143">            nodes = doc.getElementsByTagName(rootTag);</span>
+<span class="nc" id="L144">        } catch (Exception e) {</span>
+<span class="nc" id="L145">            throw new ParsingException(&quot;Error tring to parse &quot; + rootTag + &quot;Type&quot;, e);</span>
+<span class="nc" id="L146">        }</span>
+
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        if (nodes.getLength() != 1)</span>
+<span class="nc" id="L149">            throw new ParsingException(&quot;Only one &quot; + rootTag + &quot;Type allowed &quot;</span>
+                    + &quot;at the root of a Context doc&quot;);
+
+<span class="nc" id="L152">        return nodes.item(0);</span>
+    }
+
+    /**
+     * Standard handler routine for the XML parsing.
+     * 
+     * @param exception information on what caused the problem
+     */
+    public void warning(SAXParseException exception) throws SAXException {
+<span class="nc bnc" id="L161" title="All 2 branches missed.">        if (logger.isWarnEnabled())</span>
+<span class="nc" id="L162">            logger.warn(&quot;Warning on line &quot; + exception.getLineNumber() + &quot;: &quot;</span>
+<span class="nc" id="L163">                    + exception.getMessage());</span>
+<span class="nc" id="L164">    }</span>
+
+    /**
+     * Standard handler routine for the XML parsing.
+     * 
+     * @param exception information on what caused the problem
+     * 
+     * @throws SAXException always to halt parsing on errors
+     */
+    public void error(SAXParseException exception) throws SAXException {
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (logger.isErrorEnabled())</span>
+<span class="nc" id="L175">            logger.error(&quot;Error on line &quot; + exception.getLineNumber() + &quot;: &quot;</span>
+<span class="nc" id="L176">                    + exception.getMessage());</span>
+
+<span class="nc" id="L178">        throw new SAXException(&quot;invalid context document&quot;);</span>
+    }
+
+    /**
+     * Standard handler routine for the XML parsing.
+     * 
+     * @param exception information on what caused the problem
+     * 
+     * @throws SAXException always to halt parsing on errors
+     */
+    public void fatalError(SAXParseException exception) throws SAXException {
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        if (logger.isErrorEnabled())</span>
+<span class="nc" id="L190">            logger.error(&quot;FatalError on line &quot; + exception.getLineNumber() + &quot;: &quot;</span>
+<span class="nc" id="L191">                    + exception.getMessage());</span>
+
+<span class="nc" id="L193">        throw new SAXException(&quot;invalid context document&quot;);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

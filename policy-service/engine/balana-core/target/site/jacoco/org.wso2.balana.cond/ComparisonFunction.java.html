@@ -1,0 +1,649 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ComparisonFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">ComparisonFunction.java</span></div><h1>ComparisonFunction.java</h1><pre class="source lang-java linenums">/*
+ * @(#)ComparisonFunction.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.BooleanAttribute;
+import org.wso2.balana.attr.DateAttribute;
+import org.wso2.balana.attr.DateTimeAttribute;
+import org.wso2.balana.attr.DoubleAttribute;
+import org.wso2.balana.attr.IntegerAttribute;
+import org.wso2.balana.attr.StringAttribute;
+import org.wso2.balana.attr.TimeAttribute;
+
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * A class that implements all of the standard comparison functions.
+ * 
+ * @since 1.0
+ * @author Steve Hanna
+ * @author Seth Proctor
+ */
+public class ComparisonFunction extends FunctionBase {
+
+	/**
+	 * Standard identifier for the integer-greater-than function.
+	 */
+	public static final String NAME_INTEGER_GREATER_THAN = FUNCTION_NS + &quot;integer-greater-than&quot;;
+
+	/**
+	 * Standard identifier for the integer-greater-than-or-equal function.
+	 */
+	public static final String NAME_INTEGER_GREATER_THAN_OR_EQUAL = FUNCTION_NS
+			+ &quot;integer-greater-than-or-equal&quot;;
+
+	/**
+	 * Standard identifier for the integer-less-than function.
+	 */
+	public static final String NAME_INTEGER_LESS_THAN = FUNCTION_NS + &quot;integer-less-than&quot;;
+
+	/**
+	 * Standard identifier for the integer-less-than-or-equal function.
+	 */
+	public static final String NAME_INTEGER_LESS_THAN_OR_EQUAL = FUNCTION_NS
+			+ &quot;integer-less-than-or-equal&quot;;
+
+	/**
+	 * Standard identifier for the double-greater-than function.
+	 */
+	public static final String NAME_DOUBLE_GREATER_THAN = FUNCTION_NS + &quot;double-greater-than&quot;;
+
+	/**
+	 * Standard identifier for the double-greater-than-or-equal function.
+	 */
+	public static final String NAME_DOUBLE_GREATER_THAN_OR_EQUAL = FUNCTION_NS
+			+ &quot;double-greater-than-or-equal&quot;;
+
+	/**
+	 * Standard identifier for the double-less-than function.
+	 */
+	public static final String NAME_DOUBLE_LESS_THAN = FUNCTION_NS + &quot;double-less-than&quot;;
+
+	/**
+	 * Standard identifier for the double-less-than-or-equal function.
+	 */
+	public static final String NAME_DOUBLE_LESS_THAN_OR_EQUAL = FUNCTION_NS
+			+ &quot;double-less-than-or-equal&quot;;
+
+	/**
+	 * Standard identifier for the string-greater-than function.
+	 */
+	public static final String NAME_STRING_GREATER_THAN = FUNCTION_NS + &quot;string-greater-than&quot;;
+
+	/**
+	 * Standard identifier for the string-greater-than-or-equal function.
+	 */
+	public static final String NAME_STRING_GREATER_THAN_OR_EQUAL = FUNCTION_NS
+			+ &quot;string-greater-than-or-equal&quot;;
+
+	/**
+	 * Standard identifier for the string-less-than function.
+	 */
+	public static final String NAME_STRING_LESS_THAN = FUNCTION_NS + &quot;string-less-than&quot;;
+
+	/**
+	 * Standard identifier for the string-less-than-or-equal function.
+	 */
+	public static final String NAME_STRING_LESS_THAN_OR_EQUAL = FUNCTION_NS
+			+ &quot;string-less-than-or-equal&quot;;
+
+	/**
+	 * Standard identifier for the time-greater-than function.
+	 */
+	public static final String NAME_TIME_GREATER_THAN = FUNCTION_NS + &quot;time-greater-than&quot;;
+
+	/**
+	 * Standard identifier for the time-greater-than-or-equal function.
+	 */
+	public static final String NAME_TIME_GREATER_THAN_OR_EQUAL = FUNCTION_NS
+			+ &quot;time-greater-than-or-equal&quot;;
+
+	/**
+	 * Standard identifier for the time-less-than function.
+	 */
+	public static final String NAME_TIME_LESS_THAN = FUNCTION_NS + &quot;time-less-than&quot;;
+
+	/**
+	 * Standard identifier for the time-less-than-or-equal function.
+	 */
+	public static final String NAME_TIME_LESS_THAN_OR_EQUAL = FUNCTION_NS
+			+ &quot;time-less-than-or-equal&quot;;
+
+	/**
+	 * Standard identifier for the dateTime-greater-than function.
+	 */
+	public static final String NAME_DATETIME_GREATER_THAN = FUNCTION_NS + &quot;dateTime-greater-than&quot;;
+
+	/**
+	 * Standard identifier for the dateTime-greater-than-or-equal function.
+	 */
+	public static final String NAME_DATETIME_GREATER_THAN_OR_EQUAL = FUNCTION_NS
+			+ &quot;dateTime-greater-than-or-equal&quot;;
+
+	/**
+	 * Standard identifier for the dateTime-less-than function.
+	 */
+	public static final String NAME_DATETIME_LESS_THAN = FUNCTION_NS + &quot;dateTime-less-than&quot;;
+
+	/**
+	 * Standard identifier for the dateTime-less-than-or-equal function.
+	 */
+	public static final String NAME_DATETIME_LESS_THAN_OR_EQUAL = FUNCTION_NS
+			+ &quot;dateTime-less-than-or-equal&quot;;
+
+	/**
+	 * Standard identifier for the date-greater-than function.
+	 */
+	public static final String NAME_DATE_GREATER_THAN = FUNCTION_NS + &quot;date-greater-than&quot;;
+
+	/**
+	 * Standard identifier for the date-greater-than-or-equal function.
+	 */
+	public static final String NAME_DATE_GREATER_THAN_OR_EQUAL = FUNCTION_NS
+			+ &quot;date-greater-than-or-equal&quot;;
+
+	/**
+	 * Standard identifier for the date-less-than function.
+	 */
+	public static final String NAME_DATE_LESS_THAN = FUNCTION_NS + &quot;date-less-than&quot;;
+
+	/**
+	 * Standard identifier for the date-less-than-or-equal function.
+	 */
+	public static final String NAME_DATE_LESS_THAN_OR_EQUAL = FUNCTION_NS
+			+ &quot;date-less-than-or-equal&quot;;
+
+	// private identifiers for the supported functions
+	private static final int ID_INTEGER_GREATER_THAN = 0;
+	private static final int ID_INTEGER_GREATER_THAN_OR_EQUAL = 1;
+	private static final int ID_INTEGER_LESS_THAN = 2;
+	private static final int ID_INTEGER_LESS_THAN_OR_EQUAL = 3;
+	private static final int ID_DOUBLE_GREATER_THAN = 4;
+	private static final int ID_DOUBLE_GREATER_THAN_OR_EQUAL = 5;
+	private static final int ID_DOUBLE_LESS_THAN = 6;
+	private static final int ID_DOUBLE_LESS_THAN_OR_EQUAL = 7;
+	private static final int ID_STRING_GREATER_THAN = 8;
+	private static final int ID_STRING_GREATER_THAN_OR_EQUAL = 9;
+	private static final int ID_STRING_LESS_THAN = 10;
+	private static final int ID_STRING_LESS_THAN_OR_EQUAL = 11;
+	private static final int ID_TIME_GREATER_THAN = 12;
+	private static final int ID_TIME_GREATER_THAN_OR_EQUAL = 13;
+	private static final int ID_TIME_LESS_THAN = 14;
+	private static final int ID_TIME_LESS_THAN_OR_EQUAL = 15;
+	private static final int ID_DATE_GREATER_THAN = 16;
+	private static final int ID_DATE_GREATER_THAN_OR_EQUAL = 17;
+	private static final int ID_DATE_LESS_THAN = 18;
+	private static final int ID_DATE_LESS_THAN_OR_EQUAL = 19;
+	private static final int ID_DATETIME_GREATER_THAN = 20;
+	private static final int ID_DATETIME_GREATER_THAN_OR_EQUAL = 21;
+	private static final int ID_DATETIME_LESS_THAN = 22;
+	private static final int ID_DATETIME_LESS_THAN_OR_EQUAL = 23;
+
+	// mappings from name to private identifier and argument datatype
+	private static HashMap&lt;String, Integer&gt; idMap;
+	private static HashMap&lt;String, String&gt; typeMap;
+
+	/**
+	 * Static initializer to setup the two maps.
+	 */
+	static {
+<span class="fc" id="L230">		idMap = new HashMap&lt;String, Integer&gt;();</span>
+
+<span class="fc" id="L232">		idMap.put(NAME_INTEGER_GREATER_THAN, Integer.valueOf(ID_INTEGER_GREATER_THAN));</span>
+<span class="fc" id="L233">		idMap.put(NAME_INTEGER_GREATER_THAN_OR_EQUAL,</span>
+<span class="fc" id="L234">				Integer.valueOf(ID_INTEGER_GREATER_THAN_OR_EQUAL));</span>
+<span class="fc" id="L235">		idMap.put(NAME_INTEGER_LESS_THAN, Integer.valueOf(ID_INTEGER_LESS_THAN));</span>
+<span class="fc" id="L236">		idMap.put(NAME_INTEGER_LESS_THAN_OR_EQUAL, Integer.valueOf(ID_INTEGER_LESS_THAN_OR_EQUAL));</span>
+<span class="fc" id="L237">		idMap.put(NAME_DOUBLE_GREATER_THAN, Integer.valueOf(ID_DOUBLE_GREATER_THAN));</span>
+<span class="fc" id="L238">		idMap.put(NAME_DOUBLE_GREATER_THAN_OR_EQUAL,</span>
+<span class="fc" id="L239">				Integer.valueOf(ID_DOUBLE_GREATER_THAN_OR_EQUAL));</span>
+<span class="fc" id="L240">		idMap.put(NAME_DOUBLE_LESS_THAN, Integer.valueOf(ID_DOUBLE_LESS_THAN));</span>
+<span class="fc" id="L241">		idMap.put(NAME_DOUBLE_LESS_THAN_OR_EQUAL, Integer.valueOf(ID_DOUBLE_LESS_THAN_OR_EQUAL));</span>
+<span class="fc" id="L242">		idMap.put(NAME_STRING_GREATER_THAN, Integer.valueOf(ID_STRING_GREATER_THAN));</span>
+<span class="fc" id="L243">		idMap.put(NAME_STRING_GREATER_THAN_OR_EQUAL,</span>
+<span class="fc" id="L244">				Integer.valueOf(ID_STRING_GREATER_THAN_OR_EQUAL));</span>
+<span class="fc" id="L245">		idMap.put(NAME_STRING_LESS_THAN, Integer.valueOf(ID_STRING_LESS_THAN));</span>
+<span class="fc" id="L246">		idMap.put(NAME_STRING_LESS_THAN_OR_EQUAL, Integer.valueOf(ID_STRING_LESS_THAN_OR_EQUAL));</span>
+<span class="fc" id="L247">		idMap.put(NAME_TIME_GREATER_THAN, Integer.valueOf(ID_TIME_GREATER_THAN));</span>
+<span class="fc" id="L248">		idMap.put(NAME_TIME_GREATER_THAN_OR_EQUAL, Integer.valueOf(ID_TIME_GREATER_THAN_OR_EQUAL));</span>
+<span class="fc" id="L249">		idMap.put(NAME_TIME_LESS_THAN, Integer.valueOf(ID_TIME_LESS_THAN));</span>
+<span class="fc" id="L250">		idMap.put(NAME_TIME_LESS_THAN_OR_EQUAL, Integer.valueOf(ID_TIME_LESS_THAN_OR_EQUAL));</span>
+<span class="fc" id="L251">		idMap.put(NAME_DATE_GREATER_THAN, Integer.valueOf(ID_DATE_GREATER_THAN));</span>
+<span class="fc" id="L252">		idMap.put(NAME_DATE_GREATER_THAN_OR_EQUAL, Integer.valueOf(ID_DATE_GREATER_THAN_OR_EQUAL));</span>
+<span class="fc" id="L253">		idMap.put(NAME_DATE_LESS_THAN, Integer.valueOf(ID_DATE_LESS_THAN));</span>
+<span class="fc" id="L254">		idMap.put(NAME_DATE_LESS_THAN_OR_EQUAL, Integer.valueOf(ID_DATE_LESS_THAN_OR_EQUAL));</span>
+<span class="fc" id="L255">		idMap.put(NAME_DATETIME_GREATER_THAN, Integer.valueOf(ID_DATETIME_GREATER_THAN));</span>
+<span class="fc" id="L256">		idMap.put(NAME_DATETIME_GREATER_THAN_OR_EQUAL,</span>
+<span class="fc" id="L257">				Integer.valueOf(ID_DATETIME_GREATER_THAN_OR_EQUAL));</span>
+<span class="fc" id="L258">		idMap.put(NAME_DATETIME_LESS_THAN, Integer.valueOf(ID_DATETIME_LESS_THAN));</span>
+<span class="fc" id="L259">		idMap.put(NAME_DATETIME_LESS_THAN_OR_EQUAL, Integer.valueOf(ID_DATETIME_LESS_THAN_OR_EQUAL));</span>
+
+<span class="fc" id="L261">		typeMap = new HashMap&lt;String, String&gt;();</span>
+
+<span class="fc" id="L263">		typeMap.put(NAME_INTEGER_GREATER_THAN, IntegerAttribute.identifier);</span>
+<span class="fc" id="L264">		typeMap.put(NAME_INTEGER_GREATER_THAN_OR_EQUAL, IntegerAttribute.identifier);</span>
+<span class="fc" id="L265">		typeMap.put(NAME_INTEGER_LESS_THAN, IntegerAttribute.identifier);</span>
+<span class="fc" id="L266">		typeMap.put(NAME_INTEGER_LESS_THAN_OR_EQUAL, IntegerAttribute.identifier);</span>
+<span class="fc" id="L267">		typeMap.put(NAME_DOUBLE_GREATER_THAN, DoubleAttribute.identifier);</span>
+<span class="fc" id="L268">		typeMap.put(NAME_DOUBLE_GREATER_THAN_OR_EQUAL, DoubleAttribute.identifier);</span>
+<span class="fc" id="L269">		typeMap.put(NAME_DOUBLE_LESS_THAN, DoubleAttribute.identifier);</span>
+<span class="fc" id="L270">		typeMap.put(NAME_DOUBLE_LESS_THAN_OR_EQUAL, DoubleAttribute.identifier);</span>
+<span class="fc" id="L271">		typeMap.put(NAME_STRING_GREATER_THAN, StringAttribute.identifier);</span>
+<span class="fc" id="L272">		typeMap.put(NAME_STRING_GREATER_THAN_OR_EQUAL, StringAttribute.identifier);</span>
+<span class="fc" id="L273">		typeMap.put(NAME_STRING_LESS_THAN, StringAttribute.identifier);</span>
+<span class="fc" id="L274">		typeMap.put(NAME_STRING_LESS_THAN_OR_EQUAL, StringAttribute.identifier);</span>
+<span class="fc" id="L275">		typeMap.put(NAME_TIME_GREATER_THAN, TimeAttribute.identifier);</span>
+<span class="fc" id="L276">		typeMap.put(NAME_TIME_GREATER_THAN_OR_EQUAL, TimeAttribute.identifier);</span>
+<span class="fc" id="L277">		typeMap.put(NAME_TIME_LESS_THAN, TimeAttribute.identifier);</span>
+<span class="fc" id="L278">		typeMap.put(NAME_TIME_LESS_THAN_OR_EQUAL, TimeAttribute.identifier);</span>
+<span class="fc" id="L279">		typeMap.put(NAME_DATETIME_GREATER_THAN, DateTimeAttribute.identifier);</span>
+<span class="fc" id="L280">		typeMap.put(NAME_DATETIME_GREATER_THAN_OR_EQUAL, DateTimeAttribute.identifier);</span>
+<span class="fc" id="L281">		typeMap.put(NAME_DATETIME_LESS_THAN, DateTimeAttribute.identifier);</span>
+<span class="fc" id="L282">		typeMap.put(NAME_DATETIME_LESS_THAN_OR_EQUAL, DateTimeAttribute.identifier);</span>
+<span class="fc" id="L283">		typeMap.put(NAME_DATE_GREATER_THAN, DateAttribute.identifier);</span>
+<span class="fc" id="L284">		typeMap.put(NAME_DATE_GREATER_THAN_OR_EQUAL, DateAttribute.identifier);</span>
+<span class="fc" id="L285">		typeMap.put(NAME_DATE_LESS_THAN, DateAttribute.identifier);</span>
+<span class="fc" id="L286">		typeMap.put(NAME_DATE_LESS_THAN_OR_EQUAL, DateAttribute.identifier);</span>
+<span class="fc" id="L287">	};</span>
+
+	/**
+	 * Creates a new &lt;code&gt;ComparisonFunction&lt;/code&gt; object.
+	 * 
+	 * @param functionName the standard XACML name of the function to be handled by this object,
+	 *            including the full namespace
+	 * 
+	 * @throws IllegalArgumentException if the function isn't known
+	 */
+	public ComparisonFunction(String functionName) {
+<span class="fc" id="L298">		super(functionName, getId(functionName), getArgumentType(functionName), false, 2,</span>
+				BooleanAttribute.identifier, false);
+<span class="fc" id="L300">	}</span>
+
+	/**
+	 * Private helper that returns the internal identifier used for the given standard function.
+	 */
+	private static int getId(String functionName) {
+<span class="fc" id="L306">		Integer i = (Integer) (idMap.get(functionName));</span>
+
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">		if (i == null)</span>
+<span class="nc" id="L309">			throw new IllegalArgumentException(&quot;unknown comparison function &quot; + functionName);</span>
+
+<span class="fc" id="L311">		return i.intValue();</span>
+	}
+
+	/**
+	 * Private helper that returns the type used for the given standard function. Note that this
+	 * doesn't check on the return value since the method always is called after getId, so we assume
+	 * that the function is present.
+	 */
+	private static String getArgumentType(String functionName) {
+<span class="fc" id="L320">		return (String) (typeMap.get(functionName));</span>
+	}
+
+	/**
+	 * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+	 * 
+	 * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+	 */
+	public static Set getSupportedIdentifiers() {
+<span class="fc" id="L329">		return Collections.unmodifiableSet(idMap.keySet());</span>
+	}
+
+	/**
+	 * Evaluate the function, using the specified parameters.
+	 * 
+	 * @param inputs a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt; objects representing the
+	 *            arguments passed to the function
+	 * @param context an &lt;code&gt;EvaluationCtx&lt;/code&gt; so that the &lt;code&gt;Evaluatable&lt;/code&gt; objects can
+	 *            be evaluated
+	 * @return an &lt;code&gt;EvaluationResult&lt;/code&gt; representing the function's result
+	 */
+	public EvaluationResult evaluate(List inputs, EvaluationCtx context) {
+		// Evaluate the arguments
+<span class="fc" id="L343">		AttributeValue[] argValues = new AttributeValue[inputs.size()];</span>
+<span class="fc" id="L344">		EvaluationResult result = evalArgs(inputs, context, argValues);</span>
+<span class="pc bpc" id="L345" title="1 of 2 branches missed.">		if (result != null)</span>
+<span class="nc" id="L346">			return result;</span>
+
+		// Now that we have real values, perform the comparison operation
+
+<span class="fc" id="L350">		boolean boolResult = false;</span>
+
+<span class="pc bpc" id="L352" title="1 of 25 branches missed.">		switch (getFunctionId()) {</span>
+
+		case ID_INTEGER_GREATER_THAN: {
+<span class="fc" id="L355">			long arg0 = ((IntegerAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L356">			long arg1 = ((IntegerAttribute) (argValues[1])).getValue();</span>
+
+<span class="fc bfc" id="L358" title="All 2 branches covered.">			boolResult = (arg0 &gt; arg1);</span>
+
+<span class="fc" id="L360">			break;</span>
+		}
+
+		case ID_INTEGER_GREATER_THAN_OR_EQUAL: {
+<span class="fc" id="L364">			long arg0 = ((IntegerAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L365">			long arg1 = ((IntegerAttribute) (argValues[1])).getValue();</span>
+
+<span class="fc bfc" id="L367" title="All 2 branches covered.">			boolResult = (arg0 &gt;= arg1);</span>
+
+<span class="fc" id="L369">			break;</span>
+		}
+
+		case ID_INTEGER_LESS_THAN: {
+<span class="fc" id="L373">			long arg0 = ((IntegerAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L374">			long arg1 = ((IntegerAttribute) (argValues[1])).getValue();</span>
+
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">			boolResult = (arg0 &lt; arg1);</span>
+
+<span class="fc" id="L378">			break;</span>
+		}
+
+		case ID_INTEGER_LESS_THAN_OR_EQUAL: {
+<span class="fc" id="L382">			long arg0 = ((IntegerAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L383">			long arg1 = ((IntegerAttribute) (argValues[1])).getValue();</span>
+
+<span class="fc bfc" id="L385" title="All 2 branches covered.">			boolResult = (arg0 &lt;= arg1);</span>
+
+<span class="fc" id="L387">			break;</span>
+		}
+
+		case ID_DOUBLE_GREATER_THAN: {
+<span class="fc" id="L391">			double arg0 = ((DoubleAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L392">			double arg1 = ((DoubleAttribute) (argValues[1])).getValue();</span>
+
+<span class="fc bfc" id="L394" title="All 2 branches covered.">			boolResult = (doubleCompare(arg0, arg1) &gt; 0);</span>
+
+<span class="fc" id="L396">			break;</span>
+		}
+
+		case ID_DOUBLE_GREATER_THAN_OR_EQUAL: {
+<span class="fc" id="L400">			double arg0 = ((DoubleAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L401">			double arg1 = ((DoubleAttribute) (argValues[1])).getValue();</span>
+
+<span class="fc bfc" id="L403" title="All 2 branches covered.">			boolResult = (doubleCompare(arg0, arg1) &gt;= 0);</span>
+
+<span class="fc" id="L405">			break;</span>
+		}
+
+		case ID_DOUBLE_LESS_THAN: {
+<span class="fc" id="L409">			double arg0 = ((DoubleAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L410">			double arg1 = ((DoubleAttribute) (argValues[1])).getValue();</span>
+
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">			boolResult = (doubleCompare(arg0, arg1) &lt; 0);</span>
+
+<span class="fc" id="L414">			break;</span>
+		}
+
+		case ID_DOUBLE_LESS_THAN_OR_EQUAL: {
+<span class="fc" id="L418">			double arg0 = ((DoubleAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L419">			double arg1 = ((DoubleAttribute) (argValues[1])).getValue();</span>
+
+<span class="pc bpc" id="L421" title="1 of 2 branches missed.">			boolResult = (doubleCompare(arg0, arg1) &lt;= 0);</span>
+
+<span class="fc" id="L423">			break;</span>
+		}
+
+		case ID_STRING_GREATER_THAN: {
+<span class="fc" id="L427">			String arg0 = ((StringAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L428">			String arg1 = ((StringAttribute) (argValues[1])).getValue();</span>
+
+<span class="fc bfc" id="L430" title="All 2 branches covered.">			boolResult = (arg0.compareTo(arg1) &gt; 0);</span>
+
+<span class="fc" id="L432">			break;</span>
+		}
+
+		case ID_STRING_GREATER_THAN_OR_EQUAL: {
+<span class="fc" id="L436">			String arg0 = ((StringAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L437">			String arg1 = ((StringAttribute) (argValues[1])).getValue();</span>
+
+<span class="fc bfc" id="L439" title="All 2 branches covered.">			boolResult = (arg0.compareTo(arg1) &gt;= 0);</span>
+
+<span class="fc" id="L441">			break;</span>
+		}
+
+		case ID_STRING_LESS_THAN: {
+<span class="fc" id="L445">			String arg0 = ((StringAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L446">			String arg1 = ((StringAttribute) (argValues[1])).getValue();</span>
+
+<span class="pc bpc" id="L448" title="1 of 2 branches missed.">			boolResult = (arg0.compareTo(arg1) &lt; 0);</span>
+
+<span class="fc" id="L450">			break;</span>
+		}
+
+		case ID_STRING_LESS_THAN_OR_EQUAL: {
+<span class="fc" id="L454">			String arg0 = ((StringAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L455">			String arg1 = ((StringAttribute) (argValues[1])).getValue();</span>
+
+<span class="pc bpc" id="L457" title="1 of 2 branches missed.">			boolResult = (arg0.compareTo(arg1) &lt;= 0);</span>
+
+<span class="fc" id="L459">			break;</span>
+		}
+
+		case ID_TIME_GREATER_THAN: {
+<span class="fc" id="L463">			TimeAttribute arg0 = (TimeAttribute) (argValues[0]);</span>
+<span class="fc" id="L464">			TimeAttribute arg1 = (TimeAttribute) (argValues[1]);</span>
+
+<span class="fc bfc" id="L466" title="All 2 branches covered.">			boolResult = (dateCompare(arg0.getValue(), arg0.getNanoseconds(), arg1.getValue(),</span>
+<span class="fc" id="L467">					arg1.getNanoseconds()) &gt; 0);</span>
+
+<span class="fc" id="L469">			break;</span>
+		}
+
+		case ID_TIME_GREATER_THAN_OR_EQUAL: {
+<span class="fc" id="L473">			TimeAttribute arg0 = (TimeAttribute) (argValues[0]);</span>
+<span class="fc" id="L474">			TimeAttribute arg1 = (TimeAttribute) (argValues[1]);</span>
+
+<span class="fc bfc" id="L476" title="All 2 branches covered.">			boolResult = (dateCompare(arg0.getValue(), arg0.getNanoseconds(), arg1.getValue(),</span>
+<span class="fc" id="L477">					arg1.getNanoseconds()) &gt;= 0);</span>
+
+<span class="fc" id="L479">			break;</span>
+		}
+
+		case ID_TIME_LESS_THAN: {
+<span class="fc" id="L483">			TimeAttribute arg0 = (TimeAttribute) (argValues[0]);</span>
+<span class="fc" id="L484">			TimeAttribute arg1 = (TimeAttribute) (argValues[1]);</span>
+
+<span class="pc bpc" id="L486" title="1 of 2 branches missed.">			boolResult = (dateCompare(arg0.getValue(), arg0.getNanoseconds(), arg1.getValue(),</span>
+<span class="fc" id="L487">					arg1.getNanoseconds()) &lt; 0);</span>
+
+<span class="fc" id="L489">			break;</span>
+		}
+
+		case ID_TIME_LESS_THAN_OR_EQUAL: {
+<span class="fc" id="L493">			TimeAttribute arg0 = (TimeAttribute) (argValues[0]);</span>
+<span class="fc" id="L494">			TimeAttribute arg1 = (TimeAttribute) (argValues[1]);</span>
+
+<span class="pc bpc" id="L496" title="1 of 2 branches missed.">			boolResult = (dateCompare(arg0.getValue(), arg0.getNanoseconds(), arg1.getValue(),</span>
+<span class="fc" id="L497">					arg1.getNanoseconds()) &lt;= 0);</span>
+
+<span class="fc" id="L499">			break;</span>
+		}
+
+		case ID_DATETIME_GREATER_THAN: {
+<span class="fc" id="L503">			DateTimeAttribute arg0 = (DateTimeAttribute) (argValues[0]);</span>
+<span class="fc" id="L504">			DateTimeAttribute arg1 = (DateTimeAttribute) (argValues[1]);</span>
+
+<span class="fc bfc" id="L506" title="All 2 branches covered.">			boolResult = (dateCompare(arg0.getValue(), arg0.getNanoseconds(), arg1.getValue(),</span>
+<span class="fc" id="L507">					arg1.getNanoseconds()) &gt; 0);</span>
+
+<span class="fc" id="L509">			break;</span>
+		}
+
+		case ID_DATETIME_GREATER_THAN_OR_EQUAL: {
+<span class="fc" id="L513">			DateTimeAttribute arg0 = (DateTimeAttribute) (argValues[0]);</span>
+<span class="fc" id="L514">			DateTimeAttribute arg1 = (DateTimeAttribute) (argValues[1]);</span>
+
+<span class="fc bfc" id="L516" title="All 2 branches covered.">			boolResult = (dateCompare(arg0.getValue(), arg0.getNanoseconds(), arg1.getValue(),</span>
+<span class="fc" id="L517">					arg1.getNanoseconds()) &gt;= 0);</span>
+
+<span class="fc" id="L519">			break;</span>
+		}
+
+		case ID_DATETIME_LESS_THAN: {
+<span class="fc" id="L523">			DateTimeAttribute arg0 = (DateTimeAttribute) (argValues[0]);</span>
+<span class="fc" id="L524">			DateTimeAttribute arg1 = (DateTimeAttribute) (argValues[1]);</span>
+
+<span class="pc bpc" id="L526" title="1 of 2 branches missed.">			boolResult = (dateCompare(arg0.getValue(), arg0.getNanoseconds(), arg1.getValue(),</span>
+<span class="fc" id="L527">					arg1.getNanoseconds()) &lt; 0);</span>
+
+<span class="fc" id="L529">			break;</span>
+		}
+
+		case ID_DATETIME_LESS_THAN_OR_EQUAL: {
+<span class="fc" id="L533">			DateTimeAttribute arg0 = (DateTimeAttribute) (argValues[0]);</span>
+<span class="fc" id="L534">			DateTimeAttribute arg1 = (DateTimeAttribute) (argValues[1]);</span>
+
+<span class="pc bpc" id="L536" title="1 of 2 branches missed.">			boolResult = (dateCompare(arg0.getValue(), arg0.getNanoseconds(), arg1.getValue(),</span>
+<span class="fc" id="L537">					arg1.getNanoseconds()) &lt;= 0);</span>
+
+<span class="fc" id="L539">			break;</span>
+		}
+
+		case ID_DATE_GREATER_THAN: {
+<span class="fc" id="L543">			Date arg0 = ((DateAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L544">			Date arg1 = ((DateAttribute) (argValues[1])).getValue();</span>
+
+<span class="fc bfc" id="L546" title="All 2 branches covered.">			boolResult = (arg0.compareTo(arg1) &gt; 0);</span>
+
+<span class="fc" id="L548">			break;</span>
+		}
+
+		case ID_DATE_GREATER_THAN_OR_EQUAL: {
+<span class="fc" id="L552">			Date arg0 = ((DateAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L553">			Date arg1 = ((DateAttribute) (argValues[1])).getValue();</span>
+
+<span class="fc bfc" id="L555" title="All 2 branches covered.">			boolResult = (arg0.compareTo(arg1) &gt;= 0);</span>
+
+<span class="fc" id="L557">			break;</span>
+		}
+
+		case ID_DATE_LESS_THAN: {
+<span class="fc" id="L561">			Date arg0 = ((DateAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L562">			Date arg1 = ((DateAttribute) (argValues[1])).getValue();</span>
+
+<span class="pc bpc" id="L564" title="1 of 2 branches missed.">			boolResult = (arg0.compareTo(arg1) &lt; 0);</span>
+
+<span class="fc" id="L566">			break;</span>
+		}
+
+		case ID_DATE_LESS_THAN_OR_EQUAL: {
+<span class="fc" id="L570">			Date arg0 = ((DateAttribute) (argValues[0])).getValue();</span>
+<span class="fc" id="L571">			Date arg1 = ((DateAttribute) (argValues[1])).getValue();</span>
+
+<span class="pc bpc" id="L573" title="1 of 2 branches missed.">			boolResult = (arg0.compareTo(arg1) &lt;= 0);</span>
+
+<span class="fc" id="L575">			break;</span>
+		}
+
+		}
+
+		// Return the result as a BooleanAttribute.
+<span class="fc" id="L581">		return EvaluationResult.getInstance(boolResult);</span>
+	}
+
+	/**
+	 * Helper function that does a comparison of the two doubles using the rules of XMLSchema. Like
+	 * all compare methods, this returns 0 if they're equal, a positive value if d1 &gt; d2, and a
+	 * negative value if d1 &lt; d2.
+	 */
+	private int doubleCompare(double d1, double d2) {
+		// see if the numbers equal each other
+<span class="fc bfc" id="L591" title="All 2 branches covered.">		if (d1 == d2) {</span>
+			// these are not NaNs, and therefore we just need to check that
+			// that they're not zeros, which may have different signs
+<span class="pc bpc" id="L594" title="1 of 2 branches missed.">			if (d1 != 0)</span>
+<span class="fc" id="L595">				return 0;</span>
+
+			// they're both zeros, so we compare strings to figure out
+			// the significance of any signs
+<span class="nc" id="L599">			return Double.toString(d1).compareTo(Double.toString(d2));</span>
+		}
+
+		// see if d1 is NaN
+<span class="pc bpc" id="L603" title="1 of 2 branches missed.">		if (Double.isNaN(d1)) {</span>
+			// d1 is NaN, so see if d2 is as well
+<span class="nc bnc" id="L605" title="All 2 branches missed.">			if (Double.isNaN(d2)) {</span>
+				// they're both NaNs, so they're equal
+<span class="nc" id="L607">				return 0;</span>
+			} else {
+				// d1 is always bigger than d2 since it's a NaN
+<span class="nc" id="L610">				return 1;</span>
+			}
+		}
+
+		// see if d2 is NaN
+<span class="pc bpc" id="L615" title="1 of 2 branches missed.">		if (Double.isNaN(d2)) {</span>
+			// d2 is a NaN, though d1 isn't, so d2 is always bigger
+<span class="nc" id="L617">			return -1;</span>
+		}
+
+		// if we got here then neither is a NaN, and the numbers aren't
+		// equal...given those facts, basic comparison works the same in
+		// java as it's defined in XMLSchema, so now we can do the simple
+		// comparison and return whatever we find
+<span class="fc bfc" id="L624" title="All 2 branches covered.">		return ((d1 &gt; d2) ? 1 : -1);</span>
+	}
+
+	/**
+	 * Helper function to compare two Date objects and their associated nanosecond values. Like all
+	 * compare methods, this returns 0 if they're equal, a positive value if d1 &gt; d2, and a negative
+	 * value if d1 &lt; d2.
+	 */
+	private int dateCompare(Date d1, int n1, Date d2, int n2) {
+<span class="fc" id="L633">		int compareResult = d1.compareTo(d2);</span>
+
+		// we only worry about the nanosecond values if the Dates are equal
+<span class="fc bfc" id="L636" title="All 2 branches covered.">		if (compareResult != 0)</span>
+<span class="fc" id="L637">			return compareResult;</span>
+
+		// see if there's any difference
+<span class="pc bpc" id="L640" title="1 of 2 branches missed.">		if (n1 == n2)</span>
+<span class="fc" id="L641">			return 0;</span>
+
+		// there is some difference in the nanoseconds, and that's how
+		// we'll determine the comparison
+<span class="nc bnc" id="L645" title="All 2 branches missed.">		return ((n1 &gt; n2) ? 1 : -1);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

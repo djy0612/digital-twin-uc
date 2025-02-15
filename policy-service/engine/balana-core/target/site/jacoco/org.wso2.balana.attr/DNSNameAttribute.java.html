@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DNSNameAttribute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.attr</a> &gt; <span class="el_source">DNSNameAttribute.java</span></div><h1>DNSNameAttribute.java</h1><pre class="source lang-java linenums">/*
+ * @(#)DNSNameAttribute.java
+ *
+ * Copyright 2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.attr;
+
+import org.wso2.balana.ParsingException;
+
+import java.net.URI;
+
+import org.w3c.dom.Node;
+
+/**
+ * Represents the DNSName datatype introduced in XACML 2.0. All objects of this class are immutable
+ * and all methods of the class are thread-safe.
+ * 
+ * @since 2.0
+ * @author Seth Proctor
+ */
+public class DNSNameAttribute extends AttributeValue {
+
+    /**
+     * Official name of this type
+     */
+    public static final String identifier = &quot;urn:oasis:names:tc:xacml:2.0:data-type:dnsName&quot;;
+
+    /**
+     * URI version of name for this type
+     * &lt;p&gt;
+     * This field is initialized by a static initializer so that we can catch any exceptions thrown
+     * by URI(String) and transform them into a RuntimeException, since this should never happen but
+     * should be reported properly if it ever does.
+     */
+    private static URI identifierURI;
+
+    /**
+     * RuntimeException that wraps an Exception thrown during the creation of identifierURI, null if
+     * none.
+     */
+    private static RuntimeException earlyException;
+
+    /**
+     * Static initializer that initializes the identifierURI class field so that we can catch any
+     * exceptions thrown by URI(String) and transform them into a RuntimeException. Such exceptions
+     * should never happen but should be reported properly if they ever do.
+     */
+    static {
+        try {
+<span class="nc" id="L80">            identifierURI = new URI(identifier);</span>
+<span class="nc" id="L81">        } catch (Exception e) {</span>
+<span class="nc" id="L82">            earlyException = new IllegalArgumentException();</span>
+<span class="nc" id="L83">            earlyException.initCause(e);</span>
+<span class="nc" id="L84">        }</span>
+<span class="nc" id="L85">    };</span>
+
+    // the required hostname
+    private String hostname;
+
+    // the optional port range
+    private PortRange range;
+
+    // true if the hostname starts with a '*'
+<span class="nc" id="L94">    private boolean isSubdomain = false;</span>
+
+    /**
+     * Creates the new &lt;code&gt;DNSNameAttribute&lt;/code&gt; with only the required hostname component.
+     * 
+     * @param hostname the host name component of the address
+     * 
+     * @throws ParsingException if the hostname is invalid
+     */
+    public DNSNameAttribute(String hostname) throws ParsingException {
+<span class="nc" id="L104">        this(hostname, new PortRange());</span>
+<span class="nc" id="L105">    }</span>
+
+    /**
+     * Creates the new &lt;code&gt;DNSNameAttribute&lt;/code&gt; with the optional port range component.
+     * 
+     * @param hostname the host name component of the address
+     * @param range the port range
+     * 
+     * @throws ParsingException if the hostname is invalid
+     */
+    public DNSNameAttribute(String hostname, PortRange range) throws ParsingException {
+<span class="nc" id="L116">        super(identifierURI);</span>
+
+        // shouldn't happen, but just in case...
+<span class="nc bnc" id="L119" title="All 2 branches missed.">        if (earlyException != null)</span>
+<span class="nc" id="L120">            throw earlyException;</span>
+
+        // verify that the hostname is valid before we store it
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (!isValidHostName(hostname))</span>
+<span class="nc" id="L124">            System.out.println(&quot;FIXME: throw error about bad hostname&quot;);</span>
+
+        // see if it started with a '*' character
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (hostname.charAt(0) == '*')</span>
+<span class="nc" id="L128">            this.isSubdomain = true;</span>
+
+<span class="nc" id="L130">        this.hostname = hostname;</span>
+<span class="nc" id="L131">        this.range = range;</span>
+<span class="nc" id="L132">    }</span>
+
+    /**
+     * Private helper that tests whether the given string is valid.
+     */
+    private boolean isValidHostName(String hostname) {
+        /*
+         * hostname = *( domainlabel &quot;.&quot; ) toplabel [ &quot;.&quot; ] domainlabel = alphanum | alphanum *(
+         * alphanum | &quot;-&quot; ) alphanum toplabel = alpha | alpha *( alphanum | &quot;-&quot; ) alphanum
+         */
+
+<span class="nc" id="L143">        String domainlabel = &quot;\\w[[\\w|\\-]*\\w]?&quot;;</span>
+<span class="nc" id="L144">        String toplabel = &quot;[a-zA-Z][[\\w|\\-]*\\w]?&quot;;</span>
+<span class="nc" id="L145">        String pattern = &quot;[\\*\\.]?[&quot; + domainlabel + &quot;\\.]*&quot; + toplabel + &quot;\\.?&quot;;</span>
+
+<span class="nc" id="L147">        return hostname.matches(pattern);</span>
+    }
+
+    /**
+     * Returns a new &lt;code&gt;DNSNameAttribute&lt;/code&gt; that represents the name at a particular DOM
+     * node.
+     * 
+     * @param root the &lt;code&gt;Node&lt;/code&gt; that contains the desired value
+     * 
+     * @return a new &lt;code&gt;DNSNameAttribute&lt;/code&gt; representing the appropriate value (null if there
+     *         is a parsing error)
+     * 
+     * @throws ParsingException if the hostname is invalid
+     */
+    public static DNSNameAttribute getInstance(Node root) throws ParsingException {
+<span class="nc" id="L162">        return getInstance(root.getFirstChild().getNodeValue());</span>
+    }
+
+    /**
+     * Returns a new &lt;code&gt;DNSNameAttribute&lt;/code&gt; that represents the name indicated by the
+     * &lt;code&gt;String&lt;/code&gt; provided.
+     * 
+     * @param value a string representing the name
+     * 
+     * @return a new &lt;code&gt;DNSNameAttribute&lt;/code&gt;
+     * 
+     * @throws ParsingException if the hostname is invalid
+     */
+    public static DNSNameAttribute getInstance(String value) throws ParsingException {
+<span class="nc" id="L176">        int portSep = value.indexOf(':');</span>
+
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (portSep == -1) {</span>
+            // there is no port range, so just use the name
+<span class="nc" id="L180">            return new DNSNameAttribute(value);</span>
+        } else {
+            // split the name and the port range
+<span class="nc" id="L183">            String hostname = value.substring(0, portSep);</span>
+<span class="nc" id="L184">            PortRange range = PortRange.getInstance(value.substring(portSep + 1, value.length()));</span>
+<span class="nc" id="L185">            return new DNSNameAttribute(hostname, range);</span>
+        }
+    }
+
+    /**
+     * Returns the host name represented by this object.
+     * 
+     * @return the host name
+     */
+    public String getHostName() {
+<span class="nc" id="L195">        return hostname;</span>
+    }
+
+    /**
+     * Returns the port range represented by this object which will be unbound if no range was
+     * specified.
+     * 
+     * @return the port range
+     */
+    public PortRange getPortRange() {
+<span class="nc" id="L205">        return range;</span>
+    }
+
+    /**
+     * Returns true if the leading character in the hostname is a '*', and therefore represents a
+     * matching subdomain, or false otherwise.
+     * 
+     * @return true if the name represents a subdomain, false otherwise
+     */
+    public boolean isSubdomain() {
+<span class="nc" id="L215">        return isSubdomain;</span>
+    }
+
+    /**
+     * Returns true if the input is an instance of this class and if its value equals the value
+     * contained in this class.
+     * 
+     * @param o the object to compare
+     * 
+     * @return true if this object and the input represent the same value
+     */
+    public boolean equals(Object o) {
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (!(o instanceof DNSNameAttribute))</span>
+<span class="nc" id="L228">            return false;</span>
+
+<span class="nc" id="L230">        DNSNameAttribute other = (DNSNameAttribute) o;</span>
+
+<span class="nc bnc" id="L232" title="All 2 branches missed.">        if (!hostname.toUpperCase().equals(other.hostname.toUpperCase()))</span>
+<span class="nc" id="L233">            return false;</span>
+
+<span class="nc bnc" id="L235" title="All 2 branches missed.">        if (!range.equals(other.range))</span>
+<span class="nc" id="L236">            return false;</span>
+
+<span class="nc" id="L238">        return true;</span>
+    }
+
+    /**
+     * Returns the hashcode value used to index and compare this object with others of the same
+     * type.
+     * 
+     * @return the object's hashcode value
+     */
+    public int hashCode() {
+
+        // FIXME: what should the hashcode be?
+
+<span class="nc" id="L251">        return 0;</span>
+    }
+
+    /**
+     * Converts to a String representation.
+     * 
+     * @return the String representation
+     */
+    public String toString() {
+<span class="nc" id="L260">        return &quot;DNSNameAttribute: \&quot;&quot; + encode() + &quot;\&quot;&quot;;</span>
+    }
+
+    /**
+     *
+     */
+    public String encode() {
+<span class="nc bnc" id="L267" title="All 2 branches missed.">        if (range.isUnbound())</span>
+<span class="nc" id="L268">            return hostname;</span>
+
+<span class="nc" id="L270">        return hostname + &quot;:&quot; + range.encode();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

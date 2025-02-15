@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DateMathFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">DateMathFunction.java</span></div><h1>DateMathFunction.java</h1><pre class="source lang-java linenums">/*
+ * @(#)DateMathFunction.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.DateAttribute;
+import org.wso2.balana.attr.DateTimeAttribute;
+import org.wso2.balana.attr.DayTimeDurationAttribute;
+import org.wso2.balana.attr.YearMonthDurationAttribute;
+
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * A class that implements several of the date math functions. They all take two arguments. The
+ * first is a DateTimeAttribute or a DateAttribute (as the case may be) and the second is a
+ * DayTimeDurationAttribute or a YearMonthDurationAttribute (as the case may be). The function adds
+ * or subtracts the second argument to/from the first and returns a value of the same type as the
+ * first argument. If either of the arguments evaluates to indeterminate, an indeterminate result is
+ * returned.
+ * 
+ * @since 1.0
+ * @author Steve Hanna
+ * @author Seth Proctor
+ */
+public class DateMathFunction extends FunctionBase {
+
+	/**
+	 * Standard identifier for the dateTime-add-dayTimeDuration function.
+	 */
+	public static final String NAME_DATETIME_ADD_DAYTIMEDURATION = FUNCTION_NS
+			+ &quot;dateTime-add-dayTimeDuration&quot;;
+
+	/**
+	 * Standard identifier for the dateTime-subtract-dayTimeDuration function.
+	 */
+	public static final String NAME_DATETIME_SUBTRACT_DAYTIMEDURATION = FUNCTION_NS
+			+ &quot;dateTime-subtract-dayTimeDuration&quot;;
+
+	/**
+	 * Standard identifier for the dateTime-add-yearMonthDuration function.
+	 */
+	public static final String NAME_DATETIME_ADD_YEARMONTHDURATION = FUNCTION_NS
+			+ &quot;dateTime-add-yearMonthDuration&quot;;
+
+	/**
+	 * Standard identifier for the dateTime-subtract-yearMonthDuration function.
+	 */
+	public static final String NAME_DATETIME_SUBTRACT_YEARMONTHDURATION = FUNCTION_NS
+			+ &quot;dateTime-subtract-yearMonthDuration&quot;;
+
+	/**
+	 * Standard identifier for the date-add-yearMonthDuration function.
+	 */
+	public static final String NAME_DATE_ADD_YEARMONTHDURATION = FUNCTION_NS
+			+ &quot;date-add-yearMonthDuration&quot;;
+
+	/**
+	 * Standard identifier for the date-subtract-yearMonthDuration function.
+	 */
+	public static final String NAME_DATE_SUBTRACT_YEARMONTHDURATION = FUNCTION_NS
+			+ &quot;date-subtract-yearMonthDuration&quot;;
+
+	// private identifiers for the supported functions
+	private static final int ID_DATETIME_ADD_DAYTIMEDURATION = 0;
+	private static final int ID_DATETIME_SUBTRACT_DAYTIMEDURATION = 1;
+	private static final int ID_DATETIME_ADD_YEARMONTHDURATION = 2;
+	private static final int ID_DATETIME_SUBTRACT_YEARMONTHDURATION = 3;
+	private static final int ID_DATE_ADD_YEARMONTHDURATION = 4;
+	private static final int ID_DATE_SUBTRACT_YEARMONTHDURATION = 5;
+
+	// Argument types
+<span class="fc" id="L113">	private static final String dateTimeDayTimeDurationArgTypes[] = { DateTimeAttribute.identifier,</span>
+			DayTimeDurationAttribute.identifier };
+<span class="fc" id="L115">	private static final String dateTimeYearMonthDurationArgTypes[] = {</span>
+			DateTimeAttribute.identifier, YearMonthDurationAttribute.identifier };
+<span class="fc" id="L117">	private static final String dateYearMonthDurationArgTypes[] = { DateAttribute.identifier,</span>
+			YearMonthDurationAttribute.identifier };
+
+	// nothing here uses a bag
+<span class="fc" id="L121">	private static final boolean bagParams[] = { false, false };</span>
+
+	// mapping from name to provide identifiers and argument types
+	private static HashMap&lt;String,Integer&gt; idMap;
+	private static HashMap&lt;String,String[]&gt; typeMap;
+
+	/**
+	 * Static initializer to setup the id and type maps
+	 */
+	static {
+<span class="fc" id="L131">		idMap = new HashMap&lt;String,Integer&gt;();</span>
+
+<span class="fc" id="L133">		idMap.put(NAME_DATETIME_ADD_DAYTIMEDURATION,</span>
+<span class="fc" id="L134">				Integer.valueOf(ID_DATETIME_ADD_DAYTIMEDURATION));</span>
+<span class="fc" id="L135">		idMap.put(NAME_DATETIME_SUBTRACT_DAYTIMEDURATION,</span>
+<span class="fc" id="L136">				Integer.valueOf(ID_DATETIME_SUBTRACT_DAYTIMEDURATION));</span>
+<span class="fc" id="L137">		idMap.put(NAME_DATETIME_ADD_YEARMONTHDURATION,</span>
+<span class="fc" id="L138">				Integer.valueOf(ID_DATETIME_ADD_YEARMONTHDURATION));</span>
+<span class="fc" id="L139">		idMap.put(NAME_DATETIME_SUBTRACT_YEARMONTHDURATION,</span>
+<span class="fc" id="L140">				Integer.valueOf(ID_DATETIME_SUBTRACT_YEARMONTHDURATION));</span>
+<span class="fc" id="L141">		idMap.put(NAME_DATE_ADD_YEARMONTHDURATION, Integer.valueOf(ID_DATE_ADD_YEARMONTHDURATION));</span>
+<span class="fc" id="L142">		idMap.put(NAME_DATE_SUBTRACT_YEARMONTHDURATION,</span>
+<span class="fc" id="L143">				Integer.valueOf(ID_DATE_SUBTRACT_YEARMONTHDURATION));</span>
+
+<span class="fc" id="L145">		typeMap = new HashMap&lt;String,String[]&gt;();</span>
+
+<span class="fc" id="L147">		typeMap.put(NAME_DATETIME_ADD_DAYTIMEDURATION, dateTimeDayTimeDurationArgTypes);</span>
+<span class="fc" id="L148">		typeMap.put(NAME_DATETIME_SUBTRACT_DAYTIMEDURATION, dateTimeDayTimeDurationArgTypes);</span>
+<span class="fc" id="L149">		typeMap.put(NAME_DATETIME_ADD_YEARMONTHDURATION, dateTimeYearMonthDurationArgTypes);</span>
+<span class="fc" id="L150">		typeMap.put(NAME_DATETIME_SUBTRACT_YEARMONTHDURATION, dateTimeYearMonthDurationArgTypes);</span>
+<span class="fc" id="L151">		typeMap.put(NAME_DATE_ADD_YEARMONTHDURATION, dateYearMonthDurationArgTypes);</span>
+<span class="fc" id="L152">		typeMap.put(NAME_DATE_SUBTRACT_YEARMONTHDURATION, dateYearMonthDurationArgTypes);</span>
+<span class="fc" id="L153">	};</span>
+
+	/**
+	 * Creates a new &lt;code&gt;DateMathFunction&lt;/code&gt; object.
+	 * 
+	 * @param functionName the standard XACML name of the function to be handled by this object,
+	 *            including the full namespace
+	 * 
+	 * @throws IllegalArgumentException if the function is unknown
+	 */
+	public DateMathFunction(String functionName) {
+<span class="fc" id="L164">		super(functionName, getId(functionName), getArgumentTypes(functionName), bagParams,</span>
+<span class="fc" id="L165">				getReturnType(functionName), false);</span>
+<span class="fc" id="L166">	}</span>
+
+	/**
+	 * Private helper that returns the internal identifier used for the given standard function.
+	 */
+	private static int getId(String functionName) {
+<span class="fc" id="L172">		Integer i = (Integer) (idMap.get(functionName));</span>
+
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">		if (i == null)</span>
+<span class="nc" id="L175">			throw new IllegalArgumentException(&quot;unknown datemath function &quot; + functionName);</span>
+
+<span class="fc" id="L177">		return i.intValue();</span>
+	}
+
+	/**
+	 * Private helper that returns the types used for the given standard function. Note that this
+	 * doesn't check on the return value since the method always is called after getId, so we assume
+	 * that the function is present.
+	 */
+	private static String[] getArgumentTypes(String functionName) {
+<span class="fc" id="L186">		return (String[]) (typeMap.get(functionName));</span>
+	}
+
+	/**
+	 * Private helper that returns the return type for the given standard function. Note that this
+	 * doesn't check on the return value since the method always is called after getId, so we assume
+	 * that the function is present.
+	 */
+	private static String getReturnType(String functionName) {
+<span class="fc bfc" id="L195" title="All 2 branches covered.">		if (functionName.equals(NAME_DATE_ADD_YEARMONTHDURATION)</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">				|| functionName.equals(NAME_DATE_SUBTRACT_YEARMONTHDURATION))</span>
+<span class="fc" id="L197">			return DateAttribute.identifier;</span>
+		else
+<span class="fc" id="L199">			return DateTimeAttribute.identifier;</span>
+	}
+
+	/**
+	 * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+	 * 
+	 * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+	 */
+	public static Set getSupportedIdentifiers() {
+<span class="fc" id="L208">		return Collections.unmodifiableSet(idMap.keySet());</span>
+	}
+
+	/**
+	 * Evaluate the function, using the specified parameters.
+	 * 
+	 * @param inputs a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt; objects representing the
+	 *            arguments passed to the function
+	 * @param context an &lt;code&gt;EvaluationCtx&lt;/code&gt; so that the &lt;code&gt;Evaluatable&lt;/code&gt; objects can
+	 *            be evaluated
+	 * @return an &lt;code&gt;EvaluationResult&lt;/code&gt; representing the function's result
+	 */
+	public EvaluationResult evaluate(List inputs, EvaluationCtx context) {
+
+		// Evaluate the arguments
+<span class="fc" id="L223">		AttributeValue[] argValues = new AttributeValue[inputs.size()];</span>
+<span class="fc" id="L224">		EvaluationResult result = evalArgs(inputs, context, argValues);</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">		if (result != null)</span>
+<span class="nc" id="L226">			return result;</span>
+
+		// Now that we have real values, perform the date math operation.
+<span class="fc" id="L229">		AttributeValue attrResult = null;</span>
+
+<span class="pc bpc" id="L231" title="1 of 4 branches missed.">		switch (getFunctionId()) {</span>
+		// These two functions are basically the same except for sign.
+		// And they both need to deal with sign anyway, so they share
+		// their code.
+		case ID_DATETIME_ADD_DAYTIMEDURATION:
+		case ID_DATETIME_SUBTRACT_DAYTIMEDURATION: {
+<span class="fc" id="L237">			DateTimeAttribute dateTime = (DateTimeAttribute) argValues[0];</span>
+<span class="fc" id="L238">			DayTimeDurationAttribute duration = (DayTimeDurationAttribute) argValues[1];</span>
+
+			// Decide what sign goes with duration
+<span class="fc" id="L241">			int sign = 1;</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">			if (getFunctionId() == ID_DATETIME_SUBTRACT_DAYTIMEDURATION)</span>
+<span class="fc" id="L243">				sign = -sign;</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">			if (duration.isNegative())</span>
+<span class="nc" id="L245">				sign = -sign;</span>
+<span class="fc" id="L246">			long millis = sign * duration.getTotalSeconds();</span>
+<span class="fc" id="L247">			long nanoseconds = dateTime.getNanoseconds();</span>
+<span class="fc" id="L248">			nanoseconds = nanoseconds + (sign * duration.getNanoseconds());</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">			if (nanoseconds &gt;= 1000000000) {</span>
+<span class="nc" id="L250">				nanoseconds -= 1000000000;</span>
+<span class="nc" id="L251">				millis += 1000;</span>
+			}
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">			if (nanoseconds &lt; 0) {</span>
+<span class="nc" id="L254">				nanoseconds += 1000000000;</span>
+<span class="nc" id="L255">				millis -= 1000;</span>
+			}
+<span class="fc" id="L257">			millis = millis + dateTime.getValue().getTime();</span>
+
+<span class="fc" id="L259">			attrResult = new DateTimeAttribute(new Date(millis), (int) nanoseconds,</span>
+<span class="fc" id="L260">					dateTime.getTimeZone(), dateTime.getDefaultedTimeZone());</span>
+
+<span class="fc" id="L262">			break;</span>
+		}
+		case ID_DATETIME_ADD_YEARMONTHDURATION:
+		case ID_DATETIME_SUBTRACT_YEARMONTHDURATION: {
+<span class="fc" id="L266">			DateTimeAttribute dateTime = (DateTimeAttribute) argValues[0];</span>
+<span class="fc" id="L267">			YearMonthDurationAttribute duration = (YearMonthDurationAttribute) argValues[1];</span>
+
+			// Decide what sign goes with duration
+<span class="fc" id="L270">			int sign = 1;</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">			if (getFunctionId() == ID_DATETIME_SUBTRACT_YEARMONTHDURATION)</span>
+<span class="nc" id="L272">				sign = -sign;</span>
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">			if (duration.isNegative())</span>
+<span class="fc" id="L274">				sign = -sign;</span>
+
+			// Add (or subtract) the years and months.
+<span class="fc" id="L277">			Calendar cal = new GregorianCalendar();</span>
+<span class="fc" id="L278">			cal.setTime(dateTime.getValue());</span>
+<span class="fc" id="L279">			long years = sign * duration.getYears();</span>
+<span class="fc" id="L280">			long months = sign * duration.getMonths();</span>
+<span class="pc bpc" id="L281" title="2 of 4 branches missed.">			if ((years &gt; Integer.MAX_VALUE) || (years &lt; Integer.MIN_VALUE))</span>
+<span class="nc" id="L282">				return makeProcessingError(&quot;years too large&quot;);</span>
+<span class="pc bpc" id="L283" title="2 of 4 branches missed.">			if ((months &gt; Integer.MAX_VALUE) || (months &lt; Integer.MIN_VALUE))</span>
+<span class="nc" id="L284">				return makeProcessingError(&quot;months too large&quot;);</span>
+
+<span class="fc" id="L286">			cal.add(Calendar.YEAR, (int) years);</span>
+<span class="fc" id="L287">			cal.add(Calendar.MONTH, (int) months);</span>
+
+<span class="fc" id="L289">			attrResult = new DateTimeAttribute(cal.getTime(), dateTime.getNanoseconds(),</span>
+<span class="fc" id="L290">					dateTime.getTimeZone(), dateTime.getDefaultedTimeZone());</span>
+
+<span class="fc" id="L292">			break;</span>
+		}
+		case ID_DATE_ADD_YEARMONTHDURATION:
+		case ID_DATE_SUBTRACT_YEARMONTHDURATION: {
+<span class="fc" id="L296">			DateAttribute date = (DateAttribute) argValues[0];</span>
+<span class="fc" id="L297">			YearMonthDurationAttribute duration = (YearMonthDurationAttribute) argValues[1];</span>
+
+			// Decide what sign goes with duration
+<span class="fc" id="L300">			int sign = 1;</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">			if (getFunctionId() == ID_DATE_SUBTRACT_YEARMONTHDURATION)</span>
+<span class="fc" id="L302">				sign = -sign;</span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">			if (duration.isNegative())</span>
+<span class="fc" id="L304">				sign = -sign;</span>
+
+			// Add (or subtract) the years and months.
+<span class="fc" id="L307">			Calendar cal = new GregorianCalendar();</span>
+<span class="fc" id="L308">			cal.setTime(date.getValue());</span>
+<span class="fc" id="L309">			long years = sign * duration.getYears();</span>
+<span class="fc" id="L310">			long months = sign * duration.getMonths();</span>
+<span class="pc bpc" id="L311" title="2 of 4 branches missed.">			if ((years &gt; Integer.MAX_VALUE) || (years &lt; Integer.MIN_VALUE))</span>
+<span class="nc" id="L312">				return makeProcessingError(&quot;years too large&quot;);</span>
+<span class="pc bpc" id="L313" title="2 of 4 branches missed.">			if ((months &gt; Integer.MAX_VALUE) || (months &lt; Integer.MIN_VALUE))</span>
+<span class="nc" id="L314">				return makeProcessingError(&quot;months too large&quot;);</span>
+
+<span class="fc" id="L316">			cal.add(Calendar.YEAR, (int) years);</span>
+<span class="fc" id="L317">			cal.add(Calendar.MONTH, (int) months);</span>
+
+<span class="fc" id="L319">			attrResult = new DateAttribute(cal.getTime(), date.getTimeZone(),</span>
+<span class="fc" id="L320">					date.getDefaultedTimeZone());</span>
+
+<span class="fc" id="L322">			break;</span>
+		}
+		}
+
+<span class="fc" id="L326">		return new EvaluationResult(attrResult);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

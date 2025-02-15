@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>XACMLConstants.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana</a> &gt; <span class="el_source">XACMLConstants.java</span></div><h1>XACMLConstants.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+
+package org.wso2.balana;
+
+/**
+ * XACML related constants are defined here..
+ */
+<span class="nc" id="L25">public class XACMLConstants {</span>
+
+    /**
+     * The standard URI for listing a resource's id
+     */
+    public static final String RESOURCE_ID = &quot;urn:oasis:names:tc:xacml:1.0:resource:resource-id&quot;;
+
+    /**
+     * The standard URI for listing a resource's scope  in XACML 1.0 
+     */
+    public static final String RESOURCE_SCOPE_1_0 = &quot;urn:oasis:names:tc:xacml:1.0:resource:scope&quot;;
+
+    /**
+     * The standard URI for listing a resource's scope in multiple resource profile
+     */
+    public static final String RESOURCE_SCOPE_2_0 = &quot;urn:oasis:names:tc:xacml:2.0:resource:scope&quot;;
+
+    /**
+     * Resource scope of Immediate (only the given resource)
+     */
+    public static final int SCOPE_IMMEDIATE = 0;
+
+    /**
+     * Resource scope of Children (the given resource and its direct children)
+     */
+    public static final int SCOPE_CHILDREN = 1;
+
+    /**
+     * Resource scope of Descendants (the given resource and all descendants at any depth or
+     * distance)
+     */
+    public static final int SCOPE_DESCENDANTS = 2;
+
+    public static final String MULTIPLE_CONTENT_SELECTOR = &quot;urn:oasis:names:tc:xacml:3.0:profile:&quot; +
+                                                                        &quot;multiple:content-selector&quot;;
+
+    public static final String CONTENT_SELECTOR = &quot;urn:oasis:names:tc:xacml:3.0:content-selector&quot;;
+
+    public final static String ATTRIBUTES_ELEMENT =  &quot;Attributes&quot;;
+
+    public final static String MULTI_REQUESTS =  &quot;MultiRequests&quot;;
+
+    public final static String REQUEST_DEFAULTS =  &quot;RequestDefaults&quot;;
+
+    public final static String ATTRIBUTE_ELEMENT =  &quot;Attribute&quot;;
+
+    public final static String ATTRIBUTES_CATEGORY =  &quot;Category&quot;;
+
+    public final static String ATTRIBUTES_ID =  &quot;id&quot;;
+
+    public final static String RETURN_POLICY_LIST =  &quot;ReturnPolicyIdList&quot;;
+
+    public final static String COMBINE_DECISION =  &quot;CombinedDecision&quot;;
+    
+    public final static String ATTRIBUTES_CONTENT =  &quot;Content&quot;;
+
+    public final static String RESOURCE_CONTENT =  &quot;ResourceContent&quot;;
+    
+    public static final String RESOURCE_CATEGORY = &quot;urn:oasis:names:tc:xacml:3.0:attribute-category:resource&quot;;
+
+    public static final String SUBJECT_CATEGORY = &quot;urn:oasis:names:tc:xacml:1.0:subject-category:access-subject&quot;;
+
+    public static final String ACTION_CATEGORY = &quot;urn:oasis:names:tc:xacml:3.0:attribute-category:action&quot;;
+
+    public static final String ENT_CATEGORY = &quot;urn:oasis:names:tc:xacml:3.0:attribute-category:environment&quot;;
+
+    public static final String REQUEST_CONTEXT_1_0_IDENTIFIER = &quot;urn:oasis:names:tc:xacml:1.0:context&quot;;
+
+    public static final String REQUEST_CONTEXT_2_0_IDENTIFIER = &quot;urn:oasis:names:tc:xacml:2.0:context:schema:os&quot;;
+
+    public static final String REQUEST_CONTEXT_3_0_IDENTIFIER = &quot;urn:oasis:names:tc:xacml:3.0:core:schema:wd-17&quot;;
+
+    public static final String ANY  = &quot;Any&quot;;
+
+    /**
+     * XACML 1.0 identifier
+     */
+    public static final String XACML_1_0_IDENTIFIER = &quot;urn:oasis:names:tc:xacml:1.0:policy&quot;;
+
+    /**
+     * XACML 2.0 identifier
+     */
+    public static final String XACML_2_0_IDENTIFIER = &quot;urn:oasis:names:tc:xacml:2.0:policy:schema:os&quot;;
+
+    /**
+     * XACML 3.0 identifier
+     */
+    public static final String XACML_3_0_IDENTIFIER = &quot;urn:oasis:names:tc:xacml:3.0:core:schema:wd-17&quot;;
+
+    /**
+     * Version identifier for XACML 1.0
+     */
+    public static final int XACML_VERSION_1_0 = 0;
+
+    /**
+     * Version identifier for XACML 1.1 (which isn't a formal release so has no namespace string,
+     * but still exists as a separate specification)
+     */
+    public static final int XACML_VERSION_1_1 = 1;
+
+    /**
+     * Version identifier for XACML 1.2
+     */
+    public static final int XACML_VERSION_2_0 = 2;
+
+    /**
+     * Version identifier for XACML 3.0
+     */
+    public static final int XACML_VERSION_3_0 = 3;
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

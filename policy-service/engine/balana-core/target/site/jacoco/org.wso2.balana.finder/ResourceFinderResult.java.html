@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ResourceFinderResult.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.finder</a> &gt; <span class="el_source">ResourceFinderResult.java</span></div><h1>ResourceFinderResult.java</h1><pre class="source lang-java linenums">/*
+ * @(#)ResourceFinderResult.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.finder;
+
+import org.wso2.balana.attr.AttributeValue;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * This is used to return Resource Ids from the ResourceFinder. Unlike the PolicyFinder, this never
+ * returns an empty set, since it will always contain at least the original parent resource. This
+ * class will provide two sets of identifiers: those that were successfully resolved and those that
+ * had an error.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class ResourceFinderResult {
+
+    // the set of resource identifiers
+    private Set&lt;AttributeValue&gt; resources;
+
+    // the map of failed identifiers to their failure status data
+    private Map failures;
+
+    // a flag specifying whether or not result contains resource listings
+    private boolean empty;
+
+    /**
+     * Creates an empty result.
+     */
+<span class="nc" id="L69">    public ResourceFinderResult() {</span>
+<span class="nc" id="L70">        resources = Collections.unmodifiableSet(new HashSet&lt;AttributeValue&gt;());</span>
+<span class="nc" id="L71">        failures = Collections.unmodifiableMap(new HashMap());</span>
+<span class="nc" id="L72">        empty = true;</span>
+<span class="nc" id="L73">    }</span>
+
+    /**
+     * Creates a result containing the given &lt;code&gt;Set&lt;/code&gt; of resource identifiers. The
+     * &lt;code&gt;Set&lt;/code&gt;must not be null. The new &lt;code&gt;ResourceFinderResult&lt;/code&gt; represents a
+     * resource retrieval that encountered no errors.
+     * 
+     * @param resources a non-null &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;AttributeValue&lt;/code&gt;s
+     */
+    public ResourceFinderResult(Set&lt;AttributeValue&gt; resources) {
+<span class="nc" id="L83">        this(resources, new HashMap());</span>
+<span class="nc" id="L84">    }</span>
+
+    /**
+     * Creates a result containing only Resource Ids that caused errors. The &lt;code&gt;Map&lt;/code&gt; must
+     * not be null. The keys in the &lt;code&gt;Map&lt;/code&gt; are &lt;code&gt;AttributeValue&lt;/code&gt;s identifying
+     * the resources that could not be resolved, and they map to a &lt;code&gt;Status&lt;/code&gt; object
+     * explaining the error. The new &lt;code&gt;ResourceFinderResult&lt;/code&gt; represents a resource
+     * retrieval that did not succeed in finding any resource identifiers.
+     * 
+     * @param failures a non-null &lt;code&gt;Map&lt;/code&gt; mapping failed &lt;code&gt;AttributeValue&lt;/code&gt;
+     *            identifiers to their &lt;code&gt;Status&lt;/code&gt;
+     */
+    public ResourceFinderResult(HashMap failures) {
+<span class="nc" id="L97">        this(new HashSet(), failures);</span>
+<span class="nc" id="L98">    }</span>
+
+    /**
+     * Creates a new result containing both successfully resolved Resource Ids and resources that
+     * caused errors.
+     * 
+     * @param resources a non-null &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;AttributeValue&lt;/code&gt;s
+     * @param failures a non-null &lt;code&gt;Map&lt;/code&gt; mapping failed &lt;code&gt;AttributeValue&lt;/code&gt;
+     *            identifiers to their &lt;code&gt;Status&lt;/code&gt;
+     */
+<span class="nc" id="L108">    public ResourceFinderResult(Set resources, Map failures) {</span>
+<span class="nc" id="L109">        this.resources = Collections.unmodifiableSet(new HashSet&lt;AttributeValue&gt;(resources));</span>
+<span class="nc" id="L110">        this.failures = Collections.unmodifiableMap(new HashMap(failures));</span>
+<span class="nc" id="L111">        empty = false;</span>
+<span class="nc" id="L112">    }</span>
+
+    /**
+     * Returns whether or not this result contains any Resource Id listings. This will return false
+     * if either the set of successfully resolved resource identifiers or the map of failed
+     * resources is not empty.
+     * 
+     * @return false if this result names any resources, otherwise true
+     */
+    public boolean isEmpty() {
+<span class="nc" id="L122">        return empty;</span>
+    }
+
+    /**
+     * Returns the &lt;code&gt;Set&lt;/code&gt; of successfully resolved Resource Id &lt;code&gt;AttributeValue&lt;/code&gt;
+     * s, which will be empty if no resources were successfully resolved.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;AttributeValue&lt;/code&gt;s
+     */
+    public Set&lt;AttributeValue&gt; getResources() {
+<span class="nc" id="L132">        return resources;</span>
+    }
+
+    /**
+     * Returns the &lt;code&gt;Map&lt;/code&gt; of Resource Ids that caused an error on resolution, which will
+     * be empty if no resources caused any error.
+     * 
+     * @return a &lt;code&gt;Map&lt;/code&gt; of &lt;code&gt;AttributeValue&lt;/code&gt;s to &lt;code&gt;Status&lt;/code&gt;
+     */
+    public Map getFailures() {
+<span class="nc" id="L142">        return failures;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

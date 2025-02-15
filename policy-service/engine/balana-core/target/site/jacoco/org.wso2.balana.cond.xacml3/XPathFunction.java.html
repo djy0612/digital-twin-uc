@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>XPathFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond.xacml3</a> &gt; <span class="el_source">XPathFunction.java</span></div><h1>XPathFunction.java</h1><pre class="source lang-java linenums">/*
+ *  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  WSO2 Inc. licenses this file to you under the Apache License,
+ *  Version 2.0 (the &quot;License&quot;); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.wso2.balana.cond.xacml3;
+
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.DOMHelper;
+import org.wso2.balana.DefaultNamespaceContext;
+import org.wso2.balana.XACMLConstants;
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.BooleanAttribute;
+import org.wso2.balana.attr.IntegerAttribute;
+import org.wso2.balana.attr.xacml3.XPathAttribute;
+import org.wso2.balana.cond.Evaluatable;
+import org.wso2.balana.cond.EvaluationResult;
+import org.wso2.balana.cond.FunctionBase;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.Status;
+import org.wso2.balana.ctx.xacml3.XACML3EvaluationCtx;
+import org.wso2.balana.xacml3.Attributes;
+
+import javax.xml.namespace.NamespaceContext;
+import javax.xml.xpath.*;
+import java.util.*;
+
+/**
+ * The class that implement all XPath based functions. An XPath expression evaluates to a node-set,
+ * which is a set of XML nodes that match the expression. All comparison or other operations on
+ * node-sets are performed in isolation of the particular function specified.
+ */
+public class XPathFunction extends FunctionBase {
+
+    /**
+     * Standard identifier for the xpath-node-count function.
+     */
+    public static final String NAME_XPATH_NODE_COUNT = FUNCTION_NS_3 + &quot;xpath-node-count&quot;;
+
+    /**
+     * Standard identifier for the xpath-node-match function.
+     */
+    public static final String NAME_XPATH_NODE_MATCH = FUNCTION_NS_3 + &quot;xpath-node-match&quot;;
+
+    /**
+     * Standard identifier for the xpath-node-equal function.
+     */
+    public static final String NAME_XPATH_NODE_EQUAL = FUNCTION_NS_3 + &quot;xpath-node-equal&quot;;
+
+
+    /**
+     * private identifiers for xpath-node-count function
+     */
+	private static final int ID_XPATH_NODE_COUNT = 0;
+
+    /**
+     * private identifiers for xpath-node-match function.
+     */
+	private static final int ID_XPATH_NODE_MATCH = 1;
+
+    /**
+     * private identifiers for xpath-node-equal function.
+     */
+	private static final int ID_XPATH_NODE_EQUAL = 2;
+
+
+    /**
+     * Creates a new &lt;code&gt;StringFunction&lt;/code&gt; object.
+     *
+     * @param functionName the standard XACML name of the function to be handled by this object,
+     *            including the full namespace
+     *
+     * @throws IllegalArgumentException if the function is unknown
+     */
+    public XPathFunction(String functionName) {
+<span class="fc" id="L90">        super(functionName, getId(functionName), XPathAttribute.identifier, false,</span>
+<span class="fc" id="L91">                                getNumArgs(functionName), getReturnType(functionName), false);</span>
+<span class="fc" id="L92">    }</span>
+
+    /**
+     * Private helper that returns the internal identifier used for the given standard function.
+     *
+     * @param functionName function name
+     * @return function id
+     */
+    private static int getId(String functionName) {
+        
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        if (functionName.equals(NAME_XPATH_NODE_COUNT)){</span>
+<span class="fc" id="L103">            return ID_XPATH_NODE_COUNT;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        } else if (functionName.equals(NAME_XPATH_NODE_EQUAL)){</span>
+<span class="fc" id="L105">            return ID_XPATH_NODE_EQUAL;</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        } else if (functionName.equals(NAME_XPATH_NODE_MATCH)){</span>
+<span class="fc" id="L107">            return ID_XPATH_NODE_MATCH;            </span>
+        } else {
+<span class="nc" id="L109">            throw new IllegalArgumentException(&quot;unknown divide function &quot; + functionName);</span>
+        }
+    }
+
+    /**
+     * Private helper that returns the return type for the given standard function. Note that this
+     * doesn't check on the return value since the method always is called after getId, so we assume
+     * that the function is present.
+     *
+     * @param functionName function name
+     * @return identifier of the Data type
+     */
+    private static String getReturnType(String functionName) {
+        
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (functionName.equals(NAME_XPATH_NODE_COUNT)){</span>
+<span class="fc" id="L124">            return IntegerAttribute.identifier;</span>
+        } else {
+<span class="fc" id="L126">            return BooleanAttribute.identifier;</span>
+        }
+    }
+
+    /**
+     * Private helper that returns the argument count for the given standard function. Note that
+     * this doesn't check on the return value since the method always is called after getId, so we
+     * assume that the function is present.
+     *
+     * @param functionName function name
+     * @return identifier of the Data type
+     */
+    private static int getNumArgs(String functionName) {
+
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (functionName.equals(NAME_XPATH_NODE_COUNT)){</span>
+<span class="fc" id="L141">            return 1;</span>
+        } else {
+<span class="fc" id="L143">            return 2;</span>
+        }
+    }
+
+
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+     *
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public static Set&lt;String&gt; getSupportedIdentifiers() {
+
+<span class="fc" id="L155">        Set&lt;String&gt; set = new HashSet&lt;String&gt;();</span>
+<span class="fc" id="L156">        set.add(NAME_XPATH_NODE_COUNT);</span>
+<span class="fc" id="L157">        set.add(NAME_XPATH_NODE_EQUAL);</span>
+<span class="fc" id="L158">        set.add(NAME_XPATH_NODE_MATCH);</span>
+<span class="fc" id="L159">        return set;</span>
+    }
+
+    public EvaluationResult evaluate(List&lt;Evaluatable&gt; inputs, EvaluationCtx context) {
+
+        // Evaluate the arguments
+<span class="nc" id="L165">        AttributeValue[] argValues = new AttributeValue[inputs.size()];</span>
+<span class="nc" id="L166">        EvaluationResult result = evalArgs(inputs, context, argValues);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        if (result != null) {</span>
+<span class="nc" id="L168">            return result;</span>
+        }
+
+<span class="nc bnc" id="L171" title="All 2 branches missed.">		switch (getFunctionId()) {</span>
+
+            case ID_XPATH_NODE_COUNT: {
+
+<span class="nc" id="L175">                XPathAttribute xpathAttribute = ((XPathAttribute) argValues[0]);</span>
+<span class="nc" id="L176">                String xpathValue = xpathAttribute.getValue();</span>
+<span class="nc" id="L177">                String category = xpathAttribute.getXPathCategory();</span>
+
+<span class="nc" id="L179">                Node contextNode = null;</span>
+
+                // this must be XACML 3
+<span class="nc" id="L182">                List&lt;Attributes&gt; attributesSet = ((XACML3EvaluationCtx) context).getAttributes(category);</span>
+<span class="nc bnc" id="L183" title="All 4 branches missed.">                if(attributesSet != null &amp;&amp; attributesSet.size() &gt; 0){</span>
+                    // only one attributes can be there
+<span class="nc" id="L185">                    Attributes attributes = attributesSet.get(0);</span>
+<span class="nc" id="L186">                    contextNode = attributes.getContent();</span>
+                }
+
+<span class="nc bnc" id="L189" title="All 2 branches missed.">                if(contextNode != null){</span>
+                    // now apply XPath
+                    try {
+<span class="nc" id="L192">                        NodeList nodeList = getXPathResults(contextNode, xpathValue);</span>
+<span class="nc" id="L193">                        return new EvaluationResult(new IntegerAttribute(nodeList.getLength()));</span>
+<span class="nc" id="L194">                    } catch (XPathExpressionException e) {</span>
+<span class="nc" id="L195">                        List&lt;String&gt; codes = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L196">                        codes.add(Status.STATUS_SYNTAX_ERROR);</span>
+<span class="nc" id="L197">                        Status status = new Status(codes, e.getMessage());</span>
+<span class="nc" id="L198">                        return new EvaluationResult(status);</span>
+                    }
+                }
+            }
+
+            case ID_XPATH_NODE_EQUAL :{
+                    //TODO
+            }
+
+        }
+
+<span class="nc" id="L209">        List&lt;String&gt; codes = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L210">        codes.add(Status.STATUS_SYNTAX_ERROR);</span>
+<span class="nc" id="L211">        Status status = new Status(codes, &quot;Not supported function&quot;);</span>
+<span class="nc" id="L212">        return new EvaluationResult(status);</span>
+    }
+
+
+    /**
+     * Gets Xpath results
+     *
+     * @param contextNode
+     * @param xpathValue
+     * @return
+     * @throws XPathExpressionException
+     */
+    private NodeList getXPathResults(Node contextNode, String xpathValue)
+                                                                throws XPathExpressionException {
+
+<span class="nc" id="L227">        XPathFactory factory = XPathFactory.newInstance();</span>
+<span class="nc" id="L228">        XPath xpath = factory.newXPath();</span>
+
+        //see if the request root is in a namespace
+<span class="nc" id="L231">        String namespace = contextNode.getNamespaceURI();</span>
+        // name spaces are used, so we need to lookup the correct
+        // prefix to use in the search string
+<span class="nc" id="L234">        NamedNodeMap namedNodeMap = contextNode.getAttributes();</span>
+
+<span class="nc" id="L236">        Map&lt;String, String&gt; nsMap = new HashMap&lt;String, String&gt;();</span>
+
+<span class="nc bnc" id="L238" title="All 2 branches missed.">        for (int i = 0; i &lt; namedNodeMap.getLength(); i++) {</span>
+<span class="nc" id="L239">            Node n = namedNodeMap.item(i);</span>
+            // we found the matching namespace, so get the prefix
+            // and then break out
+<span class="nc" id="L242">            String prefix = DOMHelper.getLocalName(n);</span>
+<span class="nc" id="L243">            String nodeValue= n.getNodeValue();</span>
+<span class="nc" id="L244">            nsMap.put(prefix, nodeValue);</span>
+        }
+
+        // if there is not any namespace is defined for content element, default XACML request
+        //  name space would be there.
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        if(XACMLConstants.REQUEST_CONTEXT_3_0_IDENTIFIER.equals(namespace) ||</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">                XACMLConstants.REQUEST_CONTEXT_2_0_IDENTIFIER.equals(namespace) ||</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">                XACMLConstants.REQUEST_CONTEXT_1_0_IDENTIFIER.equals(namespace)){</span>
+<span class="nc" id="L252">            nsMap.put(&quot;xacml&quot;, namespace);</span>
+        }
+
+<span class="nc" id="L255">        NamespaceContext namespaceContext = new DefaultNamespaceContext(nsMap);</span>
+<span class="nc" id="L256">        xpath.setNamespaceContext(namespaceContext);</span>
+
+<span class="nc" id="L258">        XPathExpression expression = xpath.compile(xpathValue);</span>
+<span class="nc" id="L259">        return (NodeList) expression.evaluate(contextNode, XPathConstants.NODESET);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

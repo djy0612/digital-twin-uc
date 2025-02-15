@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StandardCombiningAlgFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.combine</a> &gt; <span class="el_source">StandardCombiningAlgFactory.java</span></div><h1>StandardCombiningAlgFactory.java</h1><pre class="source lang-java linenums">/*
+ * @(#)StandardCombiningAlgFactory.java
+ *
+ * Copyright 2004-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.combine;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.wso2.balana.UnknownIdentifierException;
+import org.wso2.balana.XACMLConstants;
+import org.wso2.balana.combine.xacml2.*;
+import org.wso2.balana.combine.xacml3.DenyUnlessPermitPolicyAlg;
+import org.wso2.balana.combine.xacml3.DenyUnlessPermitRuleAlg;
+import org.wso2.balana.combine.xacml3.PermitUnlessDenyPolicyAlg;
+import org.wso2.balana.combine.xacml3.PermitUnlessDenyRuleAlg;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * This factory supports the standard set of algorithms specified in XACML 1.x and 2.0. It is the
+ * default factory used by the system, and imposes a singleton pattern insuring that there is only
+ * ever one instance of this class.
+ * &lt;p&gt;
+ * Note that because this supports only the standard algorithms, this factory does not allow the
+ * addition of any other algorithms. If you call &lt;code&gt;addAlgorithm&lt;/code&gt; on an instance of this
+ * class, an exception will be thrown. If you need a standard factory that is modifiable, you should
+ * create a new &lt;code&gt;BaseCombiningAlgFactory&lt;/code&gt; (or some other &lt;code&gt;CombiningAlgFactory&lt;/code&gt;
+ * ) and configure it with the standard algorithms using &lt;code&gt;getStandardAlgorithms&lt;/code&gt; (or, in
+ * the case of &lt;code&gt;BaseAttributeFactory&lt;/code&gt;, by providing the datatypes in the constructor).
+ * 
+ * @since 1.2
+ * @author Seth Proctor
+ */
+public class StandardCombiningAlgFactory extends BaseCombiningAlgFactory {
+
+    // the single factory instance
+<span class="fc" id="L70">    private static volatile StandardCombiningAlgFactory factoryInstance = null;</span>
+
+    // the algorithms supported by this factory
+<span class="fc" id="L73">    private static Set supportedAlgorithms = null;</span>
+
+    // identifiers for the supported algorithms
+    private static Set supportedAlgIds;
+
+    // the logger we'll use for all messages
+<span class="fc" id="L79">    private static final Log logger = LogFactory.getLog(StandardCombiningAlgFactory.class);</span>
+
+    /**
+     * Default constructor.
+     */
+    private StandardCombiningAlgFactory() {
+<span class="fc" id="L85">        super(supportedAlgorithms);</span>
+<span class="fc" id="L86">    }</span>
+
+    /**
+     * Private initializer for the supported algorithms. This isn't called until something needs
+     * these values, and is only called once.
+     */
+    private static void initAlgorithms() {
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L94">            logger.debug(&quot;Initializing standard combining algorithms&quot;);</span>
+        }
+
+<span class="fc" id="L97">        supportedAlgorithms = new HashSet();</span>
+<span class="fc" id="L98">        supportedAlgIds = new HashSet();</span>
+
+<span class="fc" id="L100">        supportedAlgorithms.add(new DenyOverridesRuleAlg());</span>
+<span class="fc" id="L101">        supportedAlgIds.add(DenyOverridesRuleAlg.algId);</span>
+<span class="fc" id="L102">        supportedAlgorithms.add(new DenyOverridesPolicyAlg());</span>
+<span class="fc" id="L103">        supportedAlgIds.add(DenyOverridesPolicyAlg.algId);</span>
+
+<span class="fc" id="L105">        supportedAlgorithms.add(new OrderedDenyOverridesRuleAlg());</span>
+<span class="fc" id="L106">        supportedAlgIds.add(OrderedDenyOverridesRuleAlg.algId);</span>
+<span class="fc" id="L107">        supportedAlgorithms.add(new OrderedDenyOverridesPolicyAlg());</span>
+<span class="fc" id="L108">        supportedAlgIds.add(OrderedDenyOverridesPolicyAlg.algId);</span>
+
+<span class="fc" id="L110">        supportedAlgorithms.add(new PermitOverridesRuleAlg());</span>
+<span class="fc" id="L111">        supportedAlgIds.add(PermitOverridesRuleAlg.algId);</span>
+<span class="fc" id="L112">        supportedAlgorithms.add(new PermitOverridesPolicyAlg());</span>
+<span class="fc" id="L113">        supportedAlgIds.add(PermitOverridesPolicyAlg.algId);</span>
+
+<span class="fc" id="L115">        supportedAlgorithms.add(new OrderedPermitOverridesRuleAlg());</span>
+<span class="fc" id="L116">        supportedAlgIds.add(OrderedPermitOverridesRuleAlg.algId);</span>
+<span class="fc" id="L117">        supportedAlgorithms.add(new OrderedPermitOverridesPolicyAlg());</span>
+<span class="fc" id="L118">        supportedAlgIds.add(OrderedPermitOverridesPolicyAlg.algId);</span>
+
+<span class="fc" id="L120">        supportedAlgorithms.add(new FirstApplicableRuleAlg());</span>
+<span class="fc" id="L121">        supportedAlgIds.add(FirstApplicableRuleAlg.algId);</span>
+<span class="fc" id="L122">        supportedAlgorithms.add(new FirstApplicablePolicyAlg());</span>
+<span class="fc" id="L123">        supportedAlgIds.add(FirstApplicablePolicyAlg.algId);</span>
+
+<span class="fc" id="L125">        supportedAlgorithms.add(new OnlyOneApplicablePolicyAlg());</span>
+<span class="fc" id="L126">        supportedAlgIds.add(OnlyOneApplicablePolicyAlg.algId);</span>
+
+        // XACML 3.0
+
+<span class="fc" id="L130">        supportedAlgorithms.add(new DenyUnlessPermitRuleAlg());</span>
+<span class="fc" id="L131">        supportedAlgIds.add(DenyUnlessPermitRuleAlg.algId);</span>
+<span class="fc" id="L132">        supportedAlgorithms.add(new DenyUnlessPermitPolicyAlg());</span>
+<span class="fc" id="L133">        supportedAlgIds.add(DenyUnlessPermitPolicyAlg.algId);</span>
+
+<span class="fc" id="L135">        supportedAlgorithms.add(new PermitUnlessDenyRuleAlg());</span>
+<span class="fc" id="L136">        supportedAlgIds.add(PermitUnlessDenyRuleAlg.algId);</span>
+<span class="fc" id="L137">        supportedAlgorithms.add(new PermitUnlessDenyPolicyAlg());</span>
+<span class="fc" id="L138">        supportedAlgIds.add(PermitUnlessDenyPolicyAlg.algId);</span>
+
+<span class="fc" id="L140">        supportedAlgorithms.add(new org.wso2.balana.combine.xacml3.DenyOverridesRuleAlg());</span>
+<span class="fc" id="L141">        supportedAlgIds.add(org.wso2.balana.combine.xacml3.DenyOverridesRuleAlg.algId);</span>
+<span class="fc" id="L142">        supportedAlgorithms.add(new org.wso2.balana.combine.xacml3.DenyOverridesPolicyAlg());</span>
+<span class="fc" id="L143">        supportedAlgIds.add(org.wso2.balana.combine.xacml3.DenyOverridesPolicyAlg.algId);</span>
+
+<span class="fc" id="L145">        supportedAlgorithms.add(new org.wso2.balana.combine.xacml3.OrderedDenyOverridesRuleAlg());</span>
+<span class="fc" id="L146">        supportedAlgIds.add(org.wso2.balana.combine.xacml3.OrderedDenyOverridesRuleAlg.algId);</span>
+<span class="fc" id="L147">        supportedAlgorithms.add(new org.wso2.balana.combine.xacml3.OrderedDenyOverridesPolicyAlg());</span>
+<span class="fc" id="L148">        supportedAlgIds.add(org.wso2.balana.combine.xacml3.OrderedDenyOverridesPolicyAlg.algId);</span>
+
+<span class="fc" id="L150">        supportedAlgorithms.add(new org.wso2.balana.combine.xacml3.PermitOverridesRuleAlg());</span>
+<span class="fc" id="L151">        supportedAlgIds.add(org.wso2.balana.combine.xacml3.PermitOverridesRuleAlg.algId);</span>
+<span class="fc" id="L152">        supportedAlgorithms.add(new org.wso2.balana.combine.xacml3.PermitOverridesPolicyAlg());</span>
+<span class="fc" id="L153">        supportedAlgIds.add(org.wso2.balana.combine.xacml3.PermitOverridesPolicyAlg.algId);</span>
+
+<span class="fc" id="L155">        supportedAlgorithms.add(new org.wso2.balana.combine.xacml3.OrderedPermitOverridesRuleAlg());</span>
+<span class="fc" id="L156">        supportedAlgIds.add(org.wso2.balana.combine.xacml3.OrderedPermitOverridesRuleAlg.algId);</span>
+<span class="fc" id="L157">        supportedAlgorithms.add(new org.wso2.balana.combine.xacml3.OrderedPermitOverridesPolicyAlg());</span>
+<span class="fc" id="L158">        supportedAlgIds.add(org.wso2.balana.combine.xacml3.OrderedPermitOverridesPolicyAlg.algId);</span>
+
+<span class="fc" id="L160">        supportedAlgIds = Collections.unmodifiableSet(supportedAlgIds);</span>
+<span class="fc" id="L161">    }</span>
+
+    /**
+     * Returns an instance of this factory. This method enforces a singleton model, meaning that
+     * this always returns the same instance, creating the factory if it hasn't been requested
+     * before. This is the default model used by the &lt;code&gt;CombiningAlgFactory&lt;/code&gt;, ensuring
+     * quick access to this factory.
+     * 
+     * @return the factory instance
+     */
+    public static StandardCombiningAlgFactory getFactory() {
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        if (factoryInstance == null) {</span>
+<span class="fc" id="L173">            synchronized (StandardCombiningAlgFactory.class) {</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">                if (factoryInstance == null) {</span>
+<span class="fc" id="L175">                    initAlgorithms();</span>
+<span class="fc" id="L176">                    factoryInstance = new StandardCombiningAlgFactory();</span>
+                }
+<span class="pc" id="L178">            }</span>
+        }
+
+<span class="fc" id="L181">        return factoryInstance;</span>
+    }
+
+    /**
+     * A convenience method that returns a new instance of a &lt;code&gt;CombiningAlgFactory&lt;/code&gt; that
+     * supports all of the standard algorithms. The new factory allows adding support for new
+     * algorithms. This method should only be used when you need a new, mutable instance (eg, when
+     * you want to create a new factory that extends the set of supported algorithms). In general,
+     * you should use &lt;code&gt;getFactory&lt;/code&gt; which is more efficient and enforces a singleton
+     * pattern.
+     * 
+     * @return a new factory supporting the standard algorithms
+     */
+    public static CombiningAlgFactory getNewFactory() {
+        // first we make sure everything's been initialized...
+<span class="fc" id="L196">        getFactory();</span>
+
+        // ...then we create the new instance
+<span class="fc" id="L199">        return new BaseCombiningAlgFactory(supportedAlgorithms);</span>
+    }
+
+    /**
+     * Returns the identifiers supported for the given version of XACML. Because this factory
+     * supports identifiers from all versions of the XACML specifications, this method is useful for
+     * getting a list of which specific identifiers are supported by a given version of XACML.
+     * 
+     * @param xacmlVersion a standard XACML identifier string, as provided in
+     *            &lt;code&gt;PolicyMetaData&lt;/code&gt;
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of identifiers
+     * 
+     * @throws UnknownIdentifierException if the version string is unknown
+     */
+    public static Set getStandardAlgorithms(String xacmlVersion) throws UnknownIdentifierException {
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        if (xacmlVersion.equals(XACMLConstants.XACML_1_0_IDENTIFIER)</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">                || xacmlVersion.equals(XACMLConstants.XACML_2_0_IDENTIFIER) ||</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">                xacmlVersion.equals(XACMLConstants.XACML_3_0_IDENTIFIER)){</span>
+<span class="nc" id="L218">            return supportedAlgIds;</span>
+        }
+
+<span class="nc" id="L221">        throw new UnknownIdentifierException(&quot;Unknown XACML version: &quot; + xacmlVersion);</span>
+    }
+
+    /**
+     * Throws an &lt;code&gt;UnsupportedOperationException&lt;/code&gt; since you are not allowed to modify what
+     * a standard factory supports.
+     * 
+     * @param alg the combining algorithm to add
+     * 
+     * @throws UnsupportedOperationException always
+     */
+    public void addAlgorithm(CombiningAlgorithm alg) {
+<span class="nc" id="L233">        throw new UnsupportedOperationException(&quot;a standard factory cannot &quot;</span>
+                + &quot;support new algorithms&quot;);
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

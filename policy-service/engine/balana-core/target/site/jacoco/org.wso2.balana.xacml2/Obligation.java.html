@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Obligation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.xacml2</a> &gt; <span class="el_source">Obligation.java</span></div><h1>Obligation.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+package org.wso2.balana.xacml2;
+
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.*;
+import org.wso2.balana.attr.AttributeFactory;
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.ctx.Attribute;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.xacml2.Result;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Represents ObligationType in the XACML 2.0 policy schema. In XACML 2.0, this element represent both
+ * in policy and result. Therefore this has extends the &lt;code&gt;AbstractObligation&lt;/code&gt; and implements
+ * the  &lt;code&gt;ObligationResult&lt;/code&gt;
+ */
+public class Obligation extends AbstractObligation implements ObligationResult {
+
+    /**
+     *  A &lt;code&gt;List&lt;/code&gt; of  &lt;code&gt;Attribute&lt;/code&gt;
+     */
+    private List&lt;Attribute&gt; assignments;
+
+
+    /**
+     * Constructor that takes all the data associated with an obligation. The attribute assignment
+     * list contains &lt;code&gt;Attribute&lt;/code&gt; objects, but only the fields used by the
+     * AttributeAssignmentType are used.
+     *
+     * @param obligationId the obligation's id
+     * @param fulfillOn the effect denoting when to fulfill this obligation
+     * @param assignments a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Attribute&lt;/code&gt;s
+     */
+<span class="nc" id="L61">    public Obligation(URI obligationId, int fulfillOn, List&lt;Attribute&gt; assignments) {</span>
+<span class="nc" id="L62">        this.obligationId = obligationId;</span>
+<span class="nc" id="L63">        this.fulfillOn = fulfillOn;</span>
+<span class="nc" id="L64">        this.assignments = Collections.unmodifiableList(new ArrayList&lt;Attribute&gt;(assignments));</span>
+<span class="nc" id="L65">    }</span>
+
+    /**
+     * Creates an instance of &lt;code&gt;Obligation&lt;/code&gt; based on the DOM root node.
+     *
+     * @param root the DOM root of the ObligationType XML type
+     *
+     * @return an instance of an obligation
+     *
+     * @throws ParsingException if the structure isn't valid
+     */
+    public static Obligation getInstance(Node root) throws ParsingException {
+        
+        URI id;
+        int fulfillOn;
+        String effect;
+<span class="nc" id="L81">        List&lt;Attribute&gt; assignments = new ArrayList&lt;Attribute&gt;();</span>
+        
+<span class="nc" id="L83">        AttributeFactory attrFactory = Balana.getInstance().getAttributeFactory();</span>
+<span class="nc" id="L84">        NamedNodeMap attrs = root.getAttributes();</span>
+
+        try {
+<span class="nc" id="L87">            id = new URI(attrs.getNamedItem(&quot;ObligationId&quot;).getNodeValue());</span>
+<span class="nc" id="L88">        } catch (Exception e) {</span>
+<span class="nc" id="L89">            throw new ParsingException(&quot;Error parsing required attribute ObligationId&quot;, e);</span>
+<span class="nc" id="L90">        }</span>
+
+        try {
+<span class="nc" id="L93">            effect = attrs.getNamedItem(&quot;FulfillOn&quot;).getNodeValue();</span>
+<span class="nc" id="L94">        } catch (Exception e) {</span>
+<span class="nc" id="L95">            throw new ParsingException(&quot;Error parsing required attribute FulfillOn&quot;, e);</span>
+<span class="nc" id="L96">        }</span>
+
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (effect.equals(&quot;Permit&quot;)) {</span>
+<span class="nc" id="L99">            fulfillOn = Result.DECISION_PERMIT;</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        } else if (effect.equals(&quot;Deny&quot;)) {</span>
+<span class="nc" id="L101">            fulfillOn = Result.DECISION_DENY;</span>
+        } else {
+<span class="nc" id="L103">            throw new ParsingException(&quot;Invalid Effect type: &quot; + effect);</span>
+        }
+
+<span class="nc" id="L106">        NodeList nodes = root.getChildNodes();</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="nc" id="L108">            Node node = nodes.item(i);</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">            if (DOMHelper.getLocalName(node).equals(&quot;AttributeAssignment&quot;)) {</span>
+                try {
+<span class="nc" id="L111">                    URI attrId = new URI(node.getAttributes().getNamedItem(&quot;AttributeId&quot;)</span>
+<span class="nc" id="L112">                            .getNodeValue());</span>
+<span class="nc" id="L113">                    AttributeValue attrValue = attrFactory.createValue(node);</span>
+<span class="nc" id="L114">                    assignments.add(new Attribute(attrId, null, null, attrValue,</span>
+                                                                XACMLConstants.XACML_VERSION_2_0));
+<span class="nc" id="L116">                } catch (URISyntaxException use) {</span>
+<span class="nc" id="L117">                    throw new ParsingException(&quot;Error parsing URI&quot;, use);</span>
+<span class="nc" id="L118">                } catch (UnknownIdentifierException uie) {</span>
+<span class="nc" id="L119">                    throw new ParsingException(uie.getMessage(), uie);</span>
+<span class="nc" id="L120">                } catch (Exception e) {</span>
+<span class="nc" id="L121">                    throw new ParsingException(&quot;Error parsing attribute assignments&quot;, e);</span>
+<span class="nc" id="L122">                }</span>
+            }
+        }
+
+<span class="nc" id="L126">        return new Obligation(id, fulfillOn, assignments);</span>
+    }
+
+
+    @Override
+    public ObligationResult evaluate(EvaluationCtx ctx) {
+<span class="nc" id="L132">        return new Obligation(obligationId, fulfillOn, assignments);</span>
+    }
+
+    /**
+     * Returns the attribute assignment data in this obligation. The &lt;code&gt;List&lt;/code&gt; contains
+     * objects of type &lt;code&gt;Attribute&lt;/code&gt; with only the correct attribute fields being used.
+     *
+     * @return the assignments
+     */
+    public List&lt;Attribute&gt; getAssignments() {
+<span class="nc" id="L142">        return assignments;</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;Obligation&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="nc" id="L151">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L152">        encode(builder);</span>
+<span class="nc" id="L153">        return builder.toString();</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;Obligation&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L164">        builder.append(&quot;&lt;Obligation ObligationId=\&quot;&quot;).append(obligationId.toString()).</span>
+<span class="nc" id="L165">                append(&quot;\&quot; FulfillOn=\&quot;&quot;).append(Result.DECISIONS[fulfillOn]).append(&quot;\&quot;&gt;\n&quot;);</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">        for (Attribute assignment : assignments) {</span>
+<span class="nc" id="L167">            builder.append(&quot;&lt;AttributeAssignment AttributeId=\&quot;&quot;).</span>
+<span class="nc" id="L168">                    append(assignment.getId().toString()).append(&quot;\&quot; DataType=\&quot;&quot;).</span>
+<span class="nc" id="L169">                    append(assignment.getType().toString()).append(&quot;\&quot;&gt;&quot;).</span>
+<span class="nc" id="L170">                    append(assignment.getValue().encode()).append(&quot;&lt;/AttributeAssignment&gt;\n&quot;);</span>
+<span class="nc" id="L171">        }</span>
+<span class="nc" id="L172">        builder.append(&quot;&lt;/Obligation&gt;&quot;);</span>
+<span class="nc" id="L173">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DoubleAttribute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.attr</a> &gt; <span class="el_source">DoubleAttribute.java</span></div><h1>DoubleAttribute.java</h1><pre class="source lang-java linenums">/*
+ * @(#)DoubleAttribute.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.attr;
+
+import java.net.URI;
+
+import org.w3c.dom.Node;
+
+/**
+ * Representation of an xsi:double value. This class supports parsing xsi:double values. All objects
+ * of this class are immutable and all methods of the class are thread-safe.
+ * 
+ * @since 1.0
+ * @author Marco Barreno
+ * @author Seth Proctor
+ * @author Steve Hanna
+ */
+public class DoubleAttribute extends AttributeValue {
+    /**
+     * Official name of this type
+     */
+    public static final String identifier = &quot;http://www.w3.org/2001/XMLSchema#double&quot;;
+
+    /**
+     * URI version of name for this type
+     * &lt;p&gt;
+     * This field is initialized by a static initializer so that we can catch any exceptions thrown
+     * by URI(String) and transform them into a RuntimeException, since this should never happen but
+     * should be reported properly if it ever does.
+     */
+    private static URI identifierURI;
+
+    /**
+     * RuntimeException that wraps an Exception thrown during the creation of identifierURI, null if
+     * none.
+     */
+    private static RuntimeException earlyException;
+
+    /**
+     * Static initializer that initializes the identifierURI class field so that we can catch any
+     * exceptions thrown by URI(String) and transform them into a RuntimeException. Such exceptions
+     * should never happen but should be reported properly if they ever do.
+     */
+    static {
+        try {
+<span class="fc" id="L79">            identifierURI = new URI(identifier);</span>
+<span class="nc" id="L80">        } catch (Exception e) {</span>
+<span class="nc" id="L81">            earlyException = new IllegalArgumentException();</span>
+<span class="nc" id="L82">            earlyException.initCause(e);</span>
+<span class="fc" id="L83">        }</span>
+<span class="fc" id="L84">    };</span>
+
+    /**
+     * The actual double value that this object represents.
+     */
+    private double value;
+
+    /**
+     * Creates a new &lt;code&gt;DoubleAttribute&lt;/code&gt; that represents the double value supplied.
+     * 
+     * @param value the &lt;code&gt;double&lt;/code&gt; value to be represented
+     */
+    public DoubleAttribute(double value) {
+<span class="fc" id="L97">        super(identifierURI);</span>
+
+        // Shouldn't happen, but just in case...
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (earlyException != null)</span>
+<span class="nc" id="L101">            throw earlyException;</span>
+
+<span class="fc" id="L103">        this.value = value;</span>
+<span class="fc" id="L104">    }</span>
+
+    /**
+     * Returns a new &lt;code&gt;DoubleAttribute&lt;/code&gt; that represents the xsi:double at a particular DOM
+     * node.
+     * 
+     * @param root the &lt;code&gt;Node&lt;/code&gt; that contains the desired value
+     * @return a new &lt;code&gt;DoubleAttribute&lt;/code&gt; representing the appropriate value (null if there
+     *         is a parsing error)
+     * @throws NumberFormatException if the string form is not a double
+     */
+    public static DoubleAttribute getInstance(Node root) throws NumberFormatException {
+<span class="fc" id="L116">        return getInstance(root.getFirstChild().getNodeValue());</span>
+    }
+
+    /**
+     * Returns a new &lt;code&gt;DoubleAttribute&lt;/code&gt; that represents the xsi:double value indicated by
+     * the string provided.
+     * 
+     * @param value a string representing the desired value
+     * @return a new &lt;code&gt;DoubleAttribute&lt;/code&gt; representing the desired value (null if there is a
+     *         parsing error)
+     * @throws NumberFormatException if the value is not a double
+     */
+    public static DoubleAttribute getInstance(String value) {
+        // Convert &quot;INF&quot; to &quot;Infinity&quot;
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if (value.endsWith(&quot;INF&quot;)) {</span>
+<span class="nc" id="L131">            int infIndex = value.lastIndexOf(&quot;INF&quot;);</span>
+<span class="nc" id="L132">            value = value.substring(0, infIndex) + &quot;Infinity&quot;;</span>
+        }
+
+<span class="fc" id="L135">        return new DoubleAttribute(Double.parseDouble(value));</span>
+    }
+
+    /**
+     * Returns the &lt;code&gt;double&lt;/code&gt; value represented by this object.
+     * 
+     * @return the &lt;code&gt;double&lt;/code&gt; value
+     */
+    public double getValue() {
+<span class="fc" id="L144">        return value;</span>
+    }
+
+    /**
+     * Returns true if the input is an instance of this class and if its value equals the value
+     * contained in this class.
+     * 
+     * @param o the object to compare
+     * 
+     * @return true if this object and the input represent the same value
+     */
+    public boolean equals(Object o) {
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        if (!(o instanceof DoubleAttribute))</span>
+<span class="nc" id="L157">            return false;</span>
+
+<span class="fc" id="L159">        DoubleAttribute other = (DoubleAttribute) o;</span>
+
+        // Handle the NaN case, where Java says NaNs are never
+        // equal and XML Query says they always are
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (Double.isNaN(value)) {</span>
+            // this is a NaN, so see if the other is as well
+<span class="nc bnc" id="L165" title="All 2 branches missed.">            if (Double.isNaN(other.value)) {</span>
+                // they're both NaNs, so they're equal
+<span class="nc" id="L167">                return true;</span>
+            } else {
+                // they're not both NaNs, so they're not equal
+<span class="nc" id="L170">                return false;</span>
+            }
+        } else {
+            // not NaNs, so we can do a normal comparison
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            return (value == other.value);</span>
+        }
+    }
+
+    /**
+     * Returns the hashcode value used to index and compare this object with others of the same
+     * type. Typically this is the hashcode of the backing data object.
+     * 
+     * @return the object's hashcode value
+     */
+    public int hashCode() {
+<span class="fc" id="L185">        long v = Double.doubleToLongBits(value);</span>
+<span class="fc" id="L186">        return (int) (v ^ (v &gt;&gt;&gt; 32));</span>
+    }
+
+    /**
+     *
+     */
+    public String encode() {
+<span class="nc" id="L193">        return String.valueOf(value);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

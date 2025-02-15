@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ResourceActionMapping.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.ctx</a> &gt; <span class="el_source">ResourceActionMapping.java</span></div><h1>ResourceActionMapping.java</h1><pre class="source lang-java linenums">package org.wso2.balana.ctx;
+
+public class ResourceActionMapping {
+
+    private String resourceName;
+    private String actionName;
+    private String envName;
+
+<span class="nc" id="L9">    public ResourceActionMapping() {</span>
+
+<span class="nc" id="L11">    }</span>
+
+    public ResourceActionMapping(String resourceName, String actionName, String envName) {
+<span class="nc" id="L14">        super();</span>
+<span class="nc" id="L15">        this.resourceName = resourceName;</span>
+<span class="nc" id="L16">        this.actionName = actionName;</span>
+<span class="nc" id="L17">        this.envName = envName;</span>
+<span class="nc" id="L18">    }</span>
+
+    public String getEnvName() {
+<span class="nc" id="L21">        return envName;</span>
+    }
+
+    public void setEnvName(String envName) {
+<span class="nc" id="L25">        this.envName = envName;</span>
+<span class="nc" id="L26">    }</span>
+
+    public String getResourceName() {
+<span class="nc" id="L29">        return resourceName;</span>
+    }
+
+    public void setResourceName(String resourceName) {
+<span class="nc" id="L33">        this.resourceName = resourceName;</span>
+<span class="nc" id="L34">    }</span>
+
+    public String getActionName() {
+<span class="nc" id="L37">        return actionName;</span>
+    }
+
+    public void setActionName(String actionName) {
+<span class="nc" id="L41">        this.actionName = actionName;</span>
+<span class="nc" id="L42">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

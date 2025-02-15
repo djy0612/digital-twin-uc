@@ -1,0 +1,646 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DateTimeAttribute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.attr</a> &gt; <span class="el_source">DateTimeAttribute.java</span></div><h1>DateTimeAttribute.java</h1><pre class="source lang-java linenums">/*
+ * @(#)DateTimeAttribute.java
+ *
+ * Copyright 2003-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.attr;
+
+import org.wso2.balana.ParsingException;
+
+import java.net.URI;
+
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
+
+import org.w3c.dom.Node;
+
+/**
+ * Representation of an xs:dateTime value. This class supports parsing xs:dateTime values. All
+ * objects of this class are immutable and thread-safe. The &lt;code&gt;Date&lt;/code&gt; objects returned are
+ * not, but these objects are cloned before being returned.
+ * 
+ * @since 1.0
+ * @author Marco Barreno
+ * @author Seth Proctor
+ * @author Steve Hanna
+ */
+public class DateTimeAttribute extends AttributeValue {
+	/**
+	 * Official name of this type
+	 */
+	public static final String identifier = &quot;http://www.w3.org/2001/XMLSchema#dateTime&quot;;
+
+	/**
+	 * URI version of name for this type
+	 * &lt;p&gt;
+	 * This field is initialized by a static initializer so that we can catch any exceptions thrown
+	 * by URI(String) and transform them into a RuntimeException, since this should never happen but
+	 * should be reported properly if it ever does.
+	 * &lt;p&gt;
+	 * This object is used for synchronization whenever we need protection across this whole class.
+	 */
+	private static URI identifierURI;
+
+	/**
+	 * RuntimeException that wraps an Exception thrown during the creation of identifierURI, null if
+	 * none.
+	 */
+	private static RuntimeException earlyException;
+
+	/**
+	 * Static initializer that initializes the identifierURI class field so that we can catch any
+	 * exceptions thrown by URI(String) and transform them into a RuntimeException. Such exceptions
+	 * should never happen but should be reported properly if they ever do.
+	 */
+	static {
+		try {
+<span class="fc" id="L94">			identifierURI = new URI(identifier);</span>
+<span class="nc" id="L95">		} catch (Exception e) {</span>
+<span class="nc" id="L96">			earlyException = new IllegalArgumentException();</span>
+<span class="nc" id="L97">			earlyException.initCause(e);</span>
+<span class="fc" id="L98">		}</span>
+<span class="fc" id="L99">	};</span>
+
+	/**
+	 * Parser for dates with no time zones
+	 * &lt;p&gt;
+	 * This field is only initialized if needed (by initParsers()).
+	 * &lt;p&gt;
+	 * NOTE: This object should only be accessed from code that has synchronized on it, since
+	 * SimpleDateFormat objects are not thread-safe. If this is causing performance problems, we
+	 * could easily make this a method variable in methods that use it instead of a class field. But
+	 * that would mean we'd need to spend a lot more time creating these objects.
+	 */
+	private static volatile DateFormat simpleParser;
+
+	/**
+	 * Parser for dates with RFC 822 time zones (like +0300)
+	 * &lt;p&gt;
+	 * This field is only initialized if needed (by initParsers()).
+	 * &lt;p&gt;
+	 * NOTE: This object should only be accessed from code that has synchronized on it, since
+	 * SimpleDateFormat objects are not thread-safe.
+	 */
+	private static DateFormat zoneParser;
+
+	/**
+	 * Calendar for GMT
+	 * &lt;p&gt;
+	 * NOTE: This object should only be accessed from code that has a lock on it, since Calendar
+	 * objects are not generally thread-safe.
+	 */
+	private static volatile Calendar gmtCalendar;
+
+	/**
+	 * Time zone value that indicates that the time zone was not specified.
+	 */
+	public static final int TZ_UNSPECIFIED = -1000000;
+
+	/**
+	 * The actual date and time that this object represents (in GMT, as with all Date objects). If
+	 * no time zone was specified, the local time zone is used to convert to GMT.
+	 * &lt;p&gt;
+	 * This Date does not include fractions of a second. Those are handled by the separate
+	 * nanoseconds field, since Date only provides millisecond accuracy and the XML Query spec
+	 * requires at least 100 nanosecond accuracy.
+	 */
+	private Date value;
+
+	/**
+	 * The number of nanoseconds beyond the Date given by the value field. The XML Query document
+	 * says that fractional seconds must be supported down to at least 100 nanosecond resolution.
+	 * The Date class only supports milliseconds, so we include here support for nanosecond
+	 * resolution.
+	 */
+	private int nanoseconds;
+
+	/**
+	 * The time zone specified for this object (or TZ_UNSPECIFIED if unspecified). The offset to
+	 * GMT, in minutes.
+	 */
+	private int timeZone;
+
+	/**
+	 * The time zone actually used for this object (if it was originally unspecified, the default
+	 * time zone used). The offset to GMT, in minutes.
+	 */
+	private int defaultedTimeZone;
+
+	/**
+	 * Cached encoded value (null if not cached yet).
+	 */
+<span class="fc" id="L169">	private String encodedValue = null;</span>
+
+	/**
+	 * Creates a new &lt;code&gt;DateTimeAttribute&lt;/code&gt; that represents the current date in the default
+	 * time zone.
+	 */
+	public DateTimeAttribute() {
+<span class="nc" id="L176">		this(new Date());</span>
+<span class="nc" id="L177">	}</span>
+
+	/**
+	 * Creates a new &lt;code&gt;DateTimeAttribute&lt;/code&gt; that represents the supplied date but uses
+	 * default timezone and offset values.
+	 * 
+	 * @param dateTime a &lt;code&gt;Date&lt;/code&gt; object representing the specified date and time down to
+	 *            second resolution. If this object has non-zero milliseconds, they are combined
+	 *            with the nanoseconds parameter.
+	 */
+	public DateTimeAttribute(Date dateTime) {
+<span class="fc" id="L188">		super(identifierURI);</span>
+
+<span class="fc" id="L190">		int currOffset = getDefaultTZOffset(dateTime);</span>
+<span class="fc" id="L191">		init(dateTime, 0, currOffset, currOffset);</span>
+<span class="fc" id="L192">	}</span>
+
+	/**
+	 * Creates a new &lt;code&gt;DateTimeAttribute&lt;/code&gt; that represents the date supplied.
+	 * 
+	 * @param dateTime a &lt;code&gt;Date&lt;/code&gt; object representing the specified date and time down to
+	 *            second resolution. If this object has non-zero milliseconds, they are combined
+	 *            with the nanoseconds parameter.
+	 * @param nanoseconds the number of nanoseconds beyond the Date specified in the date parameter
+	 * @param timeZone the time zone specified for this object (or TZ_UNSPECIFIED if unspecified).
+	 *            The offset to GMT, in minutes.
+	 * @param defaultedTimeZone the time zone actually used for this object (if it was originally
+	 *            unspecified, the default time zone used). The offset to GMT, in minutes.
+	 */
+	public DateTimeAttribute(Date dateTime, int nanoseconds, int timeZone, int defaultedTimeZone) {
+<span class="fc" id="L207">		super(identifierURI);</span>
+
+<span class="fc" id="L209">		init(dateTime, nanoseconds, timeZone, defaultedTimeZone);</span>
+<span class="fc" id="L210">	}</span>
+
+	/**
+	 * Initialization code shared by constructors.
+	 * 
+	 * @param date a &lt;code&gt;Date&lt;/code&gt; object representing the specified date and time down to
+	 *            second resolution. If this object has non-zero milliseconds, they are combined
+	 *            with the nanoseconds parameter.
+	 * @param nanoseconds the number of nanoseconds beyond the Date specified in the date parameter
+	 * @param timeZone the time zone specified for this object (or TZ_UNSPECIFIED if unspecified).
+	 *            The offset to GMT, in minutes.
+	 * @param defaultedTimeZone the time zone actually used for this object (if it was originally
+	 *            unspecified, the default time zone used). The offset to GMT, in minutes.
+	 */
+	private void init(Date date, int nanoseconds, int timeZone, int defaultedTimeZone) {
+
+		// Shouldn't happen, but just in case...
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">		if (earlyException != null)</span>
+<span class="nc" id="L228">			throw earlyException;</span>
+
+		// Make a new Date object
+<span class="fc" id="L231">		this.value = (Date) date.clone();</span>
+		// Combine the nanoseconds so they are between 0 and 999,999,999
+<span class="fc" id="L233">		this.nanoseconds = combineNanos(this.value, nanoseconds);</span>
+<span class="fc" id="L234">		this.timeZone = timeZone;</span>
+<span class="fc" id="L235">		this.defaultedTimeZone = defaultedTimeZone;</span>
+<span class="fc" id="L236">	}</span>
+
+	/**
+	 * Returns a new &lt;code&gt;DateTimeAttribute&lt;/code&gt; that represents the xs:dateTime at a particular
+	 * DOM node.
+	 * 
+	 * @param root the &lt;code&gt;Node&lt;/code&gt; that contains the desired value
+	 * @return a new &lt;code&gt;DateTimeAttribute&lt;/code&gt; representing the appropriate value
+	 * @throws ParsingException if any problems occurred while parsing
+	 */
+	public static DateTimeAttribute getInstance(Node root) throws ParsingException,
+			NumberFormatException, ParseException {
+<span class="fc" id="L248">		return getInstance(root.getFirstChild().getNodeValue());</span>
+	}
+
+	/**
+	 * Returns a new &lt;code&gt;DateTimeAttribute&lt;/code&gt; that represents the xs:dateTime value indicated
+	 * by the string provided.
+	 * 
+	 * @param value a string representing the desired value
+	 * @return a new &lt;code&gt;DateTimeAttribute&lt;/code&gt; representing the desired value
+	 * @throws ParsingException if the text is formatted incorrectly
+	 * @throws NumberFormatException if the nanosecond format is incorrect
+	 * @throws ParseException
+	 */
+	public static DateTimeAttribute getInstance(String value) throws ParsingException,
+			NumberFormatException, ParseException {
+<span class="fc" id="L263">		Date dateValue = null;</span>
+<span class="fc" id="L264">		int nanoseconds = 0;</span>
+		int timeZone;
+		int defaultedTimeZone;
+
+<span class="fc" id="L268">		initParsers();</span>
+
+		// If string ends with Z, it's in GMT. Chop off the Z and
+		// add +00:00 to make the time zone explicit.
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">		if (value.endsWith(&quot;Z&quot;))</span>
+<span class="nc" id="L273">			value = value.substring(0, value.length() - 1) + &quot;+00:00&quot;;</span>
+
+		// Figure out if the string has a time zone.
+		// If string ends with +XX:XX or -XX:XX, it must have
+		// a time zone or be invalid.
+<span class="fc" id="L278">		int len = value.length(); // This variable is often not up-to-date</span>
+<span class="pc bpc" id="L279" title="2 of 4 branches missed.">		boolean hasTimeZone = ((value.charAt(len - 3) == ':') &amp;&amp; ((value.charAt(len - 6) == '-') || (value</span>
+<span class="pc bnc" id="L280" title="All 2 branches missed.">				.charAt(len - 6) == '+')));</span>
+
+		// If string contains a period, it must have fractional
+		// seconds (or be invalid). Strip them out and put the
+		// value in nanoseconds.
+<span class="fc" id="L285">		int dotIndex = value.indexOf('.');</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">		if (dotIndex != -1) {</span>
+			// Decide where fractional seconds end.
+<span class="nc" id="L288">			int secondsEnd = value.length();</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">			if (hasTimeZone)</span>
+<span class="nc" id="L290">				secondsEnd -= 6;</span>
+			// Copy the fractional seconds out of the string.
+<span class="nc" id="L292">			String nanoString = value.substring(dotIndex + 1, secondsEnd);</span>
+			// Check that all those characters are ASCII digits.
+<span class="nc bnc" id="L294" title="All 2 branches missed.">			for (int i = nanoString.length() - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L295">				char c = nanoString.charAt(i);</span>
+<span class="nc bnc" id="L296" title="All 4 branches missed.">				if ((c &lt; '0') || (c &gt; '9'))</span>
+<span class="nc" id="L297">					throw new ParsingException(&quot;non-ascii digit found&quot;);</span>
+			}
+			// If there are less than 9 digits in the fractional seconds,
+			// pad with zeros on the right so it's nanoseconds.
+<span class="nc bnc" id="L301" title="All 2 branches missed.">			if (nanoString.length() &lt; 9) {</span>
+<span class="nc" id="L302">				StringBuffer buffer = new StringBuffer(nanoString);</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">				while (buffer.length() &lt; 9) {</span>
+<span class="nc" id="L304">					buffer.append(&quot;0&quot;);</span>
+				}
+<span class="nc" id="L306">				nanoString = buffer.toString();</span>
+			}
+
+			// If there are more than 9 digits in the fractional seconds,
+			// drop the least significant digits.
+<span class="nc bnc" id="L311" title="All 2 branches missed.">			if (nanoString.length() &gt; 9) {</span>
+<span class="nc" id="L312">				nanoString = nanoString.substring(0, 9);</span>
+			}
+			// Parse the fractional seconds.
+<span class="nc" id="L315">			nanoseconds = Integer.parseInt(nanoString);</span>
+
+			// Remove the fractional seconds from the string.
+<span class="nc" id="L318">			value = value.substring(0, dotIndex) + value.substring(secondsEnd, value.length());</span>
+		}
+
+		// this is the code that may trow a ParseException
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">		if (hasTimeZone) {</span>
+			// Strip off the purported time zone and make sure what's
+			// left is a valid unzoned date and time (by parsing in GMT).
+			// If so, reformat the time zone by stripping out the colon
+			// and parse the revised string with the timezone parser.
+
+<span class="fc" id="L328">			len = value.length();</span>
+
+<span class="fc" id="L330">			Date gmtValue = strictParse(zoneParser, value.substring(0, len - 6) + &quot;+0000&quot;);</span>
+<span class="fc" id="L331">			value = value.substring(0, len - 3) + value.substring(len - 2, len);</span>
+<span class="fc" id="L332">			dateValue = strictParse(zoneParser, value);</span>
+<span class="fc" id="L333">			timeZone = (int) (gmtValue.getTime() - dateValue.getTime());</span>
+<span class="fc" id="L334">			timeZone = timeZone / 60000;</span>
+<span class="fc" id="L335">			defaultedTimeZone = timeZone;</span>
+<span class="fc" id="L336">		} else {</span>
+			// No funny business. This must be a simple date and time.
+<span class="nc" id="L338">			dateValue = strictParse(simpleParser, value);</span>
+<span class="nc" id="L339">			timeZone = TZ_UNSPECIFIED;</span>
+			// Figure out what time zone was used.
+<span class="nc" id="L341">			Date gmtValue = strictParse(zoneParser, value + &quot;+0000&quot;);</span>
+<span class="nc" id="L342">			defaultedTimeZone = (int) (gmtValue.getTime() - dateValue.getTime());</span>
+<span class="nc" id="L343">			defaultedTimeZone = defaultedTimeZone / 60000;</span>
+		}
+
+		// If parsing went OK, create a new DateTimeAttribute object and
+		// return it.
+
+<span class="fc" id="L349">		DateTimeAttribute attr = new DateTimeAttribute(dateValue, nanoseconds, timeZone,</span>
+				defaultedTimeZone);
+<span class="fc" id="L351">		return attr;</span>
+	}
+
+	/**
+	 * Parse a String using a DateFormat parser, requiring that the entire String be consumed by the
+	 * parser. On success, return a Date. On failure, throw a ParseException.
+	 * &lt;p&gt;
+	 * Synchronize on the parser object when using it, since we assume they're the shared static
+	 * objects in this class.
+	 */
+	private static Date strictParse(DateFormat parser, String str) throws ParseException {
+<span class="fc" id="L362">		ParsePosition pos = new ParsePosition(0);</span>
+		Date ret;
+<span class="fc" id="L364">		synchronized (parser) {</span>
+<span class="fc" id="L365">			ret = parser.parse(str, pos);</span>
+<span class="pc" id="L366">		}</span>
+<span class="pc bpc" id="L367" title="1 of 2 branches missed.">		if (pos.getIndex() != str.length())</span>
+<span class="nc" id="L368">			throw new ParseException(&quot;&quot;, 0);</span>
+<span class="fc" id="L369">		return ret;</span>
+	}
+
+	/**
+	 * Initialize the parser objects.
+	 */
+	private static void initParsers() {
+		// If simpleParser is already set, we're done.
+<span class="fc bfc" id="L377" title="All 2 branches covered.">		if (simpleParser != null)</span>
+<span class="fc" id="L378">			return;</span>
+
+		// Make sure that identifierURI is not null
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">		if (earlyException != null)</span>
+<span class="nc" id="L382">			throw earlyException;</span>
+
+		// Synchronize on identifierURI while initializing parsers
+		// so we don't end up using a half-way initialized parser
+<span class="fc" id="L386">		synchronized (identifierURI) {</span>
+			// This simple parser has no time zone
+<span class="fc" id="L388">			simpleParser = new SimpleDateFormat(&quot;yyyy-MM-dd'T'HH:mm:ss&quot;);</span>
+<span class="fc" id="L389">			simpleParser.setLenient(false);</span>
+
+			// This parser has a four digit offset to GMT with sign
+<span class="fc" id="L392">			zoneParser = new SimpleDateFormat(&quot;yyyy-MM-dd'T'HH:mm:ssZ&quot;);</span>
+<span class="fc" id="L393">			zoneParser.setLenient(false);</span>
+<span class="pc" id="L394">		}</span>
+<span class="fc" id="L395">	}</span>
+
+	/**
+	 * Gets the date and time represented by this object. The return value is a &lt;code&gt;Date&lt;/code&gt;
+	 * object representing the specified date and time down to second resolution. Subsecond values
+	 * are handled by the {@link #getNanoseconds getNanoseconds} method.
+	 * &lt;p&gt;
+	 * &lt;b&gt;NOTE:&lt;/b&gt; The &lt;code&gt;Date&lt;/code&gt; object is cloned before it is returned to avoid
+	 * unauthorized changes.
+	 * 
+	 * @return a &lt;code&gt;Date&lt;/code&gt; object representing the date and time represented by this object
+	 */
+	public Date getValue() {
+<span class="fc" id="L408">		return (Date) value.clone();</span>
+	}
+
+	/**
+	 * Gets the nanoseconds of this object.
+	 * 
+	 * @return the number of nanoseconds
+	 */
+	public int getNanoseconds() {
+<span class="fc" id="L417">		return nanoseconds;</span>
+	}
+
+	/**
+	 * Gets the time zone of this object (or TZ_UNSPECIFIED if unspecified).
+	 * 
+	 * @return the offset to GMT in minutes (positive or negative)
+	 */
+	public int getTimeZone() {
+<span class="fc" id="L426">		return timeZone;</span>
+	}
+
+	/**
+	 * Gets the time zone actually used for this object (if it was originally unspecified, the
+	 * default time zone used).
+	 * 
+	 * @return the offset to GMT in minutes (positive or negative)
+	 */
+	public int getDefaultedTimeZone() {
+<span class="fc" id="L436">		return defaultedTimeZone;</span>
+	}
+
+	/**
+	 * Returns true if the input is an instance of this class and if its value equals the value
+	 * contained in this class.
+	 * &lt;p&gt;
+	 * Two &lt;code&gt;DateTimeAttribute&lt;/code&gt;s are equal if and only if the dates and times represented
+	 * are identical (down to the nanosecond).
+	 * 
+	 * @param o the object to compare
+	 * 
+	 * @return true if this object and the input represent the same value
+	 */
+	public boolean equals(Object o) {
+<span class="pc bpc" id="L451" title="1 of 2 branches missed.">		if (!(o instanceof DateTimeAttribute))</span>
+<span class="nc" id="L452">			return false;</span>
+
+<span class="fc" id="L454">		DateTimeAttribute other = (DateTimeAttribute) o;</span>
+
+		// Since the value field is normalized into GMT, this is a
+		// good way to compare.
+<span class="pc bpc" id="L458" title="1 of 4 branches missed.">		return (value.equals(other.value) &amp;&amp; (nanoseconds == other.nanoseconds));</span>
+	}
+
+	/**
+	 * Returns the hashcode value used to index and compare this object with others of the same
+	 * type.
+	 * 
+	 * @return the object's hashcode value
+	 */
+	public int hashCode() {
+		// Both the value field and the nanoseconds field are considered
+		// by the equals method, so it's best if the hashCode is derived
+		// from both of those fields.
+<span class="fc" id="L471">		int hashCode = value.hashCode();</span>
+<span class="fc" id="L472">		hashCode = 31 * hashCode + nanoseconds;</span>
+<span class="fc" id="L473">		return hashCode;</span>
+	}
+
+	/**
+	 * Converts to a String representation.
+	 * 
+	 * @return the String representation
+	 */
+	public String toString() {
+<span class="nc" id="L482">		StringBuffer sb = new StringBuffer();</span>
+
+<span class="nc" id="L484">		sb.append(&quot;DateTimeAttribute: [\n&quot;);</span>
+<span class="nc" id="L485">		sb.append(&quot;  Date: &quot; + value + &quot; local time&quot;);</span>
+<span class="nc" id="L486">		sb.append(&quot;  Nanoseconds: &quot; + nanoseconds);</span>
+<span class="nc" id="L487">		sb.append(&quot;  TimeZone: &quot; + timeZone);</span>
+<span class="nc" id="L488">		sb.append(&quot;  Defaulted TimeZone: &quot; + defaultedTimeZone);</span>
+<span class="nc" id="L489">		sb.append(&quot;]&quot;);</span>
+
+<span class="nc" id="L491">		return sb.toString();</span>
+	}
+
+	/**
+	 * Encodes the value in a form suitable for including in XML data like a request or an
+	 * obligation. This must return a value that could in turn be used by the factory to create a
+	 * new instance with the same value.
+	 * 
+	 * @return a &lt;code&gt;String&lt;/code&gt; form of the value
+	 */
+	public String encode() {
+<span class="nc bnc" id="L502" title="All 2 branches missed.">		if (encodedValue != null)</span>
+<span class="nc" id="L503">			return encodedValue;</span>
+
+<span class="nc bnc" id="L505" title="All 2 branches missed.">		if (timeZone == TZ_UNSPECIFIED) {</span>
+			// If no time zone was specified, format Date value in
+			// local time with no time zone string.
+<span class="nc" id="L508">			initParsers();</span>
+<span class="nc" id="L509">			synchronized (simpleParser) {</span>
+<span class="nc" id="L510">				encodedValue = simpleParser.format(value);</span>
+<span class="nc" id="L511">			}</span>
+<span class="nc bnc" id="L512" title="All 2 branches missed.">			if (nanoseconds != 0) {</span>
+<span class="nc" id="L513">				encodedValue = encodedValue + &quot;.&quot; + DateAttribute.zeroPadInt(nanoseconds, 9);</span>
+			}
+		} else {
+			// If a time zone was specified, don't use SimpleParser
+			// because it can only format dates in the local (default)
+			// time zone. And the offset between that time zone and the
+			// time zone we need to display can vary in complicated ways.
+
+			// Instead, do it ourselves using our formatDateWithTZ method.
+<span class="nc" id="L522">			encodedValue = formatDateTimeWithTZ();</span>
+		}
+<span class="nc" id="L524">		return encodedValue;</span>
+	}
+
+	/**
+	 * Encodes the value of this object as an xsi:dateTime. Only for use when the time zone is
+	 * specified.
+	 * 
+	 * @return a &lt;code&gt;String&lt;/code&gt; form of the value
+	 */
+	private String formatDateTimeWithTZ() {
+<span class="nc bnc" id="L534" title="All 2 branches missed.">		if (gmtCalendar == null) {</span>
+<span class="nc" id="L535">			TimeZone gmtTimeZone = TimeZone.getTimeZone(&quot;GMT&quot;);</span>
+
+			// Locale doesn't make much difference here. We don't use
+			// any of the strings in the Locale and we don't do anything
+			// that depends on week count conventions. We use the US
+			// locale because it's always around and it ensures that we
+			// will always get a Gregorian calendar, which is necessary
+			// for compliance with ISO 8501.
+<span class="nc" id="L543">			gmtCalendar = Calendar.getInstance(gmtTimeZone, Locale.US);</span>
+		}
+
+		// &quot;YYYY-MM-DDThh:mm:ss.sssssssss+hh:mm&quot;.length() = 35
+		// Length may be longer if years &lt; -999 or &gt; 9999
+<span class="nc" id="L548">		StringBuffer buf = new StringBuffer(35);</span>
+
+<span class="nc" id="L550">		synchronized (gmtCalendar) {</span>
+			// Start with the proper time in GMT.
+<span class="nc" id="L552">			gmtCalendar.setTime(value);</span>
+			// Bump by the timeZone, since we're going to be extracting
+			// the value in GMT
+<span class="nc" id="L555">			gmtCalendar.add(Calendar.MINUTE, timeZone);</span>
+
+			// Now, assemble the string
+<span class="nc" id="L558">			int year = gmtCalendar.get(Calendar.YEAR);</span>
+<span class="nc" id="L559">			buf.append(DateAttribute.zeroPadInt(year, 4));</span>
+<span class="nc" id="L560">			buf.append('-');</span>
+			// JANUARY is 0
+<span class="nc" id="L562">			int month = gmtCalendar.get(Calendar.MONTH) + 1;</span>
+<span class="nc" id="L563">			buf.append(DateAttribute.zeroPadInt(month, 2));</span>
+<span class="nc" id="L564">			buf.append('-');</span>
+<span class="nc" id="L565">			int dom = gmtCalendar.get(Calendar.DAY_OF_MONTH);</span>
+<span class="nc" id="L566">			buf.append(DateAttribute.zeroPadInt(dom, 2));</span>
+<span class="nc" id="L567">			buf.append('T');</span>
+<span class="nc" id="L568">			int hour = gmtCalendar.get(Calendar.HOUR_OF_DAY);</span>
+<span class="nc" id="L569">			buf.append(DateAttribute.zeroPadInt(hour, 2));</span>
+<span class="nc" id="L570">			buf.append(':');</span>
+<span class="nc" id="L571">			int minute = gmtCalendar.get(Calendar.MINUTE);</span>
+<span class="nc" id="L572">			buf.append(DateAttribute.zeroPadInt(minute, 2));</span>
+<span class="nc" id="L573">			buf.append(':');</span>
+<span class="nc" id="L574">			int second = gmtCalendar.get(Calendar.SECOND);</span>
+<span class="nc" id="L575">			buf.append(DateAttribute.zeroPadInt(second, 2));</span>
+<span class="nc" id="L576">		}</span>
+
+<span class="nc bnc" id="L578" title="All 2 branches missed.">		if (nanoseconds != 0) {</span>
+<span class="nc" id="L579">			buf.append('.');</span>
+<span class="nc" id="L580">			buf.append(DateAttribute.zeroPadInt(nanoseconds, 9));</span>
+		}
+
+<span class="nc" id="L583">		int tzNoSign = timeZone;</span>
+<span class="nc bnc" id="L584" title="All 2 branches missed.">		if (timeZone &lt; 0) {</span>
+<span class="nc" id="L585">			tzNoSign = -tzNoSign;</span>
+<span class="nc" id="L586">			buf.append('-');</span>
+		} else
+<span class="nc" id="L588">			buf.append('+');</span>
+<span class="nc" id="L589">		int tzHours = tzNoSign / 60;</span>
+<span class="nc" id="L590">		buf.append(DateAttribute.zeroPadInt(tzHours, 2));</span>
+<span class="nc" id="L591">		buf.append(':');</span>
+<span class="nc" id="L592">		int tzMinutes = tzNoSign % 60;</span>
+<span class="nc" id="L593">		buf.append(DateAttribute.zeroPadInt(tzMinutes, 2));</span>
+
+<span class="nc" id="L595">		return buf.toString();</span>
+	}
+
+	/**
+	 * Gets the offset in minutes between the default time zone and UTC for the specified date.
+	 * 
+	 * @param the &lt;code&gt;Date&lt;/code&gt; whose offset is desired
+	 * @return the offset in minutes
+	 */
+	static int getDefaultTZOffset(Date date) {
+<span class="fc" id="L605">		int offset = TimeZone.getDefault().getOffset(date.getTime());</span>
+<span class="fc" id="L606">		offset = offset / DateAttribute.MILLIS_PER_MINUTE;</span>
+<span class="fc" id="L607">		return offset;</span>
+	}
+
+	/**
+	 * Combines a number of nanoseconds with a &lt;code&gt;Date&lt;/code&gt; so that the Date has no fractional
+	 * seconds and the number of nanoseconds is non-negative and less than a second.
+	 * &lt;p&gt;
+	 * &lt;b&gt;WARNING&lt;/b&gt;: This function changes the value stored in the date parameter!
+	 * 
+	 * @param date the &lt;code&gt;Date&lt;/code&gt; to be combined (&lt;b&gt;value may be modified!&lt;/b&gt;)
+	 * @param nanos the nanoseconds to be combined
+	 * @return the resulting number of nanoseconds
+	 */
+	static int combineNanos(Date date, int nanoseconds) {
+<span class="fc" id="L621">		long millis = date.getTime();</span>
+<span class="fc" id="L622">		int milliCarry = (int) (millis % DateAttribute.MILLIS_PER_SECOND);</span>
+
+		// If nothing needs fixing, get out quick
+<span class="pc bpc" id="L625" title="3 of 6 branches missed.">		if ((milliCarry == 0) &amp;&amp; (nanoseconds &gt; 0)</span>
+				&amp;&amp; (nanoseconds &lt; DateAttribute.NANOS_PER_SECOND))
+<span class="nc" id="L627">			return nanoseconds;</span>
+
+		// Remove any non-zero milliseconds from the date.
+<span class="fc" id="L630">		millis -= milliCarry;</span>
+		// Add them into the nanoseconds.
+<span class="fc" id="L632">		long nanoTemp = nanoseconds;</span>
+<span class="fc" id="L633">		nanoTemp += milliCarry * DateAttribute.NANOS_PER_MILLI;</span>
+		// Get the nanoseconds that represent fractional seconds.
+		// This we'll return.
+<span class="fc" id="L636">		int nanoResult = (int) (nanoTemp % DateAttribute.NANOS_PER_SECOND);</span>
+		// Get nanoseconds that represent whole seconds.
+<span class="fc" id="L638">		nanoTemp -= nanoResult;</span>
+		// Convert that to milliseconds and add it back to the date.
+<span class="fc" id="L640">		millis += nanoTemp / DateAttribute.NANOS_PER_MILLI;</span>
+<span class="fc" id="L641">		date.setTime(millis);</span>
+
+<span class="fc" id="L643">		return nanoResult;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

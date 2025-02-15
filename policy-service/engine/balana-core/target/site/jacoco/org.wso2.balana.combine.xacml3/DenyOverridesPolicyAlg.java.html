@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DenyOverridesPolicyAlg.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.combine.xacml3</a> &gt; <span class="el_source">DenyOverridesPolicyAlg.java</span></div><h1>DenyOverridesPolicyAlg.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+package org.wso2.balana.combine.xacml3;
+
+import org.wso2.balana.AbstractPolicy;
+import org.wso2.balana.MatchResult;
+import org.wso2.balana.ObligationResult;
+import org.wso2.balana.ctx.ResultFactory;
+import org.wso2.balana.combine.PolicyCombinerElement;
+import org.wso2.balana.combine.PolicyCombiningAlgorithm;
+import org.wso2.balana.ctx.AbstractResult;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.xacml3.Advice;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
+
+/**
+ * This is the new (XACML 3.0) the standard Deny Overrides policy combining algorithm.
+ * It allows a single evaluation of Deny to take precedence over any number of permit, not applicable
+ * or indeterminate results. Notethat since this implementation does an ordered evaluation,
+ * this class also supports the Ordered  Deny Overrides algorithm.
+ */
+public class DenyOverridesPolicyAlg extends PolicyCombiningAlgorithm {
+
+    /**
+     * The standard URN used to identify this algorithm
+     */
+    public static final String algId = &quot;urn:oasis:names:tc:xacml:3.0:policy-combining-algorithm:&quot;
+            + &quot;deny-overrides&quot;;
+
+    // a URI form of the identifier
+    private static URI identifierURI;
+    // exception if the URI was invalid, which should never be a problem
+    private static RuntimeException earlyException;
+
+    static {
+        try {
+<span class="fc" id="L56">            identifierURI = new URI(algId);</span>
+<span class="nc" id="L57">        } catch (URISyntaxException se) {</span>
+<span class="nc" id="L58">            earlyException = new IllegalArgumentException();</span>
+<span class="nc" id="L59">            earlyException.initCause(se);</span>
+<span class="fc" id="L60">        }</span>
+<span class="fc" id="L61">    }</span>
+
+    /**
+     * Standard constructor.
+     */
+    public DenyOverridesPolicyAlg() {
+<span class="fc" id="L67">        super(identifierURI);</span>
+
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (earlyException != null){</span>
+<span class="nc" id="L70">            throw earlyException;</span>
+        }
+<span class="fc" id="L72">    }</span>
+
+    /**
+     * Protected constructor used by the ordered version of this algorithm.
+     *
+     * @param identifier the algorithm's identifier
+     */
+    protected DenyOverridesPolicyAlg(URI identifier) {
+<span class="fc" id="L80">        super(identifier);</span>
+<span class="fc" id="L81">    }</span>
+
+    /**
+     * Applies the combining rule to the set of policies based on the evaluation context.
+     *
+     * @param context the context from the request
+     * @param parameters a (possibly empty) non-null &lt;code&gt;List&lt;/code&gt; of
+     *            &lt;code&gt;CombinerParameter&lt;code&gt;s
+     * @param policyElements the policies to combine
+     *
+     * @return the result of running the combining algorithm
+     */
+    public AbstractResult combine(EvaluationCtx context, List parameters, List policyElements) {
+
+<span class="nc" id="L95">        boolean atLeastOneErrorD = false;</span>
+<span class="nc" id="L96">        boolean atLeastOneErrorP = false;</span>
+<span class="nc" id="L97">        boolean atLeastOneErrorDP = false;</span>
+<span class="nc" id="L98">        boolean atLeastOnePermit = false;</span>
+<span class="nc" id="L99">        AbstractResult firstIndeterminateResultD = null;</span>
+<span class="nc" id="L100">        AbstractResult firstIndeterminateResultP = null;</span>
+<span class="nc" id="L101">        AbstractResult firstIndeterminateResultDP = null;</span>
+<span class="nc" id="L102">        List&lt;ObligationResult&gt; permitObligations = new ArrayList&lt;ObligationResult&gt;();</span>
+<span class="nc" id="L103">        List&lt;Advice&gt; permitAdvices= new ArrayList&lt;Advice&gt;();</span>
+<span class="nc" id="L104">        Iterator it = policyElements.iterator();</span>
+
+
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        while (it.hasNext()) {</span>
+<span class="nc" id="L108">            AbstractPolicy policy = ((PolicyCombinerElement) (it.next())).getPolicy();</span>
+            // make sure that the policy matches the context
+<span class="nc" id="L110">            MatchResult match = policy.match(context);</span>
+
+<span class="nc bnc" id="L112" title="All 2 branches missed.">            if (match.getResult() == MatchResult.INDETERMINATE){ //TODO  do we really want this?ve need to check match if...</span>
+<span class="nc" id="L113">                return ResultFactory.getFactory().getResult(AbstractResult.DECISION_DENY, context);</span>
+            }
+
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            if (match.getResult() == MatchResult.MATCH) {</span>
+                // evaluate the policy
+<span class="nc" id="L118">                AbstractResult result = policy.evaluate(context);</span>
+<span class="nc" id="L119">                int value = result.getDecision();</span>
+
+                // if there was a value of DENY, then regardless of what else
+                // we've seen, we always return DENY
+<span class="nc bnc" id="L123" title="All 2 branches missed.">                if (value == AbstractResult.DECISION_DENY){</span>
+<span class="nc" id="L124">                    return result;</span>
+                }
+
+<span class="nc bnc" id="L127" title="All 2 branches missed.">                if(value == AbstractResult.DECISION_NOT_APPLICABLE){</span>
+<span class="nc" id="L128">                    continue;</span>
+                }
+
+                // keep track of whether we had at least one rule that
+                // actually pertained to the request
+<span class="nc bnc" id="L133" title="All 2 branches missed.">                if (value == AbstractResult.DECISION_PERMIT){</span>
+
+<span class="nc" id="L135">                    atLeastOnePermit = true;</span>
+<span class="nc" id="L136">                    permitAdvices.addAll(result.getAdvices());</span>
+<span class="nc" id="L137">                    permitObligations.addAll(result.getObligations());</span>
+
+                } else {
+
+                    // if it was INDETERMINATE, check extended results
+<span class="nc bnc" id="L142" title="All 2 branches missed.">                    if (value == AbstractResult.DECISION_INDETERMINATE_DENY){</span>
+<span class="nc" id="L143">                        atLeastOneErrorD = true;</span>
+                        // there are no rules about what to do if multiple cases
+                        // cause errors, so we'll just return the first one
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                        if(firstIndeterminateResultD == null){</span>
+<span class="nc" id="L147">                            firstIndeterminateResultD = result;</span>
+                        }
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                    } else if (value== AbstractResult.DECISION_INDETERMINATE_PERMIT){</span>
+<span class="nc" id="L150">                        atLeastOneErrorP = true;</span>
+                        // there are no rules about what to do if multiple cases
+                        // cause errors, so we'll just return the first one
+<span class="nc bnc" id="L153" title="All 2 branches missed.">                        if(firstIndeterminateResultP == null){</span>
+<span class="nc" id="L154">                            firstIndeterminateResultP = result;</span>
+                        }
+<span class="nc bnc" id="L156" title="All 2 branches missed.">                    } else if(value == AbstractResult.DECISION_INDETERMINATE_DENY_OR_PERMIT){</span>
+<span class="nc" id="L157">                        atLeastOneErrorDP = true;</span>
+                        // there are no rules about what to do if multiple cases
+                        // cause errors, so we'll just return the first one
+<span class="nc bnc" id="L160" title="All 2 branches missed.">                        if(firstIndeterminateResultDP == null){</span>
+<span class="nc" id="L161">                            firstIndeterminateResultDP = result;</span>
+                        }
+                    }
+                }
+            }
+<span class="nc" id="L166">        }</span>
+
+<span class="nc bnc" id="L168" title="All 2 branches missed.">        if(atLeastOneErrorDP){</span>
+<span class="nc" id="L169">            return firstIndeterminateResultDP;    </span>
+        }
+
+<span class="nc bnc" id="L172" title="All 6 branches missed.">        if (atLeastOneErrorD &amp;&amp; (atLeastOneErrorP &amp;&amp; atLeastOnePermit)){</span>
+
+<span class="nc" id="L174">            return ResultFactory.getFactory().getResult(AbstractResult.DECISION_INDETERMINATE_DENY_OR_PERMIT,</span>
+<span class="nc" id="L175">                                                   firstIndeterminateResultD.getStatus(), context);</span>
+        }
+
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if(atLeastOneErrorD){</span>
+<span class="nc" id="L179">            return firstIndeterminateResultD;</span>
+        }
+
+<span class="nc bnc" id="L182" title="All 2 branches missed.">        if (atLeastOnePermit) {</span>
+<span class="nc" id="L183">            return ResultFactory.getFactory().getResult(AbstractResult.DECISION_PERMIT,</span>
+                                                        permitObligations, permitAdvices, context);
+        }
+
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        if (atLeastOneErrorP){</span>
+<span class="nc" id="L188">            return firstIndeterminateResultP;</span>
+        }
+        // if we hit this point, then none of the rules actually applied
+        // to us, so we return NOT_APPLICABLE
+<span class="nc" id="L192">        return ResultFactory.getFactory().getResult(AbstractResult.DECISION_NOT_APPLICABLE, context);        </span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

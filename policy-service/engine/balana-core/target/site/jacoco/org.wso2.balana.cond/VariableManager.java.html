@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VariableManager.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">VariableManager.java</span></div><h1>VariableManager.java</h1><pre class="source lang-java linenums">/*
+ * @(#)VariableManager.java
+ *
+ * Copyright 2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.DOMHelper;
+import org.wso2.balana.ParsingException;
+import org.wso2.balana.PolicyMetaData;
+import org.wso2.balana.ProcessingException;
+
+import java.net.URI;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * This class is used by the parsing routines to handle the relationships between variable
+ * references and definitions. Specifically, it takes care of the fact that definitions can be
+ * placed after their first reference, and can use references to create circular or recursive
+ * relationships. It keeps track of what's in the process of being parsed and will pre-parse
+ * elements as needed.
+ * &lt;p&gt;
+ * Note that you should never have to use this class directly. It is really meant only as a utility
+ * for the internal parsing routines. Also, note that the operations on this class are not
+ * thread-safe. Typically this doesn't matter, since the code doesn't support using more than one
+ * thread to parse a single Policy.
+ * 
+ * @since 2.0
+ * @author Seth Proctor
+ */
+public class VariableManager {
+
+    // the map from identifiers to internal data
+    private Map idMap;
+
+    // the meta-data for the containing policy
+    private PolicyMetaData metaData;
+
+    /**
+     * Creates a manager with a fixed set of supported identifiers. For each of these identifiers,
+     * the map supplies a cooresponding DOM node used to parse the definition. This is used if, in
+     * the course of parsing one definition, a reference requires that you have information about
+     * another definition available. All parsed definitions are cached so that each is only parsed
+     * once. If a node is not provided, then the parsing code may throw an exception if out-of-order
+     * or circular refereces are used.
+     * &lt;p&gt;
+     * Note that the use of a DOM node may change to an arbitrary interface, so that you could use
+     * your own mechanism, but this is still being hashed out. This interface will be forzed before
+     * a 2.0 release.
+     * 
+     * @param variableIds a &lt;code&gt;Map&lt;/code&gt; from an identifier to the &lt;code&gt;Node&lt;/code&gt; that is the
+     *            root of the cooresponding variable definition, or null
+     * @param metaData the meta-data associated with the containing policy
+     */
+<span class="fc" id="L92">    public VariableManager(Map variableIds, PolicyMetaData metaData) {</span>
+<span class="fc" id="L93">        idMap = new HashMap();</span>
+
+<span class="fc" id="L95">        Iterator it = variableIds.entrySet().iterator();</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        while (it.hasNext()) {</span>
+<span class="nc" id="L97">            Object key = ((Entry)it.next()).getKey();</span>
+<span class="nc" id="L98">            Node node = (Node) (variableIds.get(key));</span>
+<span class="nc" id="L99">            idMap.put(key, new VariableState(null, node, null, false, false));</span>
+<span class="nc" id="L100">        }</span>
+
+<span class="fc" id="L102">        this.metaData = metaData;</span>
+<span class="fc" id="L103">    }</span>
+
+    /**
+     * Returns the definition with the given identifier. If the definition is not available, then
+     * this method will try to get the definition based on the DOM node given for this identifier.
+     * If parsing the definition requires loading another definition (because of a reference) then
+     * this method will be recursively invoked. This may make it slow to call this method once, but
+     * all retrieved definitions are cached, and once this manager has started parsing a definition
+     * it will never try parsing that definition again. If the definition cannot be retrieved, then
+     * an exception is thrown.
+     * 
+     * @param variableId the definition's identifier
+     * 
+     * @return the identified definition
+     * 
+     * @throws ProcessingException if the definition cannot be resolved
+     */
+    public VariableDefinition getDefinition(String variableId) {
+<span class="nc" id="L121">        VariableState state = (VariableState) (idMap.get(variableId));</span>
+
+        // make sure this is an identifier we handle
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (state == null)</span>
+<span class="nc" id="L125">            throw new ProcessingException(&quot;variable is unsupported: &quot; + variableId);</span>
+
+        // if we've resolved the definition before, then we're done
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (state.definition != null)</span>
+<span class="nc" id="L129">            return state.definition;</span>
+
+        // we don't have the definition, so get the DOM node
+<span class="nc" id="L132">        Node node = state.rootNode;</span>
+
+        // we can't keep going unless we have a node to work with
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        if (node != null) {</span>
+            // if we've already started parsing this node before, then
+            // don't start again
+<span class="nc bnc" id="L138" title="All 2 branches missed.">            if (state.handled)</span>
+<span class="nc" id="L139">                throw new ProcessingException(&quot;processing in progress&quot;);</span>
+
+            // keep track of the fact that we're parsing this node, and
+            // also get the type (if it's an Apply node)
+<span class="nc" id="L143">            state.handled = true;</span>
+<span class="nc" id="L144">            discoverApplyType(node, state);</span>
+
+            try {
+                // now actually try parsing the definition...remember that
+                // if its expression has a reference, we could end up
+                // calling this manager method again
+<span class="nc" id="L150">                state.definition = VariableDefinition.getInstance(state.rootNode, metaData, this);</span>
+
+<span class="nc" id="L152">                return state.definition;</span>
+<span class="nc" id="L153">            } catch (ParsingException pe) {</span>
+                // we failed to parse the definition for some reason
+<span class="nc" id="L155">                throw new ProcessingException(&quot;failed to parse the definition&quot;, pe);</span>
+            }
+        }
+
+        // we couldn't figure out how to resolve the definition
+<span class="nc" id="L160">        throw new ProcessingException(&quot;couldn't retrieve definition: &quot; + variableId);</span>
+    }
+
+    /**
+     * Private helper method to get the type of an expression, but only if that expression is an
+     * Apply. Basically, if there is a circular reference, then we'll need to know the types before
+     * we're done parsing one of the definitions. But, a circular reference that requires
+     * type-checking can only happen if the definition's expression is an Apply. So, we look here,
+     * and if it's an Apply, we get the type information and store that for later use, just in case.
+     * &lt;p&gt;
+     * Note that we could wait until later to try this, or we could check first to see if there will
+     * be a circular reference. Comparatively, however, this isn't too expensive, and it makes the
+     * system much simpler. Still, it's worth re-examining this to see if there's a way that makes
+     * more sense.
+     */
+    private void discoverApplyType(Node root, VariableState state) {
+        // get the first element, which is the expression node
+<span class="nc" id="L177">        NodeList nodes = root.getChildNodes();</span>
+<span class="nc" id="L178">        Node xprNode = nodes.item(0);</span>
+<span class="nc" id="L179">        int i = 1;</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        while (xprNode.getNodeType() != Node.ELEMENT_NODE)</span>
+<span class="nc" id="L181">            xprNode = nodes.item(i++);</span>
+
+        // now see if the node is an Apply
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        if (DOMHelper.getLocalName(xprNode).equals(&quot;Apply&quot;)) {</span>
+            try {
+                // get the function in the Apply...
+<span class="nc" id="L187">                Function function = ExpressionHandler.getFunction(xprNode, metaData,</span>
+<span class="nc" id="L188">                        FunctionFactory.getGeneralInstance());</span>
+
+                // ...and store the type information in the variable state
+<span class="nc" id="L191">                state.type = function.getReturnType();</span>
+<span class="nc" id="L192">                state.returnsBag = function.returnsBag();</span>
+<span class="nc" id="L193">            } catch (ParsingException pe) {</span>
+                // we can just ignore this...if there really is an error,
+                // then it will come up during parsing in a code path that
+                // can handle the error cleanly
+<span class="nc" id="L197">            }</span>
+        }
+<span class="nc" id="L199">    }</span>
+
+    /**
+     * Returns the datatype that the identified definition's expression resolves to on evaluation.
+     * Note that this method makes every attempt to discover this value, including parsing dependent
+     * definitions if needed and possible.
+     * 
+     * @param variableId the identifier for the definition
+     * 
+     * @return the datatype that the identified definition's expression evaluates to
+     * 
+     * @throws ProcessingException if the identifier is not supported or if the result cannot be
+     *             resolved
+     */
+    public URI getVariableType(String variableId) {
+<span class="nc" id="L214">        VariableState state = (VariableState) (idMap.get(variableId));</span>
+
+        // make sure the variable is supported
+<span class="nc bnc" id="L217" title="All 2 branches missed.">        if (state == null)</span>
+<span class="nc" id="L218">            throw new ProcessingException(&quot;variable not supported: &quot; + variableId);</span>
+
+        // if we've previously figured out the type, then return that
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (state.type != null)</span>
+<span class="nc" id="L222">            return state.type;</span>
+
+        // we haven't figured out the type already, so see if we have or
+        // can resolve the definition
+<span class="nc" id="L226">        VariableDefinition definition = state.definition;</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (definition == null)</span>
+<span class="nc" id="L228">            definition = getDefinition(variableId);</span>
+
+        // if we could get the definition, then ask it for the type
+<span class="nc bnc" id="L231" title="All 2 branches missed.">        if (definition != null)</span>
+<span class="nc" id="L232">            return definition.getExpression().getType();</span>
+
+        // we exhausted all our ways to get the right answer
+<span class="nc" id="L235">        throw new ProcessingException(&quot;we couldn't establish the type: &quot; + variableId);</span>
+    }
+
+    /**
+     * Returns true if the identified definition's expression resolves to a bag on evaluation. Note
+     * that this method makes every attempt to discover this value, including parsing dependent
+     * definitions if needed and possible.
+     * 
+     * @param variableId the identifier for the definition
+     * 
+     * @return true if the identified definition's expression evaluates to a bag
+     * 
+     * @throws ProcessingException if the identifier is not supported or if the result cannot be
+     *             resolved
+     */
+    public boolean returnsBag(String variableId) {
+<span class="nc" id="L251">        VariableState state = (VariableState) (idMap.get(variableId));</span>
+
+        // make sure the variable is supported
+<span class="nc bnc" id="L254" title="All 2 branches missed.">        if (state == null)</span>
+<span class="nc" id="L255">            throw new ProcessingException(&quot;variable not supported: &quot; + variableId);</span>
+
+        // the flag is only valid if a type has also been determined
+<span class="nc bnc" id="L258" title="All 2 branches missed.">        if (state.type != null)</span>
+<span class="nc" id="L259">            return state.returnsBag;</span>
+
+        // we haven't figured out the type already, so see if we have or
+        // can resolve the definition
+<span class="nc" id="L263">        VariableDefinition definition = state.definition;</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        if (definition == null)</span>
+<span class="nc" id="L265">            definition = getDefinition(variableId);</span>
+
+        // if we could get the definition, then ask it for the bag return
+<span class="nc bnc" id="L268" title="All 2 branches missed.">        if (definition != null)</span>
+<span class="nc" id="L269">            return definition.getExpression().returnsBag();</span>
+
+        // we exhausted all our ways to get the right answer
+<span class="nc" id="L272">        throw new ProcessingException(&quot;couldn't establish bag return for &quot; + variableId);</span>
+    }
+
+    /**
+     * Inner class that is used simply to manage fields associated with a given identifier.
+     */
+    static class VariableState {
+
+        // the resolved definition for the identifier
+        public VariableDefinition definition;
+
+        // the DOM node used to parse the definition
+        public Node rootNode;
+
+        // the datatype returned when evaluating the definition
+        public URI type;
+
+        // whether the definition's root evaluates to a Bag
+        public boolean returnsBag;
+
+        // whether the definition is being parsed and constructed
+        public boolean handled;
+
+<span class="nc" id="L295">        public VariableState() {</span>
+<span class="nc" id="L296">            this.definition = null;</span>
+<span class="nc" id="L297">            this.rootNode = null;</span>
+<span class="nc" id="L298">            this.type = null;</span>
+<span class="nc" id="L299">            this.returnsBag = false;</span>
+<span class="nc" id="L300">            this.handled = false;</span>
+<span class="nc" id="L301">        }</span>
+
+        public VariableState(VariableDefinition definition, Node rootNode, URI type,
+<span class="nc" id="L304">                boolean returnsBag, boolean handled) {</span>
+<span class="nc" id="L305">            this.definition = definition;</span>
+<span class="nc" id="L306">            this.rootNode = rootNode;</span>
+<span class="nc" id="L307">            this.type = type;</span>
+<span class="nc" id="L308">            this.returnsBag = returnsBag;</span>
+<span class="nc" id="L309">            this.handled = handled;</span>
+<span class="nc" id="L310">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

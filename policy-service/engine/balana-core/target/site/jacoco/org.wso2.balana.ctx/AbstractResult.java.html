@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractResult.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.ctx</a> &gt; <span class="el_source">AbstractResult.java</span></div><h1>AbstractResult.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+
+package org.wso2.balana.ctx;
+
+import org.wso2.balana.*;
+import org.wso2.balana.xacml3.Advice;
+
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Abstract Represents the ResultType XML object from the Context schema. Any number
+ * of these may included in a &lt;code&gt;ResponseCtx&lt;/code&gt;. This class provides an abstract method to
+ * encode XACML result with the decision effect, as well as an optional status data and obligations
+ * and advices. encode method must be implemented under the concert class. 
+ *
+ */
+public abstract class AbstractResult {
+
+    /**
+     * The decision to permit the request
+     */
+    public static final int DECISION_PERMIT = 0;
+
+    /**
+     * The decision to deny the request
+     */
+    public static final int DECISION_DENY = 1;
+
+    /**
+     * The decision that a decision about the request cannot be made
+     */
+    public static final int DECISION_INDETERMINATE = 2;
+
+    /**
+     * The decision that nothing applied to us
+     */
+    public static final int DECISION_NOT_APPLICABLE = 3;
+
+    /**
+     * The decision that a decision about the request cannot be made
+     */
+    public static final int DECISION_INDETERMINATE_DENY = 4;
+
+    /**
+     * The decision that a decision about the request cannot be made
+     */
+    public static final int DECISION_INDETERMINATE_PERMIT = 5;
+
+    /**
+     * The decision that a decision about the request cannot be made
+     */
+    public static final int DECISION_INDETERMINATE_DENY_OR_PERMIT = 6;
+    
+    /**
+     * string versions of the 4 Decision types used for encoding
+     */
+<span class="fc" id="L76">    public static final String[] DECISIONS = { &quot;Permit&quot;, &quot;Deny&quot;, &quot;Indeterminate&quot;, &quot;NotApplicable&quot;};</span>
+
+    /**
+     * List of obligations which may be empty
+     */
+    protected List&lt;ObligationResult&gt; obligations;
+
+    /**
+     * List of advices which may be empty
+     */
+    protected List&lt;Advice&gt; advices;
+
+    /**
+     * the decision effect
+     */
+<span class="fc" id="L91">    protected int decision = -1;</span>
+
+    /**
+     * the status data
+     */
+<span class="fc" id="L96">    protected Status status = null;</span>
+
+    /**
+     * XACML version
+     */
+    protected int version;
+
+    /**
+     * Constructs a &lt;code&gt;AbstractResult&lt;/code&gt; object with decision status data, obligations, advices
+     *  and evaluation ctx
+     *
+     * @param decision the decision effect to include in this result. This must be one of the four
+     *            fields in this class.
+     * @param status the &lt;code&gt;Status&lt;/code&gt; to include in this result
+     * @param version XACML version
+     * @throws IllegalArgumentException if decision is not valid
+     */
+<span class="fc" id="L113">    public AbstractResult(int decision, Status status, int version) throws IllegalArgumentException {</span>
+
+<span class="fc" id="L115">        this.version = version;</span>
+
+        // check that decision is valid
+<span class="pc bpc" id="L118" title="8 of 14 branches missed.">        if ((decision != DECISION_PERMIT) &amp;&amp; (decision != DECISION_DENY)</span>
+                &amp;&amp; (decision != DECISION_INDETERMINATE) &amp;&amp; (decision != DECISION_NOT_APPLICABLE)
+                &amp;&amp; (decision != DECISION_INDETERMINATE_DENY) &amp;&amp; (decision != DECISION_INDETERMINATE_PERMIT)
+                &amp;&amp; (decision != DECISION_INDETERMINATE_DENY_OR_PERMIT)) {
+<span class="nc" id="L122">            throw new IllegalArgumentException(&quot;invalid decision value&quot;);</span>
+        }
+
+<span class="fc" id="L125">        this.decision = decision;</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        if (status == null){</span>
+<span class="fc" id="L127">            this.status = Status.getOkInstance();</span>
+        } else {
+<span class="fc" id="L129">            this.status = status;</span>
+        }
+<span class="fc" id="L131">    }</span>
+
+    /**
+     * Constructs a &lt;code&gt;AbstractResult&lt;/code&gt; object with decision status data, obligations, advices
+     *  and evaluation ctx
+     *
+     * @param decision the decision effect to include in this result. This must be one of the four
+     *            fields in this class.
+     * @param status the &lt;code&gt;Status&lt;/code&gt; to include in this result
+     * @param obligationResults a list of &lt;code&gt;ObligationResult&lt;/code&gt; objects
+     * @param advices  a list of &lt;code&gt;Advice&lt;/code&gt; objects  
+     * @param version XACML version
+     * @throws IllegalArgumentException if decision is not valid
+     */
+    public AbstractResult(int decision, Status status, List&lt;ObligationResult&gt; obligationResults,
+<span class="fc" id="L146">                  List&lt;Advice&gt; advices, int version) throws IllegalArgumentException {</span>
+
+<span class="fc" id="L148">        this.version = version;</span>
+        
+        // check that decision is valid
+<span class="pc bpc" id="L151" title="3 of 14 branches missed.">        if ((decision != DECISION_PERMIT) &amp;&amp; (decision != DECISION_DENY)</span>
+                &amp;&amp; (decision != DECISION_INDETERMINATE) &amp;&amp; (decision != DECISION_NOT_APPLICABLE)
+                &amp;&amp; (decision != DECISION_INDETERMINATE_DENY) &amp;&amp; (decision != DECISION_INDETERMINATE_PERMIT)
+                &amp;&amp; (decision != DECISION_INDETERMINATE_DENY_OR_PERMIT)) {
+<span class="nc" id="L155">            throw new IllegalArgumentException(&quot;invalid decision value&quot;);</span>
+        }
+        
+<span class="fc" id="L158">        this.decision = decision;</span>
+
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        if(obligationResults != null){</span>
+<span class="fc" id="L161">            this.obligations = obligationResults;</span>
+        }
+
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if(advices != null){</span>
+<span class="fc" id="L165">            this.advices = advices;            </span>
+        }
+
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        if (status == null){</span>
+<span class="fc" id="L169">            this.status = Status.getOkInstance();</span>
+        } else {
+<span class="fc" id="L171">            this.status = status;</span>
+        }
+<span class="fc" id="L173">    }</span>
+
+    /**
+     * Returns the set of obligations that the PEP must fulfill, which may be empty.
+     *
+     * @return the set of &lt;code&gt;Obligation&lt;/code&gt;
+     */
+    public List&lt;ObligationResult&gt; getObligations() {
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        if(obligations == null){</span>
+<span class="fc" id="L182">            obligations = new ArrayList&lt;ObligationResult&gt;();</span>
+        }
+<span class="fc" id="L184">        return obligations;</span>
+    }
+
+
+    /**
+     * Returns the set of advice that the PEP must fulfill, which may be empty.
+     *
+     * @return the set of &lt;code&gt;Advice&lt;/code&gt;
+     */
+    public List&lt;Advice&gt; getAdvices() {
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if(advices  == null){</span>
+<span class="fc" id="L195">            advices = new ArrayList&lt;Advice&gt;();</span>
+        }
+<span class="fc" id="L197">        return advices;</span>
+    }
+
+    /**
+     * Returns the decision associated with this &lt;code&gt;Result&lt;/code&gt;. This will be one of the four
+     * &lt;code&gt;DECISION_*&lt;/code&gt; fields in this class.
+     *
+     * @return the decision effect
+     */
+    public int getDecision() {
+<span class="fc" id="L207">        return decision;</span>
+    }
+
+    /**
+     * Returns the status data included in this &lt;code&gt;Result&lt;/code&gt;. Typically this will be
+     * &lt;code&gt;STATUS_OK&lt;/code&gt; except when the decision is &lt;code&gt;INDETERMINATE&lt;/code&gt;.
+     *
+     * @return status associated with this Result
+     */
+    public Status getStatus() {
+<span class="fc" id="L217">        return status;</span>
+    }
+
+    /**
+     * Gets XACML version
+     *
+     * @return XACML version id
+     */
+    public int getVersion() {
+<span class="fc" id="L226">        return version;</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;AbstractResult&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="nc" id="L235">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L236">        encode(builder);</span>
+<span class="nc" id="L237">        return builder.toString();</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;AbstractResult&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public abstract void encode(StringBuilder builder);
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

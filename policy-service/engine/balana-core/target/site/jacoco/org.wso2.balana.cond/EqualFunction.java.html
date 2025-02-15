@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EqualFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">EqualFunction.java</span></div><h1>EqualFunction.java</h1><pre class="source lang-java linenums">/*
+ * @(#)EqualFunction.java
+ *
+ * Copyright 2003-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.XACMLConstants;
+import org.wso2.balana.attr.AnyURIAttribute;
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.Base64BinaryAttribute;
+import org.wso2.balana.attr.BooleanAttribute;
+import org.wso2.balana.attr.DateAttribute;
+import org.wso2.balana.attr.DateTimeAttribute;
+import org.wso2.balana.attr.DayTimeDurationAttribute;
+import org.wso2.balana.attr.DNSNameAttribute;
+import org.wso2.balana.attr.DoubleAttribute;
+import org.wso2.balana.attr.HexBinaryAttribute;
+import org.wso2.balana.attr.IntegerAttribute;
+import org.wso2.balana.attr.IPAddressAttribute;
+import org.wso2.balana.attr.RFC822NameAttribute;
+import org.wso2.balana.attr.StringAttribute;
+import org.wso2.balana.attr.TimeAttribute;
+import org.wso2.balana.attr.YearMonthDurationAttribute;
+import org.wso2.balana.attr.X500NameAttribute;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * A class that implements all the *-equal functions. It takes two operands of the appropriate type
+ * and returns a &lt;code&gt;BooleanAttribute&lt;/code&gt; indicating whether both of the operands are equal. If
+ * either of the operands is indeterminate, an indeterminate result is returned.
+ * 
+ * @since 1.0
+ * @author Steve Hanna
+ * @author Seth Proctor
+ */
+public class EqualFunction extends FunctionBase {
+
+    /**
+     * Standard identifier for the string-equal function.
+     */
+    public static final String NAME_STRING_EQUAL = FUNCTION_NS + &quot;string-equal&quot;;
+
+    /**
+     * Standard identifier for the boolean-equal function.
+     */
+    public static final String NAME_BOOLEAN_EQUAL = FUNCTION_NS + &quot;boolean-equal&quot;;
+
+    /**
+     * Standard identifier for the integer-equal function.
+     */
+    public static final String NAME_INTEGER_EQUAL = FUNCTION_NS + &quot;integer-equal&quot;;
+
+    /**
+     * Standard identifier for the double-equal function.
+     */
+    public static final String NAME_DOUBLE_EQUAL = FUNCTION_NS + &quot;double-equal&quot;;
+
+    /**
+     * Standard identifier for the date-equal function.
+     */
+    public static final String NAME_DATE_EQUAL = FUNCTION_NS + &quot;date-equal&quot;;
+
+    /**
+     * Standard identifier for the time-equal function.
+     */
+    public static final String NAME_TIME_EQUAL = FUNCTION_NS + &quot;time-equal&quot;;
+
+    /**
+     * Standard identifier for the dateTime-equal function.
+     */
+    public static final String NAME_DATETIME_EQUAL = FUNCTION_NS + &quot;dateTime-equal&quot;;
+
+    /**
+     * Standard identifier for the dayTimeDuration-equal function.
+     */
+    public static final String NAME_DAYTIME_DURATION_EQUAL = FUNCTION_NS + &quot;dayTimeDuration-equal&quot;;
+
+    /**
+     * Standard identifier for the yearMonthDuration-equal function.
+     */
+    public static final String NAME_YEARMONTH_DURATION_EQUAL = FUNCTION_NS
+            + &quot;yearMonthDuration-equal&quot;;
+
+    /**
+     * Standard identifier for the anyURI-equal function.
+     */
+    public static final String NAME_ANYURI_EQUAL = FUNCTION_NS + &quot;anyURI-equal&quot;;
+
+    /**
+     * Standard identifier for the x500Name-equal function.
+     */
+    public static final String NAME_X500NAME_EQUAL = FUNCTION_NS + &quot;x500Name-equal&quot;;
+
+    /**
+     * Standard identifier for the rfc822Name-equal function.
+     */
+    public static final String NAME_RFC822NAME_EQUAL = FUNCTION_NS + &quot;rfc822Name-equal&quot;;
+
+    /**
+     * Standard identifier for the hexBinary-equal function.
+     */
+    public static final String NAME_HEXBINARY_EQUAL = FUNCTION_NS + &quot;hexBinary-equal&quot;;
+
+    /**
+     * Standard identifier for the base64Binary-equal function.
+     */
+    public static final String NAME_BASE64BINARY_EQUAL = FUNCTION_NS + &quot;base64Binary-equal&quot;;
+
+    /**
+     * Standard identifier for the ipAddress-equal function.
+     */
+    public static final String NAME_IPADDRESS_EQUAL = FUNCTION_NS_2 + &quot;ipAddress-equal&quot;;
+
+    /**
+     * Standard identifier for the dnsName-equal function.
+     */
+    public static final String NAME_DNSNAME_EQUAL = FUNCTION_NS_2 + &quot;dnsName-equal&quot;;
+
+    /**
+     * Standard identifier for the sting equal with ignore case
+     */
+    public static final String NAME_EQUAL_CASE_IGNORE = FUNCTION_NS_3 + &quot;string-equal-ignore-case&quot;;
+
+    // internal identifiers for each of the supported functions   
+    private static final int ID_EQUAL_CASE_IGNORE = 1;
+
+    // private mapping of standard functions to their argument types
+    private static HashMap typeMap;
+
+    /**
+     * Static initializer sets up a map of standard function names to their associated datatypes
+     */
+    static {
+<span class="fc" id="L171">        typeMap = new HashMap();</span>
+
+<span class="fc" id="L173">        typeMap.put(NAME_STRING_EQUAL, StringAttribute.identifier);</span>
+<span class="fc" id="L174">        typeMap.put(NAME_BOOLEAN_EQUAL, BooleanAttribute.identifier);</span>
+<span class="fc" id="L175">        typeMap.put(NAME_INTEGER_EQUAL, IntegerAttribute.identifier);</span>
+<span class="fc" id="L176">        typeMap.put(NAME_DOUBLE_EQUAL, DoubleAttribute.identifier);</span>
+<span class="fc" id="L177">        typeMap.put(NAME_DATE_EQUAL, DateAttribute.identifier);</span>
+<span class="fc" id="L178">        typeMap.put(NAME_TIME_EQUAL, TimeAttribute.identifier);</span>
+<span class="fc" id="L179">        typeMap.put(NAME_DATETIME_EQUAL, DateTimeAttribute.identifier);</span>
+<span class="fc" id="L180">        typeMap.put(NAME_DAYTIME_DURATION_EQUAL, DayTimeDurationAttribute.identifier);</span>
+<span class="fc" id="L181">        typeMap.put(NAME_YEARMONTH_DURATION_EQUAL, YearMonthDurationAttribute.identifier);</span>
+<span class="fc" id="L182">        typeMap.put(NAME_ANYURI_EQUAL, AnyURIAttribute.identifier);</span>
+<span class="fc" id="L183">        typeMap.put(NAME_X500NAME_EQUAL, X500NameAttribute.identifier);</span>
+<span class="fc" id="L184">        typeMap.put(NAME_RFC822NAME_EQUAL, RFC822NameAttribute.identifier);</span>
+<span class="fc" id="L185">        typeMap.put(NAME_HEXBINARY_EQUAL, HexBinaryAttribute.identifier);</span>
+<span class="fc" id="L186">        typeMap.put(NAME_BASE64BINARY_EQUAL, Base64BinaryAttribute.identifier);</span>
+<span class="fc" id="L187">        typeMap.put(NAME_IPADDRESS_EQUAL, IPAddressAttribute.identifier);</span>
+<span class="fc" id="L188">        typeMap.put(NAME_DNSNAME_EQUAL, DNSNameAttribute.identifier);</span>
+<span class="fc" id="L189">        typeMap.put(NAME_EQUAL_CASE_IGNORE, StringAttribute.identifier);</span>
+<span class="fc" id="L190">    }</span>
+
+    /**
+     * Returns an &lt;code&gt;EqualFunction&lt;/code&gt; that provides the type-equal functionality over the
+     * given attribute type. This should be used to create new function instances for any new
+     * attribute types, and the resulting object should be put into the &lt;code&gt;FunctionFactory&lt;/code&gt;
+     * (instances for the standard types are pre-installed in the standard factory).
+     * &lt;p&gt;
+     * Note that this method has the same affect as invoking the constructor with the same
+     * parameters. This method is provided as a convenience, and for symmetry with the bag and set
+     * functions.
+     * 
+     * @param functionName the name to use for the function
+     * @param argumentType the type to operate on
+     * 
+     * @return a new &lt;code&gt;EqualFunction&lt;/code&gt;
+     */
+    public static EqualFunction getEqualInstance(String functionName, String argumentType) {
+<span class="nc" id="L208">        return new EqualFunction(functionName, argumentType);</span>
+    }
+
+    /**
+     * Creates a new &lt;code&gt;EqualFunction&lt;/code&gt; object that supports one of the standard type-equal
+     * functions. If you need to create an instance for a custom type, use the
+     * &lt;code&gt;getEqualInstance&lt;/code&gt; method or the alternate constructor.
+     * 
+     * @param functionName the standard XACML name of the function to be handled by this object,
+     *            including the full namespace
+     * 
+     * @throws IllegalArgumentException if the function isn't standard
+     */
+    public EqualFunction(String functionName) {
+<span class="fc" id="L222">        this(functionName, getArgumentType(functionName));</span>
+<span class="fc" id="L223">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;EqualFunction&lt;/code&gt; object.
+     * 
+     * @param functionName the standard XACML name of the function to be handled by this object,
+     *            including the full namespace
+     * @param argumentType the standard XACML name for the type of the arguments, inlcuding the full
+     *            namespace
+     */
+    public EqualFunction(String functionName, String argumentType) {
+<span class="fc" id="L234">        super(functionName, getId(functionName), argumentType, false, 2, BooleanAttribute.identifier, false);</span>
+<span class="fc" id="L235">    }</span>
+
+    /**
+     * Private helper that returns the type used for the given standard type-equal function.
+     */
+    private static String getArgumentType(String functionName) {
+<span class="fc" id="L241">        String datatype = (String) (typeMap.get(functionName));</span>
+
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        if (datatype == null)</span>
+<span class="nc" id="L244">            throw new IllegalArgumentException(&quot;not a standard function: &quot; + functionName);</span>
+
+<span class="fc" id="L246">        return datatype;</span>
+    }
+
+    /**
+     * Private helper that returns the internal identifier used for the given standard function.
+     *
+     * @param functionName function name
+     * @return function id
+     */
+    private static int getId(String functionName) {
+
+<span class="fc bfc" id="L257" title="All 2 branches covered.">        if (functionName.equals(NAME_EQUAL_CASE_IGNORE)){</span>
+<span class="fc" id="L258">            return ID_EQUAL_CASE_IGNORE;</span>
+        } else {
+<span class="fc" id="L260">            return 0;</span>
+        }
+    }
+
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public static Set getSupportedIdentifiers() {
+<span class="fc" id="L270">        return Collections.unmodifiableSet(typeMap.keySet());</span>
+    }
+
+    /**
+     * Evaluate the function, using the specified parameters.
+     * 
+     * @param inputs a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Evaluatable&lt;/code&gt; objects representing the
+     *            arguments passed to the function
+     * @param context an &lt;code&gt;EvaluationCtx&lt;/code&gt; so that the &lt;code&gt;Evaluatable&lt;/code&gt; objects can
+     *            be evaluated
+     * @return an &lt;code&gt;EvaluationResult&lt;/code&gt; representing the function's result
+     */
+    public EvaluationResult evaluate(List&lt;Evaluatable&gt; inputs, EvaluationCtx context) {
+
+        // Evaluate the arguments
+<span class="fc" id="L285">        AttributeValue[] argValues = new AttributeValue[inputs.size()];</span>
+<span class="fc" id="L286">        EvaluationResult result = evalArgs(inputs, context, argValues);</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        if (result != null)</span>
+<span class="fc" id="L288">            return result;</span>
+
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        if (argValues[1] instanceof StringAttribute</span>
+<span class="pc bpc" id="L291" title="1 of 2 branches missed.">                &amp;&amp; XACMLConstants.ANY.equals(((StringAttribute) argValues[1]).getValue())) {</span>
+<span class="nc" id="L292">            return EvaluationResult.getInstance(true);</span>
+        }
+
+        // Now that we have real values, perform the equals operation
+<span class="fc bfc" id="L296" title="All 2 branches covered.">        if(getFunctionId() == ID_EQUAL_CASE_IGNORE){</span>
+<span class="fc" id="L297">            return EvaluationResult.getInstance(argValues[0].encode().toLowerCase().</span>
+<span class="fc" id="L298">                    equals(argValues[1].encode().toLowerCase()));            </span>
+        }  else {
+<span class="fc" id="L300">            return EvaluationResult.getInstance(argValues[0].equals(argValues[1]));</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

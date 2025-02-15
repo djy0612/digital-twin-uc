@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Target.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.xacml2</a> &gt; <span class="el_source">Target.java</span></div><h1>Target.java</h1><pre class="source lang-java linenums">/*
+ * @(#)Target.java
+ *
+ * Copyright 2003-2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.xacml2;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.*;
+import org.wso2.balana.ctx.EvaluationCtx;
+
+/**
+ * Represents the TargetType XML type in XACML. This also stores several other XML types: Subjects,
+ * Resources, Actions, and Environments (in XACML 2.0 and later). The target is used to quickly
+ * identify whether the parent element (a policy set, policy, or rule) is applicable to a given
+ * request.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class Target extends AbstractTarget {
+
+    // the four sections of a Target
+    private TargetSection subjectsSection;
+    private TargetSection resourcesSection;
+    private TargetSection actionsSection;
+    private TargetSection environmentsSection;
+
+    // the version of XACML of the policy containing this target
+    private int xacmlVersion;
+
+    // the logger we'll use for all messages
+<span class="fc" id="L71">    private static final Log logger = LogFactory.getLog(Target.class);</span>
+
+    /**
+     * Constructor that creates an XACML 1.x &lt;code&gt;Target&lt;/code&gt; from components. Each of the
+     * sections must be non-null, but they may match any request. Because this is only used for 1.x
+     * Targets, there is no Environments section.
+     * 
+     * @param subjectsSection a &lt;code&gt;TargetSection&lt;/code&gt; representing the Subjects section of this
+     *            target
+     * @param resourcesSection a &lt;code&gt;TargetSection&lt;/code&gt; representing the Resources section of
+     *            this target
+     * @param actionsSection a &lt;code&gt;TargetSection&lt;/code&gt; representing the Actions section of this
+     *            target
+     */
+    public Target(TargetSection subjectsSection, TargetSection resourcesSection,
+<span class="nc" id="L86">            TargetSection actionsSection) {</span>
+<span class="nc bnc" id="L87" title="All 6 branches missed.">        if ((subjectsSection == null) || (resourcesSection == null) || (actionsSection == null))</span>
+<span class="nc" id="L88">            throw new ProcessingException(&quot;All sections of a Target must &quot; + &quot;be non-null&quot;);</span>
+
+<span class="nc" id="L90">        this.subjectsSection = subjectsSection;</span>
+<span class="nc" id="L91">        this.resourcesSection = resourcesSection;</span>
+<span class="nc" id="L92">        this.actionsSection = actionsSection;</span>
+<span class="nc" id="L93">        this.environmentsSection = new TargetSection(null, TargetMatch.ENVIRONMENT,</span>
+                XACMLConstants.XACML_VERSION_1_0);
+<span class="nc" id="L95">        this.xacmlVersion = XACMLConstants.XACML_VERSION_1_0;</span>
+<span class="nc" id="L96">    }</span>
+
+    /**
+     * Constructor that creates an XACML 2.0 &lt;code&gt;Target&lt;/code&gt; from components. Each of the
+     * sections must be non-null, but they may match any request.
+     * 
+     * @param subjectsSection a &lt;code&gt;TargetSection&lt;/code&gt; representing the Subjects section of this
+     *            target
+     * @param resourcesSection a &lt;code&gt;TargetSection&lt;/code&gt; representing the Resources section of
+     *            this target
+     * @param actionsSection a &lt;code&gt;TargetSection&lt;/code&gt; representing the Actions section of this
+     *            target
+     * @param environmentsSection a &lt;code&gt;TargetSection&lt;/code&gt; representing the Environments section
+     *            of this target
+     */
+    public Target(TargetSection subjectsSection, TargetSection resourcesSection,
+<span class="fc" id="L112">            TargetSection actionsSection, TargetSection environmentsSection) {</span>
+<span class="pc bpc" id="L113" title="4 of 8 branches missed.">        if ((subjectsSection == null) || (resourcesSection == null) || (actionsSection == null)</span>
+                || (environmentsSection == null))
+<span class="nc" id="L115">            throw new ProcessingException(&quot;All sections of a Target must &quot; + &quot;be non-null&quot;);</span>
+
+<span class="fc" id="L117">        this.subjectsSection = subjectsSection;</span>
+<span class="fc" id="L118">        this.resourcesSection = resourcesSection;</span>
+<span class="fc" id="L119">        this.actionsSection = actionsSection;</span>
+<span class="fc" id="L120">        this.environmentsSection = environmentsSection;</span>
+<span class="fc" id="L121">        this.xacmlVersion = XACMLConstants.XACML_VERSION_2_0;</span>
+<span class="fc" id="L122">    }</span>
+
+    /**
+     * Creates a &lt;code&gt;Target&lt;/code&gt; by parsing a node.
+     * 
+     * @deprecated As of 2.0 you should avoid using this method and should instead use the version
+     *             that takes a &lt;code&gt;PolicyMetaData&lt;/code&gt; instance. This method will only work for
+     *             XACML 1.x policies.
+     * 
+     * @param root the node to parse for the &lt;code&gt;Target&lt;/code&gt;
+     * @param xpathVersion the XPath version to use in any selectors, or null if this is unspecified
+     *            (ie, not supplied in the defaults section of the policy)
+     * 
+     * @return a new &lt;code&gt;Target&lt;/code&gt; constructed by parsing
+     * 
+     * @throws ParsingException if the DOM node is invalid
+     */
+    public static Target getInstance(Node root, String xpathVersion) throws ParsingException {
+<span class="nc" id="L140">        return getInstance(root, new PolicyMetaData(XACMLConstants.XACML_1_0_IDENTIFIER,</span>
+                xpathVersion));
+    }
+
+    /**
+     * Creates a &lt;code&gt;Target&lt;/code&gt; by parsing a node.
+     * 
+     * @param root the node to parse for the &lt;code&gt;Target&lt;/code&gt;
+     * @param metaData
+     * @return a new &lt;code&gt;Target&lt;/code&gt; constructed by parsing
+     * 
+     * @throws ParsingException if the DOM node is invalid
+     */
+    public static Target getInstance(Node root, PolicyMetaData metaData) throws ParsingException {
+        
+<span class="fc" id="L155">        TargetSection subjects = null;</span>
+<span class="fc" id="L156">        TargetSection resources = null;</span>
+<span class="fc" id="L157">        TargetSection actions = null;</span>
+<span class="fc" id="L158">        TargetSection environments = null;</span>
+<span class="fc" id="L159">        int version = metaData.getXACMLVersion();</span>
+<span class="fc" id="L160">        NodeList children = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L163">            Node child = children.item(i);</span>
+<span class="fc" id="L164">            String name = DOMHelper.getLocalName(child);</span>
+
+<span class="fc bfc" id="L166" title="All 2 branches covered.">            if (name.equals(&quot;Subjects&quot;)) {</span>
+<span class="fc" id="L167">                subjects = TargetSection.getInstance(child, TargetMatch.SUBJECT, metaData);</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            } else if (name.equals(&quot;Resources&quot;)) {</span>
+<span class="fc" id="L169">                resources = TargetSection.getInstance(child, TargetMatch.RESOURCE, metaData);</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            } else if (name.equals(&quot;Actions&quot;)) {</span>
+<span class="fc" id="L171">                actions = TargetSection.getInstance(child, TargetMatch.ACTION, metaData);</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">            } else if (name.equals(&quot;Environments&quot;)) {</span>
+<span class="nc" id="L173">                environments = TargetSection.getInstance(child, TargetMatch.ENVIRONMENT, metaData);</span>
+            }
+        }
+
+        // starting in 2.0 an any-matching section is represented by a
+        // missing element, and in 1.x there were no Environments elements,
+        // so these need to get turned into non-null arguments
+
+
+<span class="fc bfc" id="L182" title="All 2 branches covered.">        if (subjects == null)</span>
+<span class="fc" id="L183">            subjects = new TargetSection(null, TargetMatch.SUBJECT, version);</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">        if (resources == null)</span>
+<span class="fc" id="L185">            resources = new TargetSection(null, TargetMatch.RESOURCE, version);</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (actions == null)</span>
+<span class="fc" id="L187">            actions = new TargetSection(null, TargetMatch.ACTION, version);</span>
+
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        if (version == XACMLConstants.XACML_VERSION_2_0) {</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">            if (environments == null)</span>
+<span class="fc" id="L191">                environments = new TargetSection(null, TargetMatch.ENVIRONMENT, version);</span>
+<span class="fc" id="L192">            return new Target(subjects, resources, actions, environments);</span>
+        } else {
+<span class="nc" id="L194">            return new Target(subjects, resources, actions);</span>
+        }
+
+    }
+
+    /**
+     * Returns the Subjects section of this Target.
+     * 
+     * @return a &lt;code&gt;TargetSection&lt;/code&gt; representing the Subjects
+     */
+    public TargetSection getSubjectsSection() {
+<span class="nc" id="L205">        return subjectsSection;</span>
+    }
+
+    /**
+     * Returns the Resources section of this Target.
+     * 
+     * @return a &lt;code&gt;TargetSection&lt;/code&gt; representing the Resources
+     */
+    public TargetSection getResourcesSection() {
+<span class="nc" id="L214">        return resourcesSection;</span>
+    }
+
+    /**
+     * Returns the Actions section of this Target.
+     * 
+     * @return a &lt;code&gt;TargetSection&lt;/code&gt; representing the Actions
+     */
+    public TargetSection getActionsSection() {
+<span class="nc" id="L223">        return actionsSection;</span>
+    }
+
+    /**
+     * Returns the Environments section of this Target. Note that if this is an XACML 1.x policy,
+     * then the section will always match anything, since XACML 1.x doesn't support matching on the
+     * Environment.
+     * 
+     * @return a &lt;code&gt;TargetSection&lt;/code&gt; representing the Environments
+     */
+    public TargetSection getEnvironmentsSection() {
+<span class="nc" id="L234">        return environmentsSection;</span>
+    }
+
+    /**
+     * Returns whether or not this &lt;code&gt;Target&lt;/code&gt; matches any request.
+     * 
+     * @return true if this Target matches any request, false otherwise
+     */
+    public boolean matchesAny() {
+<span class="fc bfc" id="L243" title="All 4 branches covered.">        return subjectsSection.matchesAny() &amp;&amp; resourcesSection.matchesAny()</span>
+<span class="pc bpc" id="L244" title="1 of 4 branches missed.">                &amp;&amp; actionsSection.matchesAny() &amp;&amp; environmentsSection.matchesAny();</span>
+    }
+
+    /**
+     * Determines whether this &lt;code&gt;Target&lt;/code&gt; matches the input request (whether it is
+     * applicable).
+     * 
+     * @param context the representation of the request
+     * 
+     * @return the result of trying to match the target and the request
+     */
+    public MatchResult match(EvaluationCtx context) {
+<span class="fc" id="L256">        MatchResult result = null;</span>
+        String subjectPolicyValue;
+        String resourcePolicyValue;
+        String actionPolicyValue;
+        String envPolicyValue;
+        
+
+        // before matching, see if this target matches any request
+<span class="fc bfc" id="L264" title="All 2 branches covered.">        if (matchesAny())</span>
+<span class="fc" id="L265">            return new MatchResult(MatchResult.MATCH);</span>
+
+        // first, try matching the Subjects section
+<span class="fc" id="L268">        result = subjectsSection.match(context);</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">        if (result.getResult() != MatchResult.MATCH) {</span>
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">            if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L271">                logger.debug(&quot;failed to match Subjects section of Target&quot;);</span>
+            }
+<span class="fc" id="L273">            return result;</span>
+        }
+<span class="fc" id="L275">        subjectPolicyValue = result.getPolicyValue();</span>
+
+        // now try matching the Resources section
+<span class="fc" id="L278">        result = resourcesSection.match(context);</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">        if (result.getResult() != MatchResult.MATCH) {</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">            if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L281">                logger.debug(&quot;failed to match Resources section of Target&quot;);</span>
+            }
+<span class="fc" id="L283">            return result;</span>
+        }
+
+<span class="fc" id="L286">        resourcePolicyValue = result.getPolicyValue();</span>
+
+        // next, look at the Actions section
+<span class="fc" id="L289">        result = actionsSection.match(context);</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        if (result.getResult() != MatchResult.MATCH) {</span>
+<span class="pc bpc" id="L291" title="1 of 2 branches missed.">            if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L292">                logger.debug(&quot;failed to match Actions section of Target&quot;);</span>
+            }
+<span class="fc" id="L294">            return result;</span>
+        }
+        
+<span class="fc" id="L297">        actionPolicyValue = result.getPolicyValue();</span>
+
+        // finally, match the Environments section
+<span class="fc" id="L300">        result = environmentsSection.match(context);</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">        if (result.getResult() != MatchResult.MATCH) {</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">            if (logger.isDebugEnabled()) {</span>
+<span class="nc" id="L303">                logger.debug(&quot;failed to match Environments section of Target&quot;);</span>
+            }
+<span class="nc" id="L305">            return result;</span>
+        }
+        
+<span class="fc" id="L308">        envPolicyValue = result.getPolicyValue();</span>
+        
+<span class="fc" id="L310">        result.setActionPolicyValue(actionPolicyValue);</span>
+<span class="fc" id="L311">        result.setSubjectPolicyValue(subjectPolicyValue);</span>
+<span class="fc" id="L312">        result.setEnvPolicyValue(envPolicyValue);</span>
+<span class="fc" id="L313">        result.setResourcePolicyValue(resourcePolicyValue);</span>
+
+        // if we got here, then everything matched
+<span class="fc" id="L316">        return result;</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;Target&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="nc" id="L325">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L326">        encode(builder);</span>
+<span class="nc" id="L327">        return builder.toString();</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;Target&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+        // see if this Target matches anything
+<span class="nc bnc" id="L338" title="All 4 branches missed.">        boolean matchesAny = (subjectsSection.matchesAny() &amp;&amp; resourcesSection.matchesAny()</span>
+<span class="nc bnc" id="L339" title="All 4 branches missed.">                &amp;&amp; actionsSection.matchesAny() &amp;&amp; environmentsSection.matchesAny());</span>
+
+<span class="nc bnc" id="L341" title="All 4 branches missed.">        if (matchesAny &amp;&amp; (xacmlVersion == XACMLConstants.XACML_VERSION_2_0)) {</span>
+            // in 2.0, if all the sections match any request, then the Target
+            // element is empty and should be encoded simply as en empty tag
+<span class="nc" id="L344">            builder.append(&quot;&lt;Target/&gt;\n&quot;);</span>
+        } else {
+<span class="nc" id="L346">            builder.append(&quot;&lt;Target&gt;\n&quot;);</span>
+<span class="nc" id="L347">            subjectsSection.encode(builder);</span>
+<span class="nc" id="L348">            resourcesSection.encode(builder);</span>
+<span class="nc" id="L349">            actionsSection.encode(builder);</span>
+
+            // we should only do this if we're a 2.0 policy
+<span class="nc bnc" id="L352" title="All 2 branches missed.">            if (xacmlVersion == XACMLConstants.XACML_VERSION_2_0){</span>
+<span class="nc" id="L353">                environmentsSection.encode(builder);</span>
+            }
+<span class="nc" id="L355">            builder.append(&quot;&lt;/Target&gt;\n&quot;);</span>
+        }
+<span class="nc" id="L357">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

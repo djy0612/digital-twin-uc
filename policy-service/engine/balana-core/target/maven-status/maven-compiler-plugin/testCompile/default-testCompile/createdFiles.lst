@@ -1,0 +1,15 @@
+org\wso2\balana\TestAttributeFinderModule.class
+org\wso2\balana\TestUtil.class
+org\wso2\balana\BaseTestCase.class
+org\wso2\balana\basic\TestAlgorithmsV3.class
+org\wso2\balana\advance\AdvanceTestV3.class
+org\wso2\balana\conformance\ConformanceTestV3.class
+org\wso2\balana\TestConstants.class
+org\wso2\balana\advance\XACML3HigherOrderFunctionTest.class
+org\wso2\balana\basic\TestMultipleRequestV3.class
+org\wso2\balana\basic\TestFunctionV3.class
+org\wso2\balana\BalanaTest.class
+org\wso2\balana\basic\TestXPathV3.class
+org\wso2\balana\conformance\ConformanceTestV2.class
+org\wso2\balana\TestResourceFinderModule.class
+org\wso2\balana\basic\BasicTestV3.class

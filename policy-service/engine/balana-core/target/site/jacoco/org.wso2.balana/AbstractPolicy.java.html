@@ -1,0 +1,666 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractPolicy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana</a> &gt; <span class="el_source">AbstractPolicy.java</span></div><h1>AbstractPolicy.java</h1><pre class="source lang-java linenums">/*
+ * @(#)AbstractPolicy.java
+ *
+ * Copyright 2003-2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ *
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.wso2.balana.combine.*;
+import org.wso2.balana.ctx.AbstractResult;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.xacml2.Result;
+import org.wso2.balana.xacml2.Obligation;
+import org.wso2.balana.xacml3.Advice;
+import org.wso2.balana.xacml3.AdviceExpression;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.xacml3.ObligationExpression;
+
+/**
+ * Represents an instance of an XACML policy.
+ *
+ * @since 1.0
+ * @author Seth Proctor
+ * @author Marco Barreno
+ */
+public abstract class AbstractPolicy  implements PolicyTreeElement{
+
+    // attributes associated with this policy
+    private URI idAttr;
+    private String version;
+    private CombiningAlgorithm combiningAlg;
+
+    // the elements in the policy
+    private String description;
+    private AbstractTarget target;
+
+    // the value in defaults, or null if there was no default value
+    private String defaultVersion;
+
+    // the meta-data associated with this policy
+    protected PolicyMetaData metaData;
+
+    // the child elements under this policy represented simply as the
+    // PolicyTreeElements...
+    private List&lt;PolicyTreeElement&gt; children;
+    // ...or the CombinerElements that are passed to combining algorithms
+    private List&lt;CombinerElement&gt; childElements;
+
+    // any obligations held by this policy
+    private Set&lt;AbstractObligation&gt; obligationExpressions;
+
+    // any advice expressions held by this policy
+    private Set&lt;AdviceExpression&gt; adviceExpressions;
+
+    // the list of combiner parameters
+    private List&lt;CombinerParameter&gt; parameters;
+
+    private String subjectPolicyValue;
+    private String resourcePolicyValue;
+    private String actionPolicyValue;
+    private String envPolicyValue;
+
+    // the logger we'll use for all messages
+<span class="fc" id="L108">    private static final Log logger = LogFactory.getLog(AbstractPolicy.class);</span>
+
+    /**
+     * Constructor used by &lt;code&gt;PolicyReference&lt;/code&gt;, which supplies its own values for the
+     * methods in this class.
+     */
+<span class="nc" id="L114">    protected AbstractPolicy() {</span>
+
+<span class="nc" id="L116">    }</span>
+
+    /**
+     * Constructor used to create a policy from concrete components.
+     *
+     * @param id the policy id
+     * @param version the policy version or null for the default (this is always null for pre-2.0
+     *            policies)
+     * @param combiningAlg the combining algorithm to use
+     * @param description describes the policy or null if there is none
+     * @param target the policy's target
+     */
+    protected AbstractPolicy(URI id, String version, CombiningAlgorithm combiningAlg,
+            String description, AbstractTarget target) {
+<span class="nc" id="L130">        this(id, version, combiningAlg, description, target, null);</span>
+<span class="nc" id="L131">    }</span>
+
+    /**
+     * Constructor used to create a policy from concrete components.
+     *
+     * @param id the policy id
+     * @param version the policy version or null for the default (this is always null for pre-2.0
+     *            policies)
+     * @param combiningAlg the combining algorithm to use
+     * @param description describes the policy or null if there is none
+     * @param target the policy's target
+     * @param defaultVersion the XPath version to use for selectors
+     */
+    protected AbstractPolicy(URI id, String version, CombiningAlgorithm combiningAlg,
+            String description, AbstractTarget target, String defaultVersion) {
+<span class="nc" id="L146">        this(id, version, combiningAlg, description, target, defaultVersion, null, null, null);</span>
+<span class="nc" id="L147">    }</span>
+
+    /**
+     * Constructor used to create a policy from concrete components.
+     *
+     * @param id the policy id
+     * @param version the policy version or null for the default (this is always null for pre-2.0
+     *            policies)
+     * @param combiningAlg the combining algorithm to use
+     * @param description describes the policy or null if there is none
+     * @param target the policy's target
+     * @param defaultVersion the XPath version to use for selectors
+     * @param obligationExpressions the policy's ObligationExpressions
+     * @param adviceExpressions the policy's advice expressions
+     * @param parameters the policy's parameters
+     */
+    protected AbstractPolicy(URI id, String version, CombiningAlgorithm combiningAlg,
+            String description, AbstractTarget target, String defaultVersion,
+            Set&lt;AbstractObligation&gt; obligationExpressions, Set&lt;AdviceExpression&gt; adviceExpressions,
+<span class="nc" id="L166">            List&lt;CombinerParameter&gt; parameters) {</span>
+        
+<span class="nc" id="L168">        idAttr = id;</span>
+<span class="nc" id="L169">        this.combiningAlg = combiningAlg;</span>
+<span class="nc" id="L170">        this.description = description;</span>
+<span class="nc" id="L171">        this.target = target;</span>
+<span class="nc" id="L172">        this.defaultVersion = defaultVersion;</span>
+
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (version == null)</span>
+<span class="nc" id="L175">            this.version = &quot;1.0&quot;;</span>
+        else
+<span class="nc" id="L177">            this.version = version;</span>
+
+<span class="nc" id="L179">        String namespaceUri = XACMLConstants.XACML_3_0_IDENTIFIER;</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        if (target != null) {</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">            if (target instanceof org.wso2.balana.xacml2.Target) {</span>
+<span class="nc" id="L182">                namespaceUri = XACMLConstants.XACML_2_0_IDENTIFIER;</span>
+            }
+        }
+
+<span class="nc" id="L186">        metaData = new PolicyMetaData(namespaceUri, defaultVersion);</span>
+
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        if (obligationExpressions == null)</span>
+<span class="nc" id="L189">            this.obligationExpressions = new HashSet&lt;AbstractObligation&gt;();</span>
+        else
+<span class="nc" id="L191">            this.obligationExpressions = Collections.</span>
+<span class="nc" id="L192">                        unmodifiableSet(new HashSet&lt;AbstractObligation&gt;(obligationExpressions));</span>
+
+<span class="nc bnc" id="L194" title="All 2 branches missed.">        if(adviceExpressions == null){</span>
+<span class="nc" id="L195">            this.adviceExpressions = new HashSet&lt;AdviceExpression&gt;();</span>
+        } else {
+<span class="nc" id="L197">            this.adviceExpressions = Collections.</span>
+<span class="nc" id="L198">                        unmodifiableSet(new HashSet&lt;AdviceExpression&gt;(adviceExpressions));</span>
+        }
+
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        if (parameters == null)</span>
+<span class="nc" id="L202">            this.parameters = new ArrayList&lt;CombinerParameter&gt;();</span>
+        else
+<span class="nc" id="L204">            this.parameters = Collections.unmodifiableList(new ArrayList&lt;CombinerParameter&gt;(parameters));</span>
+<span class="nc" id="L205">    }</span>
+
+    /**
+     * Constructor used by child classes to initialize the shared data from a DOM root node.
+     *
+     * @param root the DOM root of the policy
+     * @param policyPrefix either &quot;Policy&quot; or &quot;PolicySet&quot;
+     * @param combiningName name of the field naming the combining alg
+     * the XACML policy, if null use default factories
+     * @throws ParsingException if the policy is invalid
+     */
+    protected AbstractPolicy(Node root, String policyPrefix, String combiningName)
+<span class="fc" id="L217">            throws ParsingException {</span>
+        // get the attributes, all of which are common to Policies
+<span class="fc" id="L219">        NamedNodeMap attrs = root.getAttributes();</span>
+
+        try {
+            // get the attribute Id
+<span class="fc" id="L223">            idAttr = new URI(attrs.getNamedItem(policyPrefix + &quot;Id&quot;).getNodeValue());</span>
+<span class="nc" id="L224">        } catch (Exception e) {</span>
+<span class="nc" id="L225">            throw new ParsingException(&quot;Error parsing required attribute &quot; + policyPrefix + &quot;Id&quot;, e);</span>
+<span class="fc" id="L226">        }</span>
+
+        // see if there's a version
+<span class="fc" id="L229">        Node versionNode = attrs.getNamedItem(&quot;Version&quot;);</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">        if (versionNode != null) {</span>
+<span class="fc" id="L231">            version = versionNode.getNodeValue();</span>
+        } else {
+            // assign the default version
+<span class="fc" id="L234">            version = &quot;1.0&quot;;</span>
+        }
+
+        // now get the combining algorithm...
+        try {
+<span class="fc" id="L239">            URI algId = new URI(attrs.getNamedItem(combiningName).getNodeValue());</span>
+<span class="fc" id="L240">            CombiningAlgFactory factory = Balana.getInstance().getCombiningAlgFactory();</span>
+<span class="fc" id="L241">            combiningAlg = factory.createAlgorithm(algId);</span>
+<span class="nc" id="L242">        } catch (Exception e) {</span>
+<span class="nc" id="L243">            throw new ParsingException(&quot;Error parsing combining algorithm&quot; + &quot; in &quot; + policyPrefix,</span>
+                    e);
+<span class="fc" id="L245">        }</span>
+
+        // ...and make sure it's the right kind
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        if (policyPrefix.equals(&quot;Policy&quot;)) {</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">            if (!(combiningAlg instanceof RuleCombiningAlgorithm))</span>
+<span class="nc" id="L250">                throw new ParsingException(&quot;Policy must use a Rule &quot; + &quot;Combining Algorithm&quot;);</span>
+        } else {
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">            if (!(combiningAlg instanceof PolicyCombiningAlgorithm))</span>
+<span class="nc" id="L253">                throw new ParsingException(&quot;PolicySet must use a Policy &quot; + &quot;Combining Algorithm&quot;);</span>
+        }
+
+        // do an initial pass through the elements to pull out the
+        // defaults, if any, so we can setup the meta-data
+<span class="fc" id="L258">        NodeList children = root.getChildNodes();</span>
+<span class="fc" id="L259">        String xpathVersion = null;</span>
+
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L262">            Node child = children.item(i);</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">            if (DOMHelper.getLocalName(child).equals(policyPrefix + &quot;Defaults&quot;))</span>
+<span class="fc" id="L264">                handleDefaults(child);</span>
+        }
+
+        // with the defaults read, create the meta-data
+<span class="fc" id="L268">        metaData = new PolicyMetaData(root.getNamespaceURI(), defaultVersion);        </span>
+
+        // now read the remaining policy elements
+<span class="fc" id="L271">        obligationExpressions = new HashSet&lt;AbstractObligation&gt;();</span>
+<span class="fc" id="L272">        adviceExpressions = new HashSet&lt;AdviceExpression&gt;();</span>
+<span class="fc" id="L273">        parameters = new ArrayList&lt;CombinerParameter&gt;();</span>
+<span class="fc" id="L274">        children = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L276" title="All 2 branches covered.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L277">            Node child = children.item(i);</span>
+<span class="fc" id="L278">            String cname = DOMHelper.getLocalName(child);</span>
+
+<span class="fc bfc" id="L280" title="All 2 branches covered.">            if (cname.equals(&quot;Description&quot;)) {</span>
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">                if (child.hasChildNodes()){</span>
+<span class="fc" id="L282">                    description = child.getFirstChild().getNodeValue();</span>
+                }
+<span class="fc bfc" id="L284" title="All 2 branches covered.">            } else if (cname.equals(&quot;Target&quot;)) {</span>
+<span class="fc" id="L285">                target = TargetFactory.getFactory().getTarget(child, metaData);</span>
+<span class="pc bpc" id="L286" title="1 of 4 branches missed.">            } else if (cname.equals(&quot;ObligationExpressions&quot;) || cname.equals(&quot;Obligations&quot;)) {</span>
+<span class="fc" id="L287">                parseObligationExpressions(child);</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">            } else if (cname.equals(&quot;AdviceExpressions&quot;)) {</span>
+<span class="fc" id="L289">                parseAdviceExpressions(child);</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">            } else if (cname.equals(&quot;CombinerParameters&quot;)) {</span>
+<span class="nc" id="L291">                handleParameters(child);</span>
+            }
+        }
+
+        // finally, make sure the obligations and parameters are immutable
+<span class="fc" id="L296">        obligationExpressions = Collections.unmodifiableSet(obligationExpressions);</span>
+<span class="fc" id="L297">        adviceExpressions = Collections.unmodifiableSet(adviceExpressions);</span>
+<span class="fc" id="L298">        parameters = Collections.unmodifiableList(parameters);</span>
+<span class="fc" id="L299">    }</span>
+
+    public String getSubjectPolicyValue() {
+<span class="nc" id="L302">        return subjectPolicyValue;</span>
+    }
+
+    public void setSubjectPolicyValue(String subjectPolicyValue) {
+<span class="nc" id="L306">        this.subjectPolicyValue = subjectPolicyValue;</span>
+<span class="nc" id="L307">    }</span>
+
+    public String getResourcePolicyValue() {
+<span class="nc" id="L310">        return resourcePolicyValue;</span>
+    }
+
+    public void setResourcePolicyValue(String resourcePolicyValue) {
+<span class="nc" id="L314">        this.resourcePolicyValue = resourcePolicyValue;</span>
+<span class="nc" id="L315">    }</span>
+
+    public String getActionPolicyValue() {
+<span class="nc" id="L318">        return actionPolicyValue;</span>
+    }
+
+    public void setActionPolicyValue(String actionPolicyValue) {
+<span class="nc" id="L322">        this.actionPolicyValue = actionPolicyValue;</span>
+<span class="nc" id="L323">    }</span>
+
+    public String getEnvPolicyValue() {
+<span class="nc" id="L326">        return envPolicyValue;</span>
+    }
+
+    public void setEnvPolicyValue(String envPolicyValue) {
+<span class="nc" id="L330">        this.envPolicyValue = envPolicyValue;</span>
+<span class="nc" id="L331">    }</span>
+
+    /**
+     * Helper routine to parse the obligation data
+     *
+     * @param root  root node of ObligationExpression
+     * @throws ParsingException if error while parsing node
+     */
+    private void parseObligationExpressions(Node root) throws ParsingException {
+<span class="fc" id="L340">        NodeList nodes = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L342" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L343">            Node node = nodes.item(i);</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">            if (DOMHelper.getLocalName(node).equals(&quot;ObligationExpression&quot;) ||</span>
+<span class="pc bpc" id="L345" title="1 of 2 branches missed.">                                DOMHelper.getLocalName(node).equals(&quot;Obligation&quot;)){</span>
+<span class="fc" id="L346">                AbstractObligation obligation = ObligationFactory.getFactory().</span>
+<span class="fc" id="L347">                                                                getObligation(node, metaData);</span>
+<span class="fc" id="L348">                obligationExpressions.add(obligation);</span>
+            }
+        }
+<span class="fc" id="L351">    }</span>
+
+    /**
+     * Helper routine to parse the Advice Expression data
+     *
+     * @param root  root node of AdviceExpressions
+     * @throws ParsingException if error while parsing node
+     */
+    private void parseAdviceExpressions(Node root) throws ParsingException {
+<span class="fc" id="L360">        NodeList nodes = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L362" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L363">            Node node = nodes.item(i);</span>
+<span class="fc bfc" id="L364" title="All 2 branches covered.">            if (DOMHelper.getLocalName(node).equals(&quot;AdviceExpression&quot;))</span>
+<span class="fc" id="L365">                adviceExpressions.add(AdviceExpression.getInstance(node, metaData));</span>
+        }
+<span class="fc" id="L367">    }</span>
+
+    /**
+     * There used to be multiple things in the defaults type, but now there's just the one string
+     * that must be a certain value, so it doesn't seem all that useful to have a class for
+     * this...we could always bring it back, however, if it started to do more
+     * @param root
+     * @throws ParsingException
+     */
+    private void handleDefaults(Node root) throws ParsingException {
+<span class="fc" id="L377">        defaultVersion = null;</span>
+<span class="fc" id="L378">        NodeList nodes = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L380" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L381">            Node node = nodes.item(i);</span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">            if (DOMHelper.getLocalName(node).equals(&quot;XPathVersion&quot;)){</span>
+<span class="fc" id="L383">                defaultVersion = node.getFirstChild().getNodeValue();</span>
+            }
+        }
+<span class="fc" id="L386">    }</span>
+
+    /**
+     * Handles all the CombinerParameters in the policy or policy set
+     * @param root
+     * @throws ParsingException
+     */
+    private void handleParameters(Node root) throws ParsingException {
+<span class="nc" id="L394">        NodeList nodes = root.getChildNodes();</span>
+
+<span class="nc bnc" id="L396" title="All 2 branches missed.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="nc" id="L397">            Node node = nodes.item(i);</span>
+<span class="nc bnc" id="L398" title="All 2 branches missed.">            if (DOMHelper.getLocalName(node).equals(&quot;CombinerParameter&quot;)){</span>
+<span class="nc" id="L399">                parameters.add(CombinerParameter.getInstance(node));</span>
+            }
+        }
+<span class="nc" id="L402">    }</span>
+
+    /**
+     * Returns the id of this policy
+     *
+     * @return the policy id
+     */
+    public URI getId() {
+<span class="fc" id="L410">        return idAttr;</span>
+    }
+
+    /**
+     * Returns the version of this policy. If this is an XACML 1.x policy then this will always
+     * return &lt;code&gt;&quot;1.0&quot;&lt;/code&gt;.
+     *
+     * @return the policy version
+     */
+    public String getVersion() {
+<span class="nc" id="L420">        return version;</span>
+    }
+
+    /**
+     * Returns the combining algorithm used by this policy
+     *
+     * @return the combining algorithm
+     */
+    public CombiningAlgorithm getCombiningAlg() {
+<span class="nc" id="L429">        return combiningAlg;</span>
+    }
+
+    /**
+     * Returns the list of input parameters for the combining algorithm. If this is an XACML 1.x
+     * policy then the list will always be empty.
+     *
+     * @return a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;CombinerParameter&lt;/code&gt;s
+     */
+    public List getCombiningParameters() {
+<span class="nc" id="L439">        return parameters;</span>
+    }
+
+    /**
+     * Returns the given description of this policy or null if there is no description
+     *
+     * @return the description or null
+     */
+    public String getDescription() {
+<span class="nc" id="L448">        return description;</span>
+    }
+
+    /**
+     * Returns the target for this policy
+     *
+     * @return the policy's target
+     */
+    public AbstractTarget getTarget() {
+<span class="nc" id="L457">        return target;</span>
+    }
+
+    /**
+     * Returns the XPath version to use or null if none was specified
+     *
+     * @return XPath version or null
+     */
+    public String getDefaultVersion() {
+<span class="nc" id="L466">        return defaultVersion;</span>
+    }
+
+    /**
+     * Returns the &lt;code&gt;List&lt;/code&gt; of children under this node in the policy tree. Depending on
+     * what kind of policy this node represents the children will either be
+     * &lt;code&gt;AbstractPolicy&lt;/code&gt; objects or &lt;code&gt;Rule&lt;/code&gt;s.
+     *
+     * @return a &lt;code&gt;List&lt;/code&gt; of child nodes
+     */
+    public List&lt;PolicyTreeElement&gt; getChildren() {
+<span class="nc" id="L477">        return children;</span>
+    }
+
+    /**
+     * Returns the &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;CombinerElement&lt;/code&gt;s that is provided to the
+     * combining algorithm. This returns the same set of children that &lt;code&gt;getChildren&lt;/code&gt;
+     * provides along with any associated combiner parameters.
+     *
+     * @return a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;CombinerElement&lt;/code&gt;s
+     */
+    public List&lt;CombinerElement&gt; getChildElements() {
+<span class="nc" id="L488">        return childElements;</span>
+    }
+
+    /**
+     * Returns the Set of obligations for this policy, which may be empty
+     *
+     * @return the policy's obligations
+     */
+    public Set getObligationExpressions() {
+<span class="nc" id="L497">        return obligationExpressions;</span>
+    }
+
+    /**
+     * Returns the Set of advice expressions for this policy, which may be empty
+     *
+     * @return the policy's advice expressions
+     */
+    public Set getAdviceExpressions() {
+<span class="nc" id="L506">        return adviceExpressions;</span>
+    }
+
+    /**
+     * Returns the meta-data associated with this policy
+     */
+    public PolicyMetaData getMetaData() {
+<span class="fc" id="L513">        return metaData;</span>
+    }
+
+    /**
+     * Given the input context sees whether or not the request matches this policy. This must be
+     * called by combining algorithms before they evaluate a policy. This is also used in the
+     * initial policy finding operation to determine which top-level policies might apply to the
+     * request.
+     *
+     * @param context the representation of the request
+     *
+     * @return the result of trying to match the policy and the request
+     */
+    public MatchResult match(EvaluationCtx context) {
+<span class="fc" id="L527">        return target.match(context);</span>
+    }
+
+    /**
+     * Sets the child policy tree elements for this node, which are passed to the combining
+     * algorithm on evaluation. The &lt;code&gt;List&lt;/code&gt; must contain &lt;code&gt;CombinerElement&lt;/code&gt;s,
+     * which in turn will contain &lt;code&gt;Rule&lt;/code&gt;s or &lt;code&gt;AbstractPolicy&lt;/code&gt;s, but may not
+     * contain both types of elements.
+     *
+     * @param children a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;CombinerElement&lt;/code&gt;s representing the child
+     *            elements used by the combining algorithm
+     */
+    protected void setChildren(List&lt;CombinerElement&gt; children) {
+        // we always want a concrete list, since we're going to pass it to
+        // a combiner that expects a non-null input
+<span class="pc bpc" id="L542" title="1 of 2 branches missed.">        if (children == null) {</span>
+<span class="nc" id="L543">            this.children = new ArrayList&lt;PolicyTreeElement&gt;();</span>
+        } else {
+            // NOTE: since this is only getting called by known child
+            // classes we don't check that the types are all the same
+<span class="fc" id="L547">            List&lt;PolicyTreeElement&gt; list = new ArrayList&lt;PolicyTreeElement&gt;();</span>
+
+<span class="fc bfc" id="L549" title="All 2 branches covered.">            for (CombinerElement aChildren : children) {</span>
+<span class="fc" id="L550">                list.add(aChildren.getElement());</span>
+<span class="fc" id="L551">            }</span>
+
+<span class="fc" id="L553">            this.children = Collections.unmodifiableList(list);</span>
+<span class="fc" id="L554">            childElements = Collections.unmodifiableList(children);</span>
+        }
+<span class="fc" id="L556">    }</span>
+
+    /**
+     * Tries to evaluate the policy by calling the combining algorithm on the given policies or
+     * rules. The &lt;code&gt;match&lt;/code&gt; method must always be called first, and must always return
+     * MATCH, before this method is called.
+     *
+     * @param context the representation of the request
+     *
+     * @return the result of evaluation
+     */
+    public AbstractResult evaluate(EvaluationCtx context) {
+        
+        // evaluate
+<span class="fc" id="L570">        AbstractResult result = combiningAlg.combine(context, parameters, childElements);</span>
+
+        // if we have no obligation expressions or advice expressions, we're done
+<span class="fc bfc" id="L573" title="All 4 branches covered.">        if (obligationExpressions.size() &lt; 1 &amp;&amp; adviceExpressions.size() &lt; 1){</span>
+<span class="fc" id="L574">            return result;</span>
+        }
+
+        // if we have obligations,
+        // now, see if we should add any obligations to the set
+<span class="fc" id="L579">        int effect = result.getDecision();</span>
+
+<span class="fc bfc" id="L581" title="All 4 branches covered.">        if ((effect == Result.DECISION_INDETERMINATE) || (effect == Result.DECISION_NOT_APPLICABLE)) {</span>
+            // we didn't permit/deny, so we never return obligations
+<span class="fc" id="L583">            return result;</span>
+        }
+        
+        // if any obligations or advices are defined, evaluates them and return
+<span class="fc" id="L587">        processObligationAndAdvices(context, effect, result);</span>
+<span class="fc" id="L588">        return result;</span>
+
+    }
+
+    /**
+     * helper method to evaluate the obligations and advice expressions
+     *
+     * @param evaluationCtx context of a single policy evaluation
+     * @param effect policy effect
+     * @param result result of combining algorithm
+     */
+    private void processObligationAndAdvices(EvaluationCtx evaluationCtx, int effect, AbstractResult result){
+
+<span class="pc bpc" id="L601" title="1 of 4 branches missed.">        if(obligationExpressions != null &amp;&amp; obligationExpressions.size() &gt; 0){</span>
+<span class="fc" id="L602">            Set&lt;ObligationResult&gt;  results = new HashSet&lt;ObligationResult&gt;();</span>
+<span class="fc bfc" id="L603" title="All 2 branches covered.">            for(AbstractObligation obligationExpression : obligationExpressions){</span>
+<span class="fc bfc" id="L604" title="All 2 branches covered.">                if(obligationExpression.getFulfillOn() == effect) {</span>
+<span class="fc" id="L605">                    results.add(obligationExpression.evaluate(evaluationCtx));</span>
+                }
+<span class="fc" id="L607">            }</span>
+<span class="fc" id="L608">            result.getObligations().addAll(results);</span>
+        }
+
+<span class="pc bpc" id="L611" title="1 of 4 branches missed.">        if(adviceExpressions != null &amp;&amp; adviceExpressions.size() &gt; 0){</span>
+<span class="fc" id="L612">            Set&lt;Advice&gt;  advices = new HashSet&lt;Advice&gt;();</span>
+<span class="fc bfc" id="L613" title="All 2 branches covered.">            for(AdviceExpression adviceExpression : adviceExpressions){</span>
+<span class="fc bfc" id="L614" title="All 2 branches covered.">                if(adviceExpression.getAppliesTo() == effect) {</span>
+<span class="fc" id="L615">                    advices.add(adviceExpression.evaluate(evaluationCtx));</span>
+                }
+<span class="fc" id="L617">            }</span>
+<span class="fc" id="L618">            result.getAdvices().addAll(advices);</span>
+        }
+<span class="fc" id="L620">    }</span>
+
+
+    /**
+     * Encodes this &lt;code&gt;Obligation&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    protected void encodeCommonElements(StringBuilder builder) {
+
+<span class="nc bnc" id="L631" title="All 2 branches missed.">        for (CombinerElement childElement : childElements) {</span>
+<span class="nc" id="L632">            childElement.encode(builder);</span>
+<span class="nc" id="L633">        }</span>
+
+<span class="nc bnc" id="L635" title="All 4 branches missed.">        if (obligationExpressions != null &amp;&amp; obligationExpressions.size() != 0) {</span>
+
+<span class="nc bnc" id="L637" title="All 2 branches missed.">            if(metaData.getXACMLVersion() == XACMLConstants.XACML_VERSION_3_0){</span>
+<span class="nc" id="L638">                builder.append(&quot;&lt;Obligations&gt;\n&quot;);</span>
+            } else {
+<span class="nc" id="L640">                builder.append(&quot;&lt;ObligationExpressions&gt;\n&quot;);</span>
+            }
+
+<span class="nc bnc" id="L643" title="All 2 branches missed.">            for (AbstractObligation obligationExpression : obligationExpressions) {</span>
+<span class="nc" id="L644">                obligationExpression.encode(builder);</span>
+<span class="nc" id="L645">            }</span>
+
+<span class="nc bnc" id="L647" title="All 2 branches missed.">            if(metaData.getXACMLVersion() == XACMLConstants.XACML_VERSION_3_0){</span>
+<span class="nc" id="L648">                builder.append(&quot;&lt;/Obligations&gt;\n&quot;);</span>
+            } else {
+<span class="nc" id="L650">                builder.append(&quot;&lt;/ObligationExpressions&gt;\n&quot;);</span>
+            }
+        }
+
+<span class="nc bnc" id="L654" title="All 4 branches missed.">        if (adviceExpressions != null &amp;&amp; adviceExpressions.size() != 0) {</span>
+
+<span class="nc" id="L656">            builder.append(&quot;&lt;AdviceExpressions&gt;\n&quot;);</span>
+
+<span class="nc bnc" id="L658" title="All 2 branches missed.">            for (AdviceExpression adviceExpression : adviceExpressions) {</span>
+<span class="nc" id="L659">                adviceExpression.encode(builder);</span>
+<span class="nc" id="L660">            }</span>
+
+<span class="nc" id="L662">            builder.append(&quot;&lt;/AdviceExpressions&gt;\n&quot;);</span>
+        }
+<span class="nc" id="L664">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

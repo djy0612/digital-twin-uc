@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PolicySet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana</a> &gt; <span class="el_source">PolicySet.java</span></div><h1>PolicySet.java</h1><pre class="source lang-java linenums">/*
+ * @(#)PolicySet.java
+ *
+ * Copyright 2003-2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana;
+
+import org.wso2.balana.combine.CombinerElement;
+import org.wso2.balana.combine.CombinerParameter;
+import org.wso2.balana.combine.PolicyCombinerElement;
+import org.wso2.balana.combine.PolicyCombiningAlgorithm;
+import org.wso2.balana.finder.PolicyFinder;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+/**
+ * Represents one of the two top-level constructs in XACML, the PolicySetType. This can contain
+ * other policies and policy sets, and can also contain URIs that point to policies and policy sets.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class PolicySet extends AbstractPolicy {
+
+    /**
+     * Creates a new &lt;code&gt;PolicySet&lt;/code&gt; with only the required elements.
+     * 
+     * @param id the policy set identifier
+     * @param combiningAlg the &lt;code&gt;CombiningAlgorithm&lt;/code&gt; used on the policies in this set
+     * @param target the &lt;code&gt;AbstractTarget&lt;/code&gt; for this set
+     */
+    public PolicySet(URI id, PolicyCombiningAlgorithm combiningAlg, AbstractTarget target) {
+<span class="nc" id="L73">        this(id, null, combiningAlg, null, target, null, null, null);</span>
+<span class="nc" id="L74">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;PolicySet&lt;/code&gt; with only the required elements, plus some policies.
+     * 
+     * @param id the policy set identifier
+     * @param combiningAlg the &lt;code&gt;CombiningAlgorithm&lt;/code&gt; used on the policies in this set
+     * @param target the &lt;code&gt;AbstractTarget&lt;/code&gt; for this set
+     * @param policies a list of &lt;code&gt;AbstractPolicy&lt;/code&gt; objects
+     * 
+     * @throws IllegalArgumentException if the &lt;code&gt;List&lt;/code&gt; of policies contains an object that
+     *             is not an &lt;code&gt;AbstractPolicy&lt;/code&gt;
+     */
+    public PolicySet(URI id, PolicyCombiningAlgorithm combiningAlg, AbstractTarget target, List policies) {
+<span class="nc" id="L88">        this(id, null, combiningAlg, null, target, policies, null, null);</span>
+<span class="nc" id="L89">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;PolicySet&lt;/code&gt; with the required elements plus some policies and a
+     * String description.
+     * 
+     * @param id the policy set identifier
+     * @param version the policy version or null for the default (this is always null for pre-2.0
+     *            policies)
+     * @param combiningAlg the &lt;code&gt;CombiningAlgorithm&lt;/code&gt; used on the policies in this set
+     * @param description a &lt;code&gt;String&lt;/code&gt; describing the policy
+     * @param target the &lt;code&gt;AbstractTarget&lt;/code&gt; for this set
+     * @param policies a list of &lt;code&gt;AbstractPolicy&lt;/code&gt; objects
+     * 
+     * @throws IllegalArgumentException if the &lt;code&gt;List&lt;/code&gt; of policies contains an object that
+     *             is not an &lt;code&gt;AbstractPolicy&lt;/code&gt;
+     */
+    public PolicySet(URI id, String version, PolicyCombiningAlgorithm combiningAlg,
+            String description, AbstractTarget target, List policies) {
+<span class="nc" id="L108">        this(id, version, combiningAlg, description, target, policies, null, null);</span>
+<span class="nc" id="L109">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;PolicySet&lt;/code&gt; with the required elements plus some policies, a String
+     * description, and policy defaults.
+     * 
+     * @param id the policy set identifier
+     * @param version the policy version or null for the default (this is always null for pre-2.0
+     *            policies)
+     * @param combiningAlg the &lt;code&gt;CombiningAlgorithm&lt;/code&gt; used on the policies in this set
+     * @param description a &lt;code&gt;String&lt;/code&gt; describing the policy
+     * @param target the &lt;code&gt;AbstractTarget&lt;/code&gt; for this set
+     * @param policies a list of &lt;code&gt;AbstractPolicy&lt;/code&gt; objects
+     * @param defaultVersion the XPath version to use
+     * 
+     * @throws IllegalArgumentException if the &lt;code&gt;List&lt;/code&gt; of policies contains an object that
+     *             is not an &lt;code&gt;AbstractPolicy&lt;/code&gt;
+     */
+    public PolicySet(URI id, String version, PolicyCombiningAlgorithm combiningAlg,
+            String description, AbstractTarget target, List policies, String defaultVersion) {
+<span class="nc" id="L129">        this(id, version, combiningAlg, description, target, policies, defaultVersion, null);</span>
+<span class="nc" id="L130">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;PolicySet&lt;/code&gt; with the required elements plus some policies, a String
+     * description, policy defaults, and obligations.
+     * 
+     * @param id the policy set identifier
+     * @param version the policy version or null for the default (this is always null for pre-2.0
+     *            policies)
+     * @param combiningAlg the &lt;code&gt;CombiningAlgorithm&lt;/code&gt; used on the policies in this set
+     * @param description a &lt;code&gt;String&lt;/code&gt; describing the policy
+     * @param target the &lt;code&gt;AbstractTarget&lt;/code&gt; for this set
+     * @param policies a list of &lt;code&gt;AbstractPolicy&lt;/code&gt; objects
+     * @param defaultVersion the XPath version to use
+     * @param obligations a set of &lt;code&gt;Obligation&lt;/code&gt; objects
+     * 
+     * @throws IllegalArgumentException if the &lt;code&gt;List&lt;/code&gt; of policies contains an object that
+     *             is not an &lt;code&gt;AbstractPolicy&lt;/code&gt;
+     */
+    public PolicySet(URI id, String version, PolicyCombiningAlgorithm combiningAlg,
+            String description, AbstractTarget target, List&lt;AbstractPolicy&gt; policies, String defaultVersion,
+            Set&lt;AbstractObligation&gt; obligations) {
+<span class="nc" id="L152">        super(id, version, combiningAlg, description, target, defaultVersion, obligations, null, null);</span>
+
+<span class="nc" id="L154">        List&lt;CombinerElement&gt; list = null;</span>
+
+        // check that the list contains only AbstractPolicy objects
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (policies != null) {</span>
+<span class="nc" id="L158">            list = new ArrayList&lt;CombinerElement&gt;();</span>
+<span class="nc" id="L159">            Iterator it = policies.iterator();</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">            while (it.hasNext()) {</span>
+<span class="nc" id="L161">                Object o = it.next();</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">                if (!(o instanceof AbstractPolicy))</span>
+<span class="nc" id="L163">                    throw new IllegalArgumentException(&quot;non-AbstractPolicy &quot; + &quot;in policies&quot;);</span>
+<span class="nc" id="L164">                list.add(new PolicyCombinerElement((AbstractPolicy) o));</span>
+<span class="nc" id="L165">            }</span>
+        }
+
+<span class="nc" id="L168">        setChildren(list);</span>
+<span class="nc" id="L169">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;PolicySet&lt;/code&gt; with the required and optional elements. If you need to
+     * provide combining algorithm parameters, you need to use this constructor. Note that unlike
+     * the other constructors in this class, the policies list is actually a list of
+     * &lt;code&gt;CombinerElement&lt;/code&gt;s used to match a policy with any combiner parameters it may
+     * have.
+     * 
+     * @param id the policy set identifier
+     * @param version the policy version or null for the default (this is always null for pre-2.0
+     *            policies)
+     * @param combiningAlg the &lt;code&gt;CombiningAlgorithm&lt;/code&gt; used on the rules in this set
+     * @param description a &lt;code&gt;String&lt;/code&gt; describing the policy or null if there is no
+     *            description
+     * @param target the &lt;code&gt;AbstractTarget&lt;/code&gt; for this policy
+     * @param policyElements a list of &lt;code&gt;CombinerElement&lt;/code&gt; objects or null if there are no
+     *            policies
+     * @param defaultVersion the XPath version to use or null if there is no default version
+     * @param obligations a set of &lt;code&gt;Obligations&lt;/code&gt; objects or null if there are no
+     *            obligations
+     * @param parameters the &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;CombinerParameter&lt;/code&gt;s provided for
+     *            general use by the combining algorithm
+     * 
+     * @throws IllegalArgumentException if the &lt;code&gt;List&lt;/code&gt; of rules contains an object that is
+     *             not a &lt;code&gt;Rule&lt;/code&gt;
+     */
+    public PolicySet(URI id, String version, PolicyCombiningAlgorithm combiningAlg,
+            String description, AbstractTarget target, List policyElements, String defaultVersion,
+            Set&lt;AbstractObligation&gt; obligations, List&lt;CombinerParameter&gt;  parameters) {
+        
+<span class="nc" id="L200">        super(id, version, combiningAlg, description, target, defaultVersion, obligations, null,</span>
+                parameters);
+
+        // check that the list contains only CombinerElements
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        if (policyElements != null) {</span>
+<span class="nc" id="L205">            Iterator it = policyElements.iterator();</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            while (it.hasNext()) {</span>
+<span class="nc" id="L207">                Object o = it.next();</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">                if (!(o instanceof PolicyCombinerElement))</span>
+<span class="nc" id="L209">                    throw new IllegalArgumentException(&quot;non-AbstractPolicy &quot; + &quot;in policies&quot;);</span>
+<span class="nc" id="L210">            }</span>
+        }
+
+<span class="nc" id="L213">        setChildren(policyElements);</span>
+<span class="nc" id="L214">    }</span>
+
+    /**
+     * Creates a new PolicySet based on the given root node. This is private since every class is
+     * supposed to use a getInstance() method to construct from a Node, but since we want some
+     * common code in the parent class, we need this functionality in a constructor.
+     *
+     * @param root  the node to parse for the &lt;code&gt;PolicySet&lt;/code&gt;
+     * @param finder the &lt;code&gt;PolicyFinder&lt;/code&gt; used to handle references
+     * the XACML policy, if null use default factories
+     * @throws ParsingException ParsingException if the PolicyType is invalid
+     */
+    private PolicySet(Node root, PolicyFinder finder) throws ParsingException {
+        
+<span class="fc" id="L228">        super(root, &quot;PolicySet&quot;, &quot;PolicyCombiningAlgId&quot;);</span>
+
+<span class="fc" id="L230">        List&lt;AbstractPolicy&gt; policies = new ArrayList&lt;AbstractPolicy&gt;();</span>
+<span class="fc" id="L231">        HashMap&lt;String, List&lt;CombinerParameter&gt;&gt; policyParameters =</span>
+                                                new HashMap&lt;String, List&lt;CombinerParameter&gt;&gt;();
+<span class="fc" id="L233">        HashMap&lt;String, List&lt;CombinerParameter&gt;&gt; policySetParameters =</span>
+                                                new HashMap&lt;String, List&lt;CombinerParameter&gt;&gt;();
+<span class="fc" id="L235">        PolicyMetaData metaData = getMetaData();</span>
+
+        // collect the PolicySet-specific elements
+<span class="fc" id="L238">        NodeList children = root.getChildNodes();</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L240">            Node child = children.item(i);</span>
+<span class="fc" id="L241">            String name = DOMHelper.getLocalName(child);</span>
+
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">            if (name.equals(&quot;PolicySet&quot;)) {</span>
+<span class="nc" id="L244">                policies.add(PolicySet.getInstance(child, finder));</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">            } else if (name.equals(&quot;Policy&quot;)) {</span>
+<span class="fc" id="L246">                policies.add(Policy.getInstance(child));</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">            } else if (name.equals(&quot;PolicySetIdReference&quot;)) {</span>
+<span class="nc" id="L248">                policies.add(PolicyReference.getInstance(child, finder, metaData));</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">            } else if (name.equals(&quot;PolicyIdReference&quot;)) {</span>
+<span class="nc" id="L250">                policies.add(PolicyReference.getInstance(child, finder, metaData));</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">            } else if (name.equals(&quot;PolicyCombinerParameters&quot;)) {</span>
+<span class="nc" id="L252">                parameterHelper(policyParameters, child, &quot;Policy&quot;);</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">            } else if (name.equals(&quot;PolicySetCombinerParameters&quot;)) {</span>
+<span class="nc" id="L254">                parameterHelper(policySetParameters, child, &quot;PolicySet&quot;);</span>
+            }
+        }
+
+        // now make sure that we can match up any parameters we may have
+        // found to a corresponding Policy or PolicySet...
+<span class="fc" id="L260">        List&lt;CombinerElement&gt; elements = new ArrayList&lt;CombinerElement&gt;();</span>
+<span class="fc" id="L261">        Iterator it = policies.iterator();</span>
+
+        // right now we have to go though each policy and based on several
+        // possible cases figure out what parameters might apply...but
+        // there should be a better way to do this
+
+<span class="fc bfc" id="L267" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+<span class="fc" id="L268">            AbstractPolicy policy = (AbstractPolicy) (it.next());</span>
+<span class="fc" id="L269">            List&lt;CombinerParameter&gt; list = null;</span>
+
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">            if (policy instanceof Policy) {</span>
+<span class="fc" id="L272">                list = policyParameters.remove(policy.getId().toString());</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">            } else if (policy instanceof PolicySet) {</span>
+<span class="nc" id="L274">                list = policySetParameters.remove(policy.getId().toString());</span>
+            } else {
+<span class="nc" id="L276">                PolicyReference ref = (PolicyReference) policy;</span>
+<span class="nc" id="L277">                String id = ref.getReference().toString();</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">                if (ref.getReferenceType() == PolicyReference.POLICY_REFERENCE){</span>
+<span class="nc" id="L279">                    list = policyParameters.remove(id);</span>
+                } else {
+<span class="nc" id="L281">                    list = policySetParameters.remove(id);</span>
+                }
+            }
+
+<span class="fc" id="L285">            elements.add(new PolicyCombinerElement(policy, list));</span>
+<span class="fc" id="L286">        }</span>
+
+        // ...and that there aren't extra parameters
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">        if (!policyParameters.isEmpty()) {</span>
+<span class="nc" id="L290">            throw new ParsingException(&quot;Unmatched parameters in Policy&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">        if (!policySetParameters.isEmpty()){</span>
+<span class="nc" id="L294">            throw new ParsingException(&quot;Unmatched parameters in PolicySet&quot;);</span>
+        }
+        // finally, set the list of Rules
+<span class="fc" id="L297">        setChildren(elements);</span>
+<span class="fc" id="L298">    }</span>
+
+    /**
+     * Private helper method that handles parsing a collection of parameters
+     * @param parameters
+     * @param root
+     * @param prefix
+     * @param parameters
+     * @throws ParsingException
+     */
+    private void parameterHelper(HashMap&lt;String, List&lt;CombinerParameter&gt;&gt; parameters,
+                                                Node root, String prefix) throws ParsingException {
+        
+<span class="nc" id="L311">        String ref = root.getAttributes().getNamedItem(prefix + &quot;IdRef&quot;).getNodeValue();</span>
+
+<span class="nc bnc" id="L313" title="All 2 branches missed.">        if (parameters.containsKey(ref)) {</span>
+<span class="nc" id="L314">            List&lt;CombinerParameter&gt; list = parameters.get(ref);</span>
+<span class="nc" id="L315">            parseParameters(list, root);</span>
+<span class="nc" id="L316">        } else {</span>
+<span class="nc" id="L317">            List&lt;CombinerParameter&gt; list = new ArrayList&lt;CombinerParameter&gt;();</span>
+<span class="nc" id="L318">            parseParameters(list, root);</span>
+<span class="nc" id="L319">            parameters.put(ref, list);</span>
+        }
+<span class="nc" id="L321">    }</span>
+
+    /**
+     * Private helper method that handles parsing a single parameter.
+     * @param parameters
+     * @param root
+     * @throws ParsingException
+     */
+    private void parseParameters(List&lt;CombinerParameter&gt; parameters, Node root) throws ParsingException {
+<span class="nc" id="L330">        NodeList nodes = root.getChildNodes();</span>
+
+<span class="nc bnc" id="L332" title="All 2 branches missed.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="nc" id="L333">            Node node = nodes.item(i);</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">            if (DOMHelper.getLocalName(node).equals(&quot;CombinerParameter&quot;)){</span>
+<span class="nc" id="L335">                parameters.add(CombinerParameter.getInstance(node));</span>
+            }
+        }
+<span class="nc" id="L338">    }</span>
+
+    /**
+     * Creates an instance of a &lt;code&gt;PolicySet&lt;/code&gt; object based on a DOM node. The node must be
+     * the root of PolicySetType XML object, otherwise an exception is thrown. This
+     * &lt;code&gt;PolicySet&lt;/code&gt; will not support references because it has no
+     * &lt;code&gt;PolicyFinder&lt;/code&gt;.
+     * 
+     * @param root the DOM root of a PolicySetType XML type
+     * @return  a &lt;code&gt;PolicySet&lt;/code&gt; object
+     * @throws ParsingException if the PolicySetType is invalid
+     */
+    public static PolicySet getInstance(Node root) throws ParsingException {
+<span class="nc" id="L351">        return getInstance(root, null);</span>
+    }
+
+    /**
+     * Creates an instance of a &lt;code&gt;PolicySet&lt;/code&gt; object based on a DOM node. The node must be
+     * the root of PolicySetType XML object, otherwise an exception is thrown. The finder is used to
+     * handle policy references.
+     * 
+     * @param root the DOM root of a PolicySetType XML type
+     * @param finder the &lt;code&gt;PolicyFinder&lt;/code&gt; used to handle references
+     * @return a &lt;code&gt;PolicySet&lt;/code&gt; object
+     * @throws ParsingException if the PolicySetType is invalid
+     */
+    public static PolicySet getInstance(Node root, PolicyFinder finder) throws ParsingException {
+        // first off, check that it's the right kind of node
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">        if (!DOMHelper.getLocalName(root).equals(&quot;PolicySet&quot;)) {</span>
+<span class="nc" id="L367">            throw new ParsingException(&quot;Cannot create PolicySet from root of&quot; + &quot; type &quot;</span>
+<span class="nc" id="L368">                    + DOMHelper.getLocalName(root));</span>
+        }
+
+<span class="fc" id="L371">        return new PolicySet(root, finder);</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;PolicySet&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="nc" id="L380">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L381">        encode(builder);</span>
+<span class="nc" id="L382">        return builder.toString();</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;PolicySet&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+<span class="nc" id="L392">        String xacmlVersionId = metaData.getXACMLIdentifier();</span>
+
+<span class="nc" id="L394">        String version = getVersion();</span>
+
+<span class="nc" id="L396">        builder.append(&quot;&lt;PolicySet xmlns=\&quot;&quot;).append(xacmlVersionId).append(&quot;\&quot; PolicySetId=\&quot;&quot;).</span>
+<span class="nc" id="L397">                append(getId().toString()).append(&quot;\&quot; PolicyCombiningAlgId=\&quot;&quot;).</span>
+<span class="nc" id="L398">                append(getCombiningAlg().getIdentifier().toString()).append(&quot;\&quot;&gt;\n&quot;);</span>
+
+<span class="nc" id="L400">        String description = getDescription();</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">        if (description != null){</span>
+<span class="nc" id="L402">            builder.append(&quot;&lt;Description&gt;&quot;).append(description).append(&quot;&lt;/Description&gt;\n&quot;);</span>
+        }
+
+<span class="nc" id="L405">        String xPathVersion = metaData.getXPathIdentifier();</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">        if (xPathVersion != null){</span>
+<span class="nc" id="L407">            builder.append(&quot;&lt;PolicySetDefaults&gt;&lt;XPathVersion&gt;&quot;).</span>
+<span class="nc" id="L408">                    append(xPathVersion).append(&quot;&lt;/XPathVersion&gt;&lt;/PolicySetDefaults&gt;\n&quot;);</span>
+        }
+
+<span class="nc" id="L411">        getTarget().encode(builder);</span>
+<span class="nc" id="L412">        encodeCommonElements(builder);</span>
+
+<span class="nc" id="L414">        builder.append(&quot;&lt;/PolicySet&gt;\n&quot;);</span>
+<span class="nc" id="L415">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

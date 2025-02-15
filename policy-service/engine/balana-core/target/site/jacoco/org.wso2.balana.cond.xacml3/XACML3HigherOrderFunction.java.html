@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>XACML3HigherOrderFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond.xacml3</a> &gt; <span class="el_source">XACML3HigherOrderFunction.java</span></div><h1>XACML3HigherOrderFunction.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  WSO2 Inc. licenses this file to you under the Apache License,
+ *  Version 2.0 (the &quot;License&quot;); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ */
+
+package org.wso2.balana.cond.xacml3;
+
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.BagAttribute;
+import org.wso2.balana.attr.BooleanAttribute;
+import org.wso2.balana.cond.Evaluatable;
+import org.wso2.balana.cond.EvaluationResult;
+import org.wso2.balana.cond.Expression;
+import org.wso2.balana.cond.Function;
+import org.wso2.balana.cond.FunctionBase;
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Represents all of the XACML3 higher order functions. (any-of, all-of and any-of-any)
+ */
+public class XACML3HigherOrderFunction implements Function {
+
+    // Standard identifier for the any-of function.
+    public static final String NAME_ANY_OF = FunctionBase.FUNCTION_NS_3 + &quot;any-of&quot;;
+
+    // Standard identifier for the all-of function.
+    public static final String NAME_ALL_OF = FunctionBase.FUNCTION_NS_3 + &quot;all-of&quot;;
+
+    // Standard identifier for the any-of-any function.
+    public static final String NAME_ANY_OF_ANY = FunctionBase.FUNCTION_NS_3 + &quot;any-of-any&quot;;
+
+    // Internal identifiers for each of the supported functions.
+    private static final int ID_ANY_OF = 0;
+    private static final int ID_ALL_OF = 1;
+    private static final int ID_ANY_OF_ANY = 2;
+
+    // Internal mapping of names to ids.
+    private final static Map&lt;String, Integer&gt; ID_MAP;
+
+    private int functionId;
+    private URI identifier;
+    private static URI returnTypeURI;
+    private static RuntimeException earlyException;
+
+    // Try to create the return type URI, and also setup the id map.
+    static {
+        try {
+<span class="fc" id="L71">            returnTypeURI = new URI(BooleanAttribute.identifier);</span>
+<span class="nc" id="L72">        } catch (URISyntaxException e) {</span>
+<span class="nc" id="L73">            earlyException = new IllegalArgumentException(e);</span>
+<span class="fc" id="L74">        }</span>
+
+<span class="fc" id="L76">        Map&lt;String, Integer&gt; nameIdMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L77">        nameIdMap.put(NAME_ANY_OF, ID_ANY_OF);</span>
+<span class="fc" id="L78">        nameIdMap.put(NAME_ALL_OF, ID_ALL_OF);</span>
+<span class="fc" id="L79">        nameIdMap.put(NAME_ANY_OF_ANY, ID_ANY_OF_ANY);</span>
+<span class="fc" id="L80">        ID_MAP = Collections.unmodifiableMap(nameIdMap);</span>
+<span class="fc" id="L81">    }</span>
+
+    /**
+     * Creates a new instance of the given function.
+     *
+     * @param functionName the function to create
+     * @throws IllegalArgumentException if the function is unknown
+     */
+<span class="fc" id="L89">    public XACML3HigherOrderFunction(String functionName) {</span>
+
+        // Try to get the function's identifier.
+<span class="fc" id="L92">        Integer i = ID_MAP.get(functionName);</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (i == null) {</span>
+<span class="nc" id="L94">            throw new IllegalArgumentException(&quot;Unknown function: &quot; + functionName);</span>
+        }
+<span class="fc" id="L96">        functionId = i;</span>
+
+        // Setup the URI form of this function's identity.
+        try {
+<span class="fc" id="L100">            identifier = new URI(functionName);</span>
+<span class="nc" id="L101">        } catch (URISyntaxException e) {</span>
+<span class="nc" id="L102">            throw new IllegalArgumentException(&quot;Invalid URI&quot;, e);</span>
+<span class="fc" id="L103">        }</span>
+<span class="fc" id="L104">    }</span>
+
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+     *
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public static Set getSupportedIdentifiers() {
+
+<span class="fc" id="L113">        return Collections.unmodifiableSet(ID_MAP.keySet());</span>
+    }
+
+    @Override
+    public void checkInputs(List inputs) throws IllegalArgumentException {
+
+<span class="fc" id="L119">        Object[] list = inputs.toArray();</span>
+
+        // First, check that we got the right number of parameters.
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">        if (list.length &lt; 2) {</span>
+<span class="nc" id="L123">            throw new IllegalArgumentException(&quot;requires more than two inputs&quot;);</span>
+        }
+
+        // Try to cast the first element into a function.
+        Function function;
+
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">        if (list[0] instanceof Function) {</span>
+<span class="fc" id="L130">            function = (Function) (list[0]);</span>
+        } else {
+<span class="nc" id="L132">            throw new IllegalArgumentException(&quot;first arg to higher-order &quot;</span>
+                    + &quot; function must be a function&quot;);
+        }
+
+        // Check that the function returns a boolean
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        if (!function.getReturnType().toString().equals(BooleanAttribute.identifier))</span>
+<span class="nc" id="L138">            throw new IllegalArgumentException(&quot;higher-order function must &quot;</span>
+                    + &quot;use a boolean function&quot;);
+
+        // Separate the remaining inputs into primitive data types or bags of primitive types.
+<span class="fc" id="L142">        List&lt;Evaluatable&gt; bagArgs = new ArrayList();</span>
+<span class="fc" id="L143">        List&lt;Evaluatable&gt; args = new ArrayList();</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        for (int i = 1; i &lt; list.length; i++) {</span>
+<span class="fc" id="L145">            Evaluatable eval = (Evaluatable) (list[i]);</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">            if (eval.returnsBag()) {</span>
+<span class="fc" id="L147">                bagArgs.add(eval);</span>
+            } else {
+<span class="fc" id="L149">                args.add(eval);</span>
+            }
+        }
+<span class="fc bfc" id="L152" title="All 4 branches covered.">        if (functionId == ID_ALL_OF || functionId == ID_ANY_OF) {</span>
+            // The n-1 parameters SHALL be values of primitive data-types and one SHALL be a bag of a primitive
+            // data-type for any-of and all-of.
+<span class="fc bfc" id="L155" title="All 2 branches covered.">            if (bagArgs.size() != 1) {</span>
+<span class="fc" id="L156">                throw new IllegalArgumentException(&quot;Only one argument SHALL be a bag of a primitive data-type for &quot; +</span>
+<span class="fc" id="L157">                        getIdentifier());</span>
+            }
+            //  The expression SHALL be evaluated as if the function named in the &lt;Function&gt; argument were applied
+            //  to the n-1 non-bag arguments and each element of the bag argument for any-of and all-of.
+<span class="fc bfc" id="L161" title="All 2 branches covered.">            for (Evaluatable arg : args) {</span>
+<span class="fc" id="L162">                List&lt;Evaluatable&gt; inputForCheck = new ArrayList();</span>
+<span class="fc" id="L163">                inputForCheck.add(arg);</span>
+<span class="fc" id="L164">                inputForCheck.addAll(bagArgs);</span>
+<span class="fc" id="L165">                function.checkInputsNoBag(inputForCheck);</span>
+<span class="fc" id="L166">            }</span>
+        } else {
+            // The remaining arguments are either primitive data types or bags of primitive types.
+<span class="fc bfc" id="L169" title="All 4 branches covered.">            if (!args.isEmpty() &amp;&amp; !bagArgs.isEmpty()) {</span>
+<span class="fc" id="L170">                throw new IllegalArgumentException(&quot;The arguments can be are either primitive data types or &quot; +</span>
+<span class="fc" id="L171">                        &quot;bags of primitive types. &quot; + getIdentifier());</span>
+            }
+            // The expression SHALL be evaluated as if the function named in the &lt;Function&gt; argument was applied
+            // between every tuple of the cross product on all bags and the primitive values.
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (!args.isEmpty()) {</span>
+<span class="fc" id="L176">                validateAnyOfAnyInput(args, function);</span>
+            } else {
+<span class="fc" id="L178">                validateAnyOfAnyInput(bagArgs, function);</span>
+            }
+        }
+<span class="fc" id="L181">    }</span>
+
+    private void validateAnyOfAnyInput(List&lt;Evaluatable&gt; inputs, Function function) {
+
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        for (int i = 0; i &lt; inputs.size(); i++) {</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">            for (int j = i + 1; j &lt; inputs.size(); j++) {</span>
+<span class="fc" id="L187">                List&lt;Evaluatable&gt; inputForCheck = new ArrayList();</span>
+<span class="fc" id="L188">                inputForCheck.add(inputs.get(i));</span>
+<span class="fc" id="L189">                inputForCheck.add(inputs.get(j));</span>
+<span class="fc" id="L190">                function.checkInputsNoBag(inputForCheck);</span>
+            }
+        }
+<span class="fc" id="L193">    }</span>
+
+    @Override
+    public void checkInputsNoBag(List inputs) throws IllegalArgumentException {
+
+        // This always throws an exception, since this function by definition must work on bags.
+<span class="nc" id="L199">        throw new IllegalArgumentException(&quot;higher-order functions require use of bags&quot;);</span>
+    }
+
+    @Override
+    public EvaluationResult evaluate(List inputs, EvaluationCtx context) {
+
+<span class="fc" id="L205">        Iterator iterator = inputs.iterator();</span>
+
+        // Get the first arg, which is the function.
+<span class="fc" id="L208">        Expression xpr = (Expression) (iterator.next());</span>
+<span class="fc" id="L209">        Function function = null;</span>
+
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        if (xpr instanceof Function) {</span>
+<span class="fc" id="L212">            function = (Function) xpr;</span>
+        }
+
+        // Separate the remaining inputs into primitive data types or bags of primitive types.
+<span class="fc" id="L216">        List&lt;AttributeValue&gt; args = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L217">        List&lt;BagAttribute&gt; bagArgs = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        while (iterator.hasNext()) {</span>
+<span class="fc" id="L220">            Evaluatable eval = (Evaluatable) (iterator.next());</span>
+<span class="fc" id="L221">            EvaluationResult result = eval.evaluate(context);</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">            if (result.indeterminate()) {</span>
+<span class="nc" id="L223">                return result;</span>
+            }
+<span class="fc bfc" id="L225" title="All 2 branches covered.">            if (result.getAttributeValue().returnsBag()) {</span>
+<span class="fc" id="L226">                bagArgs.add((BagAttribute) (result.getAttributeValue()));</span>
+            } else {
+<span class="fc" id="L228">                args.add(result.getAttributeValue());</span>
+            }
+<span class="fc" id="L230">        }</span>
+
+<span class="pc bpc" id="L232" title="1 of 4 branches missed.">        switch (functionId) {</span>
+            case ID_ANY_OF:
+<span class="fc" id="L234">                return anyAndAllHelper(context, function, args, bagArgs.get(0), false);</span>
+
+            case ID_ALL_OF:
+<span class="fc" id="L237">                return anyAndAllHelper(context, function, args, bagArgs.get(0), true);</span>
+
+            case ID_ANY_OF_ANY:
+<span class="fc" id="L240">                return anyOfAny(context, function, args, bagArgs);</span>
+        }
+<span class="nc" id="L242">        return null;</span>
+    }
+
+    private EvaluationResult anyAndAllHelper(EvaluationCtx context, Function function, List&lt;AttributeValue&gt; values,
+                                             BagAttribute bag, boolean isAllFunction) {
+
+<span class="fc" id="L248">        Iterator it = bag.iterator();</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+<span class="fc" id="L250">            AttributeValue bagValue = (AttributeValue) (it.next());</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">            for (AttributeValue value : values) {</span>
+<span class="fc" id="L252">                EvaluationResult result = getEvaluationResult(context, function, value, bagValue, isAllFunction);</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">                if (result != null) {</span>
+<span class="fc" id="L254">                    return result;</span>
+                }
+<span class="fc" id="L256">            }</span>
+<span class="fc" id="L257">        }</span>
+<span class="fc" id="L258">        return new EvaluationResult(BooleanAttribute.getInstance(isAllFunction));</span>
+    }
+
+    private EvaluationResult anyOfAny(EvaluationCtx context, Function function, List&lt;AttributeValue&gt; args,
+                                      List&lt;BagAttribute&gt; bagArgs) {
+
+        // The expression SHALL be evaluated as if the function named in the &lt;Function&gt; argument was applied
+        // between every tuple of the cross product on all bags and the primitive values, and the results were
+        // combined using &quot;urn:oasis:names:tc:xacml:1.0:function:or&quot;
+
+<span class="fc" id="L268">        EvaluationResult result = new EvaluationResult(BooleanAttribute.getInstance(false));</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">        if (!args.isEmpty()) {</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">            for (int i = 0; i &lt; args.size() - 1; i++) {</span>
+<span class="fc" id="L271">                AttributeValue value = args.get(i);</span>
+<span class="fc" id="L272">                List&lt;AttributeValue&gt; bagValue = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L273">                bagValue.add(value);</span>
+<span class="fc" id="L274">                BagAttribute bagArg = new BagAttribute(value.getType(), bagValue);</span>
+<span class="fc" id="L275">                result = anyAndAllHelper(context, function, args.subList(i + 1, args.size()), bagArg, false);</span>
+<span class="pc bpc" id="L276" title="1 of 4 branches missed.">                if (result.indeterminate() || ((BooleanAttribute) (result.getAttributeValue())).getValue()) {</span>
+<span class="fc" id="L277">                    return result;</span>
+                }
+            }
+<span class="fc" id="L280">            return new EvaluationResult(BooleanAttribute.getInstance(false));</span>
+        }
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">        if (!bagArgs.isEmpty()) {</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">            for (int i = 0; i &lt; bagArgs.size(); i++) {</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">                for (int j = i + 1; j &lt; bagArgs.size(); j++) {</span>
+<span class="fc" id="L285">                    Iterator iIterator = bagArgs.get(i).iterator();</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">                    while (iIterator.hasNext()) {</span>
+<span class="fc" id="L287">                        AttributeValue iValue = (AttributeValue) (iIterator.next());</span>
+<span class="fc" id="L288">                        Iterator jIterator = bagArgs.get(j).iterator();</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">                        while (jIterator.hasNext()) {</span>
+<span class="fc" id="L290">                            AttributeValue jValue = (AttributeValue) (jIterator.next());</span>
+<span class="fc" id="L291">                            result = getEvaluationResult(context, function, jValue, iValue, false);</span>
+<span class="pc bpc" id="L292" title="1 of 4 branches missed.">                            if (result != null &amp;&amp; (result.indeterminate() ||</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">                                    ((BooleanAttribute) (result.getAttributeValue())).getValue())) {</span>
+<span class="fc" id="L294">                                return result;</span>
+                            }
+<span class="fc" id="L296">                        }</span>
+<span class="fc" id="L297">                    }</span>
+                }
+            }
+<span class="fc" id="L300">            return new EvaluationResult(BooleanAttribute.getInstance(false));</span>
+        }
+<span class="nc" id="L302">        return null;</span>
+    }
+
+    private EvaluationResult getEvaluationResult(EvaluationCtx context, Function function, AttributeValue val1,
+                                                 AttributeValue val2, boolean isAllFunction) {
+
+<span class="fc" id="L308">        List&lt;Evaluatable&gt; params = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L309">        params.add(val1);</span>
+<span class="fc" id="L310">        params.add(val2);</span>
+<span class="fc" id="L311">        EvaluationResult result = function.evaluate(params, context);</span>
+
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">        if (result.indeterminate()) {</span>
+<span class="nc" id="L314">            return result;</span>
+        }
+
+<span class="fc" id="L317">        BooleanAttribute bool = (BooleanAttribute) (result.getAttributeValue());</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">        if (bool.getValue() != isAllFunction) {</span>
+<span class="fc" id="L319">            return result;</span>
+        }
+<span class="fc" id="L321">        return null;</span>
+    }
+
+    @Override
+    public URI getIdentifier() {
+
+<span class="fc" id="L327">        return identifier;</span>
+    }
+
+    @Override
+    public URI getType() {
+
+<span class="nc" id="L333">        return getReturnType();</span>
+    }
+
+    @Override
+    public URI getReturnType() {
+
+<span class="nc bnc" id="L339" title="All 2 branches missed.">        if (earlyException != null) {</span>
+<span class="nc" id="L340">            throw earlyException;</span>
+        }
+<span class="nc" id="L342">        return returnTypeURI;</span>
+    }
+
+    @Override
+    public boolean returnsBag() {
+
+<span class="nc" id="L348">        return false;</span>
+    }
+
+    @Override
+    public String encode() {
+
+<span class="nc" id="L354">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L355">        encode(builder);</span>
+<span class="nc" id="L356">        return builder.toString();</span>
+    }
+
+    @Override
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L362">        builder.append(&quot;&lt;Function FunctionId=\&quot;&quot;).append(getIdentifier().toString()).append(&quot;\&quot;/&gt;\n&quot;);</span>
+<span class="nc" id="L363">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

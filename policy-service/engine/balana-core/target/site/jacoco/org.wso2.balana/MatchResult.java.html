@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MatchResult.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana</a> &gt; <span class="el_source">MatchResult.java</span></div><h1>MatchResult.java</h1><pre class="source lang-java linenums">/*
+ * @(#)MatchResult.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana;
+
+import org.wso2.balana.ctx.Status;
+
+/**
+ * This is used as the return value for the various target matching functions. It communicates that
+ * either the target matches the input request, the target doesn't match the input request, or the
+ * result is Indeterminate.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class MatchResult {
+
+    /**
+     * An integer value indicating the the target matches the request
+     */
+    public static final int MATCH = 0;
+
+    /**
+     * An integer value indicating that the target doesn't match the request
+     */
+    public static final int NO_MATCH = 1;
+
+    /**
+     * An integer value indicating the the result is Indeterminate
+     */
+    public static final int INDETERMINATE = 2;
+
+    //
+    private int result;
+    private Status status;
+    
+    private String policyValue;
+    private String subjectPolicyValue;
+    private String resourcePolicyValue;
+    private String actionPolicyValue;
+    private String envPolicyValue;
+   
+    public String getSubjectPolicyValue() {
+<span class="nc" id="L76">        return subjectPolicyValue;</span>
+    }
+
+    public void setSubjectPolicyValue(String subjectPolicyValue) {
+<span class="fc" id="L80">        this.subjectPolicyValue = subjectPolicyValue;</span>
+<span class="fc" id="L81">    }</span>
+
+    public String getResourcePolicyValue() {
+<span class="nc" id="L84">        return resourcePolicyValue;</span>
+    }
+
+    public void setResourcePolicyValue(String resourcePolicyValue) {
+<span class="fc" id="L88">        this.resourcePolicyValue = resourcePolicyValue;</span>
+<span class="fc" id="L89">    }</span>
+
+    public String getActionPolicyValue() {
+<span class="nc" id="L92">        return actionPolicyValue;</span>
+    }
+
+    public void setActionPolicyValue(String actionPolicyValue) {
+<span class="fc" id="L96">        this.actionPolicyValue = actionPolicyValue;</span>
+<span class="fc" id="L97">    }</span>
+
+    public String getEnvPolicyValue() {
+<span class="nc" id="L100">        return envPolicyValue;</span>
+    }
+
+    public void setEnvPolicyValue(String envPolicyValue) {
+<span class="fc" id="L104">        this.envPolicyValue = envPolicyValue;</span>
+<span class="fc" id="L105">    }</span>
+
+    public String getPolicyValue() {
+<span class="fc" id="L108">        return policyValue;</span>
+    }
+
+    public void setPolicyValue(String policyValue) {
+<span class="fc" id="L112">        this.policyValue = policyValue;</span>
+<span class="fc" id="L113">    }</span>
+    
+    /**
+     * Constructor that creates a &lt;code&gt;MatchResult&lt;/code&gt; with no Status
+     * 
+     * @param result the applicable result
+     */
+    public MatchResult(int result) {
+<span class="fc" id="L121">        this(result, null);</span>
+<span class="fc" id="L122">    }</span>
+
+    /**
+     * Constructor that creates a &lt;code&gt;MatchResult&lt;/code&gt;, including Status data
+     * 
+     * @param result the applicable result
+     * @param status the error information
+     * 
+     * @throws IllegalArgumentException if the input result isn't a valid value
+     */
+<span class="fc" id="L132">    public MatchResult(int result, Status status) throws IllegalArgumentException {</span>
+
+        // check if input result is a valid value
+<span class="pc bpc" id="L135" title="1 of 6 branches missed.">        if ((result != MATCH) &amp;&amp; (result != NO_MATCH) &amp;&amp; (result != INDETERMINATE))</span>
+<span class="nc" id="L136">            throw new IllegalArgumentException(&quot;Input result is not a valid&quot; + &quot;value&quot;);</span>
+
+<span class="fc" id="L138">        this.result = result;</span>
+<span class="fc" id="L139">        this.status = status;</span>
+<span class="fc" id="L140">    }</span>
+
+    /**
+     * Returns the applicable result
+     * 
+     * @return the applicable result
+     */
+    public int getResult() {
+<span class="fc" id="L148">        return result;</span>
+    }
+
+    /**
+     * Returns the status if there was an error, or null if no error occurred
+     * 
+     * @return the error status data or null
+     */
+    public Status getStatus() {
+<span class="fc" id="L157">        return status;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ResponseCtx.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.ctx</a> &gt; <span class="el_source">ResponseCtx.java</span></div><h1>ResponseCtx.java</h1><pre class="source lang-java linenums">/*
+ * @(#)ResponseCtx.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.ctx;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.*;
+import org.wso2.balana.ctx.xacml2.Result;
+
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Represents the response to a request made to the XACML PDP.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ * @author Marco Barreno
+ */
+public class ResponseCtx {
+
+    // The set of Result objects returned by the PDP
+<span class="fc" id="L63">    private Set&lt;AbstractResult&gt; results = new HashSet&lt;AbstractResult&gt;();</span>
+
+    // XACML version
+    private int version;
+
+    /**
+     * Constructor that creates a new &lt;code&gt;ResponseCtx&lt;/code&gt; with only a single
+     * &lt;code&gt;Result&lt;/code&gt; (a common case).
+     * 
+     * @param result the single result in the response
+     */
+<span class="fc" id="L74">    public ResponseCtx(AbstractResult result) {</span>
+<span class="fc" id="L75">        this.version = result.getVersion();</span>
+<span class="fc" id="L76">        results.add(result);</span>
+<span class="fc" id="L77">    }</span>
+
+    /**
+     * Constructor that creates a new &lt;code&gt;ResponseCtx&lt;/code&gt; with a &lt;code&gt;Set&lt;/code&gt; of
+     * &lt;code&gt;Result&lt;/code&gt;s. The &lt;code&gt;Set&lt;/code&gt; must be non-empty.
+     * 
+     * @param results a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;Result&lt;/code&gt; objects
+     * @param version XACML version
+     */
+<span class="fc" id="L86">    public ResponseCtx(Set&lt;AbstractResult&gt; results, int version) {</span>
+<span class="fc" id="L87">        this.version = version;</span>
+<span class="fc" id="L88">        this.results = Collections.unmodifiableSet(new HashSet&lt;AbstractResult&gt;(results));</span>
+<span class="fc" id="L89">    }</span>
+
+    /**
+     * Creates a new instance of &lt;code&gt;ResponseCtx&lt;/code&gt; based on the given
+     * DOM root node. A &lt;code&gt;ParsingException&lt;/code&gt; is thrown if the DOM
+     * root doesn't represent a valid ResponseType.
+     *
+     * @param root the DOM root of a ResponseType
+     * @return a new &lt;code&gt;ResponseCtx&lt;/code&gt;
+     * @throws ParsingException if the node is invalid
+     */
+    public static ResponseCtx getInstance(Node root) throws ParsingException {
+<span class="fc" id="L101">        String requestCtxNs = root.getNamespaceURI();</span>
+
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if(requestCtxNs != null){</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            if(XACMLConstants.REQUEST_CONTEXT_3_0_IDENTIFIER.equals(requestCtxNs.trim())){</span>
+<span class="fc" id="L105">                return getInstance(root, XACMLConstants.XACML_VERSION_3_0);</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">            } else if(XACMLConstants.REQUEST_CONTEXT_1_0_IDENTIFIER.equals(requestCtxNs.trim()) ||</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">                    XACMLConstants.REQUEST_CONTEXT_2_0_IDENTIFIER.equals(requestCtxNs.trim())) {</span>
+<span class="fc" id="L108">                return getInstance(root, XACMLConstants.XACML_VERSION_2_0);</span>
+            } else {
+<span class="nc" id="L110">                throw new ParsingException(&quot;Invalid namespace in XACML response&quot;);</span>
+            }
+        } else {
+            //No Namespace defined in XACML request and Assume as XACML 3.0
+<span class="fc" id="L114">            return getInstance(root, XACMLConstants.XACML_VERSION_3_0);</span>
+        }
+    }
+
+    /**
+     * Creates a new instance of &lt;code&gt;ResponseCtx&lt;/code&gt; based on the given
+     * DOM root node. A &lt;code&gt;ParsingException&lt;/code&gt; is thrown if the DOM
+     * root doesn't represent a valid ResponseType.
+     *
+     * @param root the DOM root of a ResponseType
+     * @param version XACML version
+     * @return a new &lt;code&gt;ResponseCtx&lt;/code&gt;
+     * @throws ParsingException if the node is invalid
+     */
+    public static ResponseCtx getInstance(Node root, int version) throws ParsingException {
+<span class="fc" id="L129">        Set&lt;AbstractResult&gt; results = new HashSet&lt;AbstractResult&gt;();</span>
+
+<span class="fc" id="L131">        NodeList nodes = root.getChildNodes();</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L133">            Node node = nodes.item(i);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">            if (DOMHelper.getLocalName(node).equals(&quot;Result&quot;)) {</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">                if(version == XACMLConstants.XACML_VERSION_3_0){</span>
+<span class="fc" id="L136">                    results.add(org.wso2.balana.ctx.xacml3.Result.getInstance(node));</span>
+                } else {
+<span class="fc" id="L138">                    results.add(Result.getInstance(node));</span>
+                }
+            }
+        }
+
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (results.size() == 0){</span>
+<span class="nc" id="L144">            throw new ParsingException(&quot;must have at least one Result&quot;);</span>
+        }
+<span class="fc" id="L146">        return new ResponseCtx(results, version);</span>
+    }    
+
+    /**
+     * Get the set of &lt;code&gt;Result&lt;/code&gt;s from this response.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of results
+     */
+    public Set&lt;AbstractResult&gt; getResults() {
+<span class="fc" id="L155">        return results;</span>
+    }
+
+
+    /**
+     * Encodes this &lt;code&gt;ResponseCtx&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="fc" id="L165">        StringBuilder builder = new StringBuilder();</span>
+<span class="fc" id="L166">        encode(builder);</span>
+<span class="fc" id="L167">        return builder.toString();</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;ResponseCtx&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="fc" id="L178">        builder.append(&quot;&lt;Response&quot;);</span>
+
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        if(version == XACMLConstants.XACML_VERSION_3_0){</span>
+<span class="fc" id="L181">            builder.append(&quot; xmlns=\&quot;urn:oasis:names:tc:xacml:3.0:core:schema:wd-17\&quot;&quot;);</span>
+        }
+
+<span class="fc" id="L184">        builder.append(&quot;&gt;&quot;);</span>
+
+        // Go through all results
+<span class="fc" id="L187">        Iterator it = results.iterator();</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+<span class="fc" id="L189">            AbstractResult result = (AbstractResult) (it.next());</span>
+<span class="fc" id="L190">            result.encode(builder);</span>
+<span class="fc" id="L191">        }</span>
+        // Finish the XML for a response
+<span class="fc" id="L193">        builder.append(&quot;&lt;/Response&gt;&quot;);</span>
+
+<span class="fc" id="L195">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

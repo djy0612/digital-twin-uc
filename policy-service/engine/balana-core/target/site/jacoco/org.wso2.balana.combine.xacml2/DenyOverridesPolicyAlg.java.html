@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DenyOverridesPolicyAlg.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.combine.xacml2</a> &gt; <span class="el_source">DenyOverridesPolicyAlg.java</span></div><h1>DenyOverridesPolicyAlg.java</h1><pre class="source lang-java linenums">/*
+ * @(#)DenyOverridesPolicyAlg.java
+ *
+ * Copyright 2003-2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.combine.xacml2;
+
+import org.wso2.balana.*;
+
+import org.wso2.balana.combine.PolicyCombinerElement;
+import org.wso2.balana.combine.PolicyCombiningAlgorithm;
+import org.wso2.balana.ctx.AbstractResult;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.ResultFactory;
+import org.wso2.balana.ctx.xacml2.Result;
+import org.wso2.balana.xacml3.Advice;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import java.util.*;
+
+/**
+ * This is the standard Deny Overrides policy combining algorithm. It allows a single evaluation of
+ * Deny to take precedence over any number of permit, not applicable or indeterminate results. Note
+ * that since this implementation does an ordered evaluation, this class also supports the Ordered
+ * Deny Overrides algorithm.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class DenyOverridesPolicyAlg extends PolicyCombiningAlgorithm {
+
+    /**
+     * The standard URN used to identify this algorithm
+     */
+    public static final String algId = &quot;urn:oasis:names:tc:xacml:1.0:policy-combining-algorithm:&quot;
+            + &quot;deny-overrides&quot;;
+
+    // a URI form of the identifier
+    private static URI identifierURI;
+    // exception if the URI was invalid, which should never be a problem
+    private static RuntimeException earlyException;
+
+    static {
+        try {
+<span class="fc" id="L77">            identifierURI = new URI(algId);</span>
+<span class="nc" id="L78">        } catch (URISyntaxException se) {</span>
+<span class="nc" id="L79">            earlyException = new IllegalArgumentException();</span>
+<span class="nc" id="L80">            earlyException.initCause(se);</span>
+<span class="fc" id="L81">        }</span>
+<span class="fc" id="L82">    }</span>
+
+    /**
+     * Standard constructor.
+     */
+    public DenyOverridesPolicyAlg() {
+<span class="fc" id="L88">        super(identifierURI);</span>
+
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (earlyException != null)</span>
+<span class="nc" id="L91">            throw earlyException;</span>
+<span class="fc" id="L92">    }</span>
+
+    /**
+     * Protected constructor used by the ordered version of this algorithm.
+     * 
+     * @param identifier the algorithm's identifier
+     */
+    protected DenyOverridesPolicyAlg(URI identifier) {
+<span class="fc" id="L100">        super(identifier);</span>
+<span class="fc" id="L101">    }</span>
+
+    /**
+     * Applies the combining rule to the set of policies based on the evaluation context.
+     * 
+     * @param context the context from the request
+     * @param parameters a (possibly empty) non-null &lt;code&gt;List&lt;/code&gt; of
+     *            &lt;code&gt;CombinerParameter&lt;code&gt;s
+     * @param policyElements the policies to combine
+     * 
+     * @return the result of running the combining algorithm
+     */
+    public AbstractResult combine(EvaluationCtx context, List parameters, List policyElements) {
+<span class="fc" id="L114">        boolean atLeastOnePermit = false;</span>
+<span class="fc" id="L115">        List&lt;ObligationResult&gt; permitObligations = new ArrayList&lt;ObligationResult&gt;();</span>
+<span class="fc" id="L116">        List&lt;Advice&gt; permitAdvices= new ArrayList&lt;Advice&gt;();</span>
+<span class="fc" id="L117">        Iterator it = policyElements.iterator();</span>
+
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        while (it.hasNext()) {</span>
+<span class="fc" id="L120">            AbstractPolicy policy = ((PolicyCombinerElement) (it.next())).getPolicy();</span>
+            // make sure that the policy matches the context
+<span class="fc" id="L122">            MatchResult match = policy.match(context);</span>
+
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">            if (match.getResult() == MatchResult.INDETERMINATE){ //TODO  do we really want this?</span>
+<span class="nc" id="L125">                return ResultFactory.getFactory().getResult(AbstractResult.DECISION_DENY, context);</span>
+            }
+
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">            if (match.getResult() == MatchResult.MATCH) {</span>
+                // evaluate the policy
+<span class="fc" id="L130">                AbstractResult result = policy.evaluate(context);</span>
+<span class="fc" id="L131">                int effect = result.getDecision();</span>
+
+                // unlike in the RuleCombining version of this alg, we always
+                // return DENY if any Policy returns DENY or INDETERMINATE
+<span class="fc bfc" id="L135" title="All 2 branches covered.">                if (effect == AbstractResult.DECISION_DENY){</span>
+<span class="fc" id="L136">                    return result;</span>
+                }
+                
+<span class="pc bpc" id="L139" title="2 of 8 branches missed.">                if (effect == AbstractResult.DECISION_INDETERMINATE ||</span>
+                    effect == AbstractResult.DECISION_INDETERMINATE_DENY ||
+                    effect == AbstractResult.DECISION_INDETERMINATE_PERMIT ||
+                    effect == AbstractResult.DECISION_INDETERMINATE_DENY_OR_PERMIT) {
+                    
+<span class="fc" id="L144">                    return ResultFactory.getFactory().getResult(Result.DECISION_DENY, context);</span>
+                }
+                // remember if at least one Policy said PERMIT
+<span class="fc bfc" id="L147" title="All 2 branches covered.">                if (effect == Result.DECISION_PERMIT) {</span>
+<span class="fc" id="L148">                    atLeastOnePermit = true;</span>
+<span class="fc" id="L149">                    permitAdvices.addAll(result.getAdvices());</span>
+<span class="fc" id="L150">                    permitObligations.addAll(result.getObligations());</span>
+                }
+            }
+<span class="fc" id="L153">        }</span>
+
+        // if we got a PERMIT, return it, otherwise it's NOT_APPLICABLE
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        if (atLeastOnePermit) {</span>
+<span class="fc" id="L157">            return ResultFactory.getFactory().getResult(AbstractResult.DECISION_PERMIT,</span>
+                                                        permitObligations, permitAdvices, context);
+        } else {
+<span class="fc" id="L160">            return ResultFactory.getFactory().getResult(AbstractResult.DECISION_NOT_APPLICABLE, context); </span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

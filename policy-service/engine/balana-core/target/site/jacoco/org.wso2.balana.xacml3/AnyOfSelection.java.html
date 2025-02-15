@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AnyOfSelection.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.xacml3</a> &gt; <span class="el_source">AnyOfSelection.java</span></div><h1>AnyOfSelection.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+package org.wso2.balana.xacml3;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.*;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.Status;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * Represents AnyOfType in the XACML 3.0 policy schema..
+ */
+public class AnyOfSelection {
+
+    /**
+     *
+     */
+    private List&lt;AllOfSelection&gt; allOfSelections;
+
+<span class="fc" id="L43">    private static final Log logger = LogFactory.getLog(AnyOfSelection.class);</span>
+
+
+    /**
+     * Constructor that creates a new &lt;code&gt;AnyOfSelection&lt;/code&gt; based on the given elements.
+     *
+     * @param allOfSelections a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;AllOfSelection&lt;/code&gt; elements
+     */
+<span class="fc" id="L51">    public AnyOfSelection(List&lt;AllOfSelection&gt; allOfSelections) {</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (allOfSelections == null)</span>
+<span class="nc" id="L53">            this.allOfSelections =new ArrayList&lt;AllOfSelection&gt;();</span>
+        else
+<span class="fc" id="L55">            this.allOfSelections = new ArrayList&lt;AllOfSelection&gt;(allOfSelections);</span>
+<span class="fc" id="L56">    }</span>
+
+    /**
+     * creates a &lt;code&gt;AnyOfSelection&lt;/code&gt; based on its DOM node.
+     *
+     * @param root the node to parse for the AnyOfSelection
+     * @param metaData meta-date associated with the policy
+     *
+     * @return a new &lt;code&gt;AnyOfSelection&lt;/code&gt; constructed by parsing
+     *
+     * @throws ParsingException if the DOM node is invalid
+     */
+    public static AnyOfSelection getInstance(Node root, PolicyMetaData metaData)
+            throws ParsingException {
+<span class="fc" id="L70">        List&lt;AllOfSelection&gt; allOfSelections = new ArrayList&lt;AllOfSelection&gt;();</span>
+<span class="fc" id="L71">        NodeList children = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L74">            Node child = children.item(i);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            if (&quot;AllOf&quot;.equals(DOMHelper.getLocalName(child))) {</span>
+<span class="fc" id="L76">                allOfSelections.add(AllOfSelection.getInstance(child, metaData));</span>
+            }
+        }
+
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if(allOfSelections.isEmpty()){</span>
+<span class="nc" id="L81">            throw new ParsingException(&quot;AnyOf must contain at least one AllOf&quot;);            </span>
+        }
+
+<span class="fc" id="L84">        return new AnyOfSelection(allOfSelections);</span>
+    }
+
+    /**
+     * Determines whether this &lt;code&gt;AnyOfSelection&lt;/code&gt; matches the input request (whether it
+     * is applicable).
+     *
+     * @param context the representation of the request
+     *
+     * @return the result of trying to match the group with the context
+     */
+    public MatchResult match(EvaluationCtx context) {
+
+        // if we apply to anything, then we always match
+//        if (allOfSelections.isEmpty())                   TODO 
+//            return new MatchResult(MatchResult.MATCH);
+
+        // there are specific matching elements, so prepare to iterate
+        // through the list
+<span class="fc" id="L103">        Status firstIndeterminateStatus = null;</span>
+
+        // in order for this section to match, one of the groups must match
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        for (AllOfSelection group : allOfSelections) {</span>
+            // get the next group and try matching it
+<span class="fc" id="L108">            MatchResult result = group.match(context);</span>
+
+            // we only need one match, so if this matched, then we're done
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (result.getResult() == MatchResult.MATCH){</span>
+<span class="fc" id="L112">                return result;</span>
+            }
+            // if we didn't match then it was either a NO_MATCH or
+            // INDETERMINATE...in the second case, we need to remember
+            // it happened, 'cause if we don't get a MATCH, then we'll
+            // be returning INDETERMINATE
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">            if (result.getResult() == MatchResult.INDETERMINATE) {</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">                if (firstIndeterminateStatus == null)</span>
+<span class="nc" id="L120">                    firstIndeterminateStatus = result.getStatus();</span>
+            }
+<span class="fc" id="L122">        }</span>
+
+        // if we got here, then none of the sub-matches passed, so
+        // we have to see if we got any INDETERMINATE cases
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (firstIndeterminateStatus == null){</span>
+<span class="fc" id="L127">            return new MatchResult(MatchResult.NO_MATCH);</span>
+        } else {
+<span class="nc" id="L129">            return new MatchResult(MatchResult.INDETERMINATE,</span>
+                                   firstIndeterminateStatus);
+        }
+    }
+
+    public List&lt;AllOfSelection&gt; getAllOfSelections() {
+<span class="nc" id="L135">        return allOfSelections;</span>
+    }
+    
+    /**
+     * Encodes this &lt;code&gt;AnyOfSelection&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L146">        builder.append(&quot;&lt;AnyOf&gt;\n&quot;);</span>
+
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        if(allOfSelections != null){</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">            for(AllOfSelection allOfSelection : allOfSelections){</span>
+<span class="nc" id="L150">                allOfSelection.encode(builder);</span>
+<span class="nc" id="L151">            }</span>
+        }
+
+<span class="nc" id="L154">        builder.append(&quot;&lt;/AnyOf&gt;\n&quot;);</span>
+<span class="nc" id="L155">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

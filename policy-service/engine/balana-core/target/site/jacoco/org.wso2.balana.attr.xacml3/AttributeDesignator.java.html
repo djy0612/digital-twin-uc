@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AttributeDesignator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.attr.xacml3</a> &gt; <span class="el_source">AttributeDesignator.java</span></div><h1>AttributeDesignator.java</h1><pre class="source lang-java linenums">/*
+ *  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  WSO2 Inc. licenses this file to you under the Apache License,
+ *  Version 2.0 (the &quot;License&quot;); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.wso2.balana.attr.xacml3;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.wso2.balana.*;
+import org.wso2.balana.attr.AbstractDesignator;
+import org.wso2.balana.attr.BagAttribute;
+import org.wso2.balana.cond.EvaluationResult;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.MissingAttributeDetail;
+import org.wso2.balana.ctx.Status;
+import org.wso2.balana.ctx.StatusDetail;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * 
+ */
+public class AttributeDesignator extends AbstractDesignator {
+
+    // required attributes
+    private URI type;
+    private URI id;
+
+    // optional attribute
+    private String issuer;
+
+    // must resolution find something
+    private boolean mustBePresent;
+
+    private URI category;
+
+    // the logger we'll use for all messages
+<span class="fc" id="L59">    private static final Log logger = LogFactory.getLog(AttributeDesignator.class);</span>
+
+
+    /**
+     * Creates a new &lt;code&gt;AttributeDesignator&lt;/code&gt; without the optional issuer.
+     *
+     * @param type          the data type resolved by this designator
+     * @param id            the attribute id looked for by this designator
+     * @param mustBePresent whether resolution must find a value
+     * @param category
+     */
+    public AttributeDesignator(URI type, URI id, boolean mustBePresent, URI category) {
+<span class="nc" id="L71">        this(type, id, mustBePresent, null, category);</span>
+<span class="nc" id="L72">    }</span>
+
+    /**
+     * Creates a new &lt;code&gt;AttributeDesignator&lt;/code&gt; with the optional issuer.
+     *
+     * @param type          the data type resolved by this designator
+     * @param id            the attribute id looked for by this designator
+     * @param mustBePresent whether resolution must find a value
+     * @param issuer        the issuer of the values to search for or null if no issuer is specified
+     * @param category
+     * @throws IllegalArgumentException if the input target isn't a valid value
+     */
+    public AttributeDesignator(URI type, URI id, boolean mustBePresent, String issuer,
+<span class="fc" id="L85">                               URI category) throws IllegalArgumentException {</span>
+<span class="fc" id="L86">        this.type = type;</span>
+<span class="fc" id="L87">        this.id = id;</span>
+<span class="fc" id="L88">        this.mustBePresent = mustBePresent;</span>
+<span class="fc" id="L89">        this.issuer = issuer;</span>
+<span class="fc" id="L90">        this.category = category;</span>
+<span class="fc" id="L91">    }</span>
+
+
+    /**
+     * Creates a new &lt;code&gt;AttributeDesignator&lt;/code&gt; based on the DOM root of the XML data.
+     *
+     * @param root  the DOM root of the AttributeDesignatorType XML type
+     * @return the designator
+     * @throws ParsingException if the AttributeDesignatorType was invalid
+     */
+    public static AttributeDesignator getInstance(Node root) throws ParsingException {
+
+<span class="fc" id="L103">        URI type = null;</span>
+<span class="fc" id="L104">        URI id = null;</span>
+<span class="fc" id="L105">        String issuer = null;</span>
+<span class="fc" id="L106">        URI category = null;</span>
+<span class="fc" id="L107">        boolean mustBePresent = false;</span>
+
+        // First check to be sure the node passed is indeed a AttributeDesignator node.
+<span class="fc" id="L110">        String tagName = DOMHelper.getLocalName(root);</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (!tagName.equals(&quot;AttributeDesignator&quot;)) {</span>
+<span class="nc" id="L112">            throw new ParsingException(&quot;AttributeDesignator cannot be constructed using &quot; + &quot;type: &quot;</span>
+<span class="nc" id="L113">                    + DOMHelper.getLocalName(root));</span>
+        }
+
+<span class="fc" id="L116">        NamedNodeMap attrs = root.getAttributes();</span>
+
+        try {
+<span class="fc" id="L119">            id = new URI(attrs.getNamedItem(&quot;AttributeId&quot;).getNodeValue());</span>
+<span class="nc" id="L120">        } catch (Exception e) {</span>
+<span class="nc" id="L121">            throw new ParsingException(&quot;Required AttributeId missing in &quot; + &quot;AttributeDesignator&quot;, e);</span>
+<span class="fc" id="L122">        }</span>
+
+        try {
+<span class="fc" id="L125">            category = new URI(attrs.getNamedItem(&quot;Category&quot;).getNodeValue());</span>
+<span class="nc" id="L126">        } catch (Exception e) {</span>
+<span class="nc" id="L127">            throw new ParsingException(&quot;Required Category missing in &quot; + &quot;AttributeDesignator&quot;, e);</span>
+<span class="fc" id="L128">        }</span>
+
+        try {
+<span class="fc" id="L131">            String nodeValue = attrs.getNamedItem(&quot;MustBePresent&quot;).getNodeValue();</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            if (&quot;true&quot;.equals(nodeValue)) {</span>
+<span class="fc" id="L133">                mustBePresent = true;</span>
+            }
+<span class="nc" id="L135">        } catch (Exception e) {</span>
+<span class="nc" id="L136">            throw new ParsingException(&quot;Required MustBePresent missing in &quot; + &quot;AttributeDesignator&quot;, e);</span>
+<span class="fc" id="L137">        }</span>
+
+        try {
+<span class="fc" id="L140">            type = new URI(attrs.getNamedItem(&quot;DataType&quot;).getNodeValue());</span>
+<span class="nc" id="L141">        } catch (Exception e) {</span>
+<span class="nc" id="L142">            throw new ParsingException(&quot;Required DataType missing in &quot; + &quot;AttributeDesignator&quot;, e);</span>
+<span class="fc" id="L143">        }</span>
+
+        try {
+<span class="fc" id="L146">            Node node = attrs.getNamedItem(&quot;Issuer&quot;);</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">            if (node != null){</span>
+<span class="nc" id="L148">                issuer = node.getNodeValue();</span>
+            }
+<span class="nc" id="L150">        } catch (Exception e) {</span>
+<span class="nc" id="L151">            throw new ParsingException(</span>
+                    &quot;Error parsing AttributeDesignator &quot; + &quot;optional attributes&quot;, e);
+<span class="fc" id="L153">        }</span>
+
+<span class="fc" id="L155">        return new AttributeDesignator(type, id, mustBePresent, issuer, category);</span>
+    }
+
+
+    /**
+     * Returns the type of attribute that is resolved by this designator. While an AD will always
+     * return a bag, this method will always return the type that is stored in the bag.
+     *
+     * @return the attribute type
+     */
+    public URI getType() {
+<span class="fc" id="L166">        return type;</span>
+    }
+
+    /**
+     * Returns the AttributeId of the values resolved by this designator.
+     *
+     * @return identifier for the values to resolve
+     */
+    public URI getId() {
+<span class="nc" id="L175">        return id;</span>
+    }
+
+    /**
+     * Returns the category for this designator. 
+     *
+     * @return the category
+     */
+    public URI getCategory() {
+<span class="nc" id="L184">        return category;</span>
+    }
+
+    /**
+     * Returns the issuer of the values resolved by this designator if specified.
+     *
+     * @return the attribute issuer or null if unspecified
+     */
+    public String getIssuer() {
+<span class="nc" id="L193">        return issuer;</span>
+    }
+
+    /**
+     * Returns whether or not a value is required to be resolved by this designator.
+     *
+     * @return true if a value is required, false otherwise
+     */
+    public boolean mustBePresent() {
+<span class="nc" id="L202">        return mustBePresent;</span>
+    }
+
+    /**
+     * Always returns true, since a designator always returns a bag of attribute values.
+     *
+     * @return true
+     */
+    public boolean returnsBag() {
+<span class="fc" id="L211">        return true;</span>
+    }
+
+    /**
+     * Always returns true, since a designator always returns a bag of attribute values.
+     *
+     * @return true
+     * @deprecated As of 2.0, you should use the &lt;code&gt;returnsBag&lt;/code&gt; method from the
+     *             super-interface &lt;code&gt;Expression&lt;/code&gt;.
+     */
+    public boolean evaluatesToBag() {
+<span class="nc" id="L222">        return true;</span>
+    }
+
+    /**
+     * Always returns an empty list since designators never have children.
+     *
+     * @return an empty &lt;code&gt;List&lt;/code&gt;
+     */
+    public List getChildren() {
+<span class="nc" id="L231">        return Collections.EMPTY_LIST;</span>
+    }
+
+    /**
+     * Evaluates the pre-assigned meta-data against the given context, trying to find some matching
+     * values.
+     *
+     * @param context the representation of the request
+     * @return a result containing a bag either empty because no values were found or containing at
+     *         least one value, or status associated with an Indeterminate result
+     */
+    public EvaluationResult evaluate(EvaluationCtx context) {
+<span class="fc" id="L243">        EvaluationResult result = null;</span>
+
+        // look in  attribute values
+<span class="fc" id="L246">        result = context.getAttribute(type, id, issuer, category);</span>
+
+        // if the lookup was indeterminate, then we return immediately
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">        if (result.indeterminate()){</span>
+<span class="nc" id="L250">            return result;</span>
+        }
+<span class="fc" id="L252">        BagAttribute bag = (BagAttribute) (result.getAttributeValue());</span>
+
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        if (bag.isEmpty()) {</span>
+            // if it's empty, this may be an error
+<span class="fc bfc" id="L256" title="All 2 branches covered.">            if (mustBePresent) {</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">                if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L258">                    logger.debug(&quot;AttributeDesignator failed to resolve a &quot;</span>
+<span class="fc" id="L259">                            + &quot;value for a required attribute: &quot; + id.toString());</span>
+                }
+
+<span class="fc" id="L262">                ArrayList&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L263">                code.add(Status.STATUS_MISSING_ATTRIBUTE);</span>
+
+<span class="fc" id="L265">                ArrayList&lt;MissingAttributeDetail&gt; missingAttributes = new ArrayList&lt;MissingAttributeDetail&gt;();</span>
+<span class="fc" id="L266">                MissingAttributeDetail missingAttribute = new MissingAttributeDetail(id, type,</span>
+                                        category, issuer, null, XACMLConstants.XACML_VERSION_3_0);
+<span class="fc" id="L268">                missingAttributes.add(missingAttribute);</span>
+<span class="fc" id="L269">                StatusDetail detail = new StatusDetail(missingAttributes);</span>
+
+<span class="fc" id="L271">                String message = &quot;Couldn't find AttributeDesignator attribute&quot;;</span>
+
+                // Note that there is a bug in the XACML spec. You can't
+                // specify an identifier without specifying acceptable
+                // values. Until this is fixed, this code will only
+                // return the status code, and not any hints about what
+                // was missing
+
+                /*
+                * List attrs = new ArrayList(); attrs.add(new Attribute(id, ((issuer == null) ?
+                * null : issuer.toString()), null, null)); StatusDetail detail = new
+                * StatusDetail(attrs);
+                */
+
+<span class="fc" id="L285">                return new EvaluationResult(new Status(code, message, detail));</span>
+            }
+        }
+
+        // if we got here the bag wasn't empty, or mustBePresent was false,
+        // so we just return the result
+<span class="fc" id="L291">        return result;</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;AttributeDesignator&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L302">        builder.append(&quot;&lt;AttributeDesignator&quot;);</span>
+
+<span class="nc" id="L304">        builder.append(&quot; AttributeId=\&quot;&quot;).append(id.toString()).append(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L305">        builder.append(&quot; DataType=\&quot;&quot;).append(type.toString()).append(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L306">        builder.append(&quot; Category=\&quot;&quot;).append(category.toString()).append(&quot;\&quot;&quot;);</span>
+
+<span class="nc bnc" id="L308" title="All 2 branches missed.">        if (issuer != null) {</span>
+<span class="nc" id="L309">            builder.append(&quot; Issuer=\&quot;&quot;).append(issuer).append(&quot;\&quot;&quot;);</span>
+        }
+        
+<span class="nc bnc" id="L312" title="All 2 branches missed.">        if (mustBePresent) {</span>
+<span class="nc" id="L313">            builder.append(&quot; MustBePresent=\&quot;true\&quot;&quot;);</span>
+        } else {
+<span class="nc" id="L315">            builder.append(&quot; MustBePresent=\&quot;false\&quot;&quot;);</span>
+        }
+        
+<span class="nc" id="L318">        builder.append(&quot;/&gt;\n&quot;);</span>
+<span class="nc" id="L319">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

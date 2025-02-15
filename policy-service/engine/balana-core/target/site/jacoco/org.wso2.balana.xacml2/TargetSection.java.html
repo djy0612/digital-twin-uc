@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TargetSection.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.xacml2</a> &gt; <span class="el_source">TargetSection.java</span></div><h1>TargetSection.java</h1><pre class="source lang-java linenums">
+/*
+ * @(#)TargetSection.java
+ *
+ * Copyright 2005-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.xacml2;
+
+import org.wso2.balana.*;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ctx.Status;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+
+/**
+ * This is a container class for instances of &lt;code&gt;TargetMatchGroup&lt;/code&gt;
+ * and represents the Subjects, Resources, Actions, and Environments
+ * sections of an XACML Target. This section may apply to any request.
+ *
+ * @since 2.0
+ * @author Seth Proctor
+ */
+public class TargetSection
+{
+
+    // the list of match groups
+    private List&lt;TargetMatchGroup&gt; matchGroups;
+
+    // the match type contained in this group
+    private int matchType;
+
+    // the version of XACML used by the containing Target
+    private int xacmlVersion;
+
+    /**
+     * Constructor that takes a group and a version. If the group is
+     * null or empty, then this represents a section that matches any request.
+     *
+     * @param matchGroups a possibly null &lt;code&gt;List&lt;/code&gt; of
+     *                    &lt;code&gt;TargetMatchGroup&lt;/code&gt;s
+     * @param matchType the type as defined in &lt;code&gt;TargetMatch&lt;/code&gt;
+     * @param xacmlVersion the version XACML being used
+     */
+<span class="fc" id="L84">    public TargetSection(List&lt;TargetMatchGroup&gt; matchGroups, int matchType, int xacmlVersion) {</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (matchGroups == null)</span>
+<span class="fc" id="L86">            this.matchGroups = Collections.unmodifiableList(new ArrayList&lt;TargetMatchGroup&gt;());</span>
+        else
+<span class="fc" id="L88">            this.matchGroups = Collections.</span>
+<span class="fc" id="L89">                unmodifiableList(new ArrayList&lt;TargetMatchGroup&gt;(matchGroups));</span>
+<span class="fc" id="L90">        this.matchType = matchType;</span>
+<span class="fc" id="L91">        this.xacmlVersion = xacmlVersion;</span>
+<span class="fc" id="L92">    }</span>
+
+    /**
+     * Creates a &lt;code&gt;Target&lt;/code&gt; by parsing a node.
+     *
+     * @param root the node to parse for the &lt;code&gt;Target&lt;/code&gt;
+     * @param matchType the type as defined in &lt;code&gt;TargetMatch&lt;/code&gt;
+     * @param metaData the meta-data from the enclosing policy
+     *
+     * @return a new &lt;code&gt;Target&lt;/code&gt; constructed by parsing
+     *
+     * @throws org.wso2.balana.ParsingException if the DOM node is invalid
+     */
+    public static TargetSection getInstance(Node root, int matchType,
+                                            PolicyMetaData metaData)
+        throws ParsingException
+    {
+<span class="fc" id="L109">        List&lt;TargetMatchGroup&gt; groups = new ArrayList&lt;TargetMatchGroup&gt;();</span>
+<span class="fc" id="L110">        NodeList children = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L113">            Node child = children.item(i);</span>
+<span class="fc" id="L114">            String name = DOMHelper.getLocalName(child);</span>
+<span class="fc" id="L115">            String typeName = TargetMatch.NAMES[matchType];</span>
+
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            if (name.equals(typeName)) {</span>
+<span class="fc" id="L118">                groups.add(TargetMatchGroup.getInstance(child, matchType,</span>
+                                                        metaData));
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">            } else if (name.equals(&quot;Any&quot; + typeName)) {</span>
+                // in a schema-valid policy, the Any element will always be
+                // the only element, so if we find this we stop
+<span class="nc" id="L123">                break;</span>
+            }
+        }
+
+        // at this point the list is non-empty (it has specific groups to
+        // match) or is empty (it applies to any request using the 1.x or
+        // 2.0 syntax)
+<span class="fc" id="L130">        return new TargetSection(groups, matchType,</span>
+<span class="fc" id="L131">                                 metaData.getXACMLVersion());</span>
+    }
+
+    /**
+     * Returns the &lt;code&gt;TargetMatchGroup&lt;/code&gt;s contained in this group.
+     *
+     * @return a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;TargetMatchGroup&lt;/code&gt;s
+     */
+    public List getMatchGroups() {
+<span class="nc" id="L140">        return matchGroups;</span>
+    }
+
+    /**
+     * Returns whether this section matches any request.
+     *
+     * @return true if this section matches any request, false otherwise
+     */
+    public boolean matchesAny() {
+<span class="fc" id="L149">        return matchGroups.isEmpty();</span>
+    }
+
+    /**
+     * Determines whether this &lt;code&gt;TargetSection&lt;/code&gt; matches
+     * the input request (whether it is applicable).
+     * 
+     * @param context the representation of the request
+     *
+     * @return the result of trying to match the target and the request
+     */
+    public MatchResult match(EvaluationCtx context) {
+        // if we apply to anything, then we always match
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (matchGroups.isEmpty())</span>
+<span class="fc" id="L163">            return new MatchResult(MatchResult.MATCH);</span>
+
+        // there are specific matching elements, so prepare to iterate
+        // through the list
+<span class="fc" id="L167">        Status firstIndeterminateStatus = null;</span>
+
+        // in order for this section to match, one of the groups must match 
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        for (TargetMatchGroup  group : matchGroups) {</span>
+            // get the next group and try matching it
+<span class="fc" id="L172">            MatchResult result = group.match(context);</span>
+
+            // we only need one match, so if this matched, then we're done
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (result.getResult() == MatchResult.MATCH)</span>
+<span class="fc" id="L176">                return result;</span>
+
+            // if we didn't match then it was either a NO_MATCH or
+            // INDETERMINATE...in the second case, we need to remember
+            // it happened, 'cause if we don't get a MATCH, then we'll
+            // be returning INDETERMINATE
+<span class="fc bfc" id="L182" title="All 2 branches covered.">            if (result.getResult() == MatchResult.INDETERMINATE) {</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">                if (firstIndeterminateStatus == null)</span>
+<span class="fc" id="L184">                    firstIndeterminateStatus = result.getStatus();</span>
+            }
+<span class="fc" id="L186">        }</span>
+
+        // if we got here, then none of the sub-matches passed, so
+        // we have to see if we got any INDETERMINATE cases
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        if (firstIndeterminateStatus == null)</span>
+<span class="fc" id="L191">            return new MatchResult(MatchResult.NO_MATCH);</span>
+        else
+<span class="fc" id="L193">            return new MatchResult(MatchResult.INDETERMINATE,</span>
+                                   firstIndeterminateStatus);
+    }
+
+    /**
+     * Encodes this &lt;code&gt;TargetSection&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="nc" id="L203">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L204">        encode(builder);</span>
+<span class="nc" id="L205">        return builder.toString();</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;TargetSection&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L216">        String name = TargetMatch.NAMES[matchType];</span>
+        
+        // figure out if this section applies to any request
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        if (matchGroups.isEmpty()) {</span>
+            // this applies to any, so now we need to encode it based on
+            // what version of XACML we're using...in 2.0, we encode an Any
+            // by simply omitting the element, so we'll only actually include
+            // something if this is a 1.x policy
+<span class="nc bnc" id="L224" title="All 2 branches missed.">            if (xacmlVersion == XACMLConstants.XACML_VERSION_1_0) {</span>
+<span class="nc" id="L225">                builder.append(&quot;&lt;&quot;).append(name).append(&quot;s&gt;\n&quot;);</span>
+<span class="nc" id="L226">                builder.append(&quot;&lt;Any&quot;).append(name).append(&quot;/&gt;\n&quot;);</span>
+<span class="nc" id="L227">                builder.append(&quot;&lt;/&quot;).append(name).append(&quot;s&gt;\n&quot;);</span>
+            }
+        } else {
+            // this has specific rules, so we can now encode them
+<span class="nc" id="L231">            builder.append(&quot;&lt;&quot;).append(name).append(&quot;s&gt;\n&quot;);</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">            for (TargetMatchGroup group : matchGroups) {</span>
+<span class="nc" id="L233">                group.encode(builder);</span>
+<span class="nc" id="L234">            }</span>
+<span class="nc" id="L235">            builder.append(&quot;&lt;/&quot;).append(name).append(&quot;s&gt;\n&quot;);</span>
+        }
+<span class="nc" id="L237">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

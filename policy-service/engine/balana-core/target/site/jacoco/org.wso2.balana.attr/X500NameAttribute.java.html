@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>X500NameAttribute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.attr</a> &gt; <span class="el_source">X500NameAttribute.java</span></div><h1>X500NameAttribute.java</h1><pre class="source lang-java linenums">/*
+ * @(#)X500NameAttribute.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.attr;
+
+import java.net.URI;
+
+import javax.security.auth.x500.X500Principal;
+
+import org.w3c.dom.Node;
+
+/**
+ * Representation of an X500 Name.
+ * 
+ * @since 1.0
+ * @author Marco Barreno
+ * @author Seth Proctor
+ */
+public class X500NameAttribute extends AttributeValue {
+
+    /**
+     * Official name of this type
+     */
+    public static final String identifier = &quot;urn:oasis:names:tc:xacml:1.0:data-type:x500Name&quot;;
+
+    // the actual value being stored
+    private X500Principal value;
+
+    /**
+     * URI version of name for this type
+     * &lt;p&gt;
+     * This field is initialized by a static initializer so that we can catch any exceptions thrown
+     * by URI(String) and transform them into a RuntimeException, since this should never happen but
+     * should be reported properly if it ever does.
+     */
+    private static URI identifierURI;
+
+    /**
+     * RuntimeException that wraps an Exception thrown during the creation of identifierURI, null if
+     * none.
+     */
+    private static RuntimeException earlyException;
+
+    /**
+     * Static initializer that initializes the identifierURI class field so that we can catch any
+     * exceptions thrown by URI(String) and transform them into a RuntimeException. Such exceptions
+     * should never happen but should be reported properly if they ever do.
+     */
+    static {
+        try {
+<span class="fc" id="L83">            identifierURI = new URI(identifier);</span>
+<span class="nc" id="L84">        } catch (Exception e) {</span>
+<span class="nc" id="L85">            earlyException = new IllegalArgumentException();</span>
+<span class="nc" id="L86">            earlyException.initCause(e);</span>
+<span class="fc" id="L87">        }</span>
+<span class="fc" id="L88">    };</span>
+
+    /**
+     * Creates a new &lt;code&gt;X500NameAttribute&lt;/code&gt; that represents the value supplied.
+     * 
+     * @param value the X500 Name to be represented
+     */
+    public X500NameAttribute(X500Principal value) {
+<span class="fc" id="L96">        super(identifierURI);</span>
+
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (earlyException != null)</span>
+<span class="nc" id="L99">            throw earlyException;</span>
+
+<span class="fc" id="L101">        this.value = value;</span>
+<span class="fc" id="L102">    }</span>
+
+    /**
+     * Returns a new &lt;codeX500NameAttribute&lt;/code&gt; that represents the X500 Name at a particular DOM
+     * node.
+     * 
+     * @param root the &lt;code&gt;Node&lt;/code&gt; that contains the desired value
+     * @return a new &lt;code&gt;X500NameAttribute&lt;/code&gt; representing the appropriate value
+     * @throws IllegalArgumentException if value is improperly specified
+     */
+    public static X500NameAttribute getInstance(Node root) throws IllegalArgumentException {
+<span class="fc" id="L113">        return getInstance(root.getFirstChild().getNodeValue());</span>
+    }
+
+    /**
+     * Returns a new &lt;code&gt;X500NameAttribute&lt;/code&gt; that represents the X500 Name value indicated by
+     * the string provided.
+     * 
+     * @param value a string representing the desired value
+     * @return a new &lt;code&gt;X500NameAttribute&lt;/code&gt; representing the appropriate value
+     * @throws IllegalArgumentException if value is improperly specified
+     */
+    public static X500NameAttribute getInstance(String value) throws IllegalArgumentException {
+<span class="fc" id="L125">        return new X500NameAttribute(new X500Principal(value));</span>
+    }
+
+    /**
+     * Returns the name value represented by this object
+     * 
+     * @return the name
+     */
+    public X500Principal getValue() {
+<span class="fc" id="L134">        return value;</span>
+    }
+
+    /**
+     * Returns true if the input is an instance of this class and if its value equals the value
+     * contained in this class. This method deviates slightly from the XACML spec in the way that it
+     * handles RDNs with multiple attributeTypeAndValue pairs and some additional canonicalization
+     * steps. This method uses the procedure used by
+     * &lt;code&gt;javax.security.auth.x500.X500Principal.equals()&lt;/code&gt;, while the XACML spec uses a
+     * slightly different procedure. In practice, it is expected that this difference will not be
+     * noticeable. For more details, refer to the javadoc for &lt;code&gt;X500Principal.equals()&lt;/code&gt;
+     * and the XACML specification.
+     * 
+     * @param o the object to compare
+     * 
+     * @return true if this object and the input represent the same value
+     */
+    public boolean equals(Object o) {
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">        if (!(o instanceof X500NameAttribute))</span>
+<span class="nc" id="L153">            return false;</span>
+
+<span class="fc" id="L155">        X500NameAttribute other = (X500NameAttribute) o;</span>
+
+<span class="fc" id="L157">        return value.equals(other.value);</span>
+    }
+
+    /**
+     * Returns the hashcode value used to index and compare this object with others of the same
+     * type. Typically this is the hashcode of the backing data object.
+     * 
+     * @return the object's hashcode value
+     */
+    public int hashCode() {
+<span class="fc" id="L167">        return value.hashCode();</span>
+    }
+
+    /**
+     *
+     */
+    public String encode() {
+<span class="nc" id="L174">        return value.getName();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

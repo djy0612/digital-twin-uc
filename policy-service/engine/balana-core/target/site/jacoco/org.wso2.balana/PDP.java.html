@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PDP.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana</a> &gt; <span class="el_source">PDP.java</span></div><h1>PDP.java</h1><pre class="source lang-java linenums">/*
+ * @(#)PDP.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import org.wso2.balana.combine.CombinerElement;
+import org.wso2.balana.ctx.*;
+
+import org.wso2.balana.ctx.xacml3.RequestCtx;
+import org.wso2.balana.finder.PolicyFinder;
+import org.wso2.balana.finder.PolicyFinderResult;
+import org.wso2.balana.ctx.xacml3.Result;
+import org.wso2.balana.ctx.xacml3.XACML3EvaluationCtx;
+import org.wso2.balana.xacml3.MultipleCtxResult;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import java.util.*;
+
+/**
+ * This is the core class for the XACML engine, providing the starting point for request evaluation.
+ * To build an XACML policy engine, you start by instantiating this object.
+ *
+ * @author Seth Proctor
+ * @since 1.0
+ */
+public class PDP {
+
+    /**
+     * the encapsulate the &lt;code&gt;PDP&lt;/code&gt; related configurations
+     */
+    private PDPConfig pdpConfig;
+
+    /**
+     * the single policy finder that will be used to resolve policies
+     */
+    private PolicyFinder policyFinder;
+
+    /**
+     * the logger we'll use for all messages
+     */
+<span class="fc" id="L80">    private static final Log logger = LogFactory.getLog(PDP.class);</span>
+
+    /**
+     * Constructs a new &lt;code&gt;PDP&lt;/code&gt; object with the given configuration information.
+     *
+     * @param pdpConfig user configuration data defining how to find policies, resolve external
+     *                  attributes, etc.
+     */
+<span class="fc" id="L88">    public PDP(PDPConfig pdpConfig) {</span>
+
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L91">            logger.debug(&quot;creating a PDP&quot;);</span>
+        }
+
+<span class="fc" id="L94">        this.pdpConfig = pdpConfig;</span>
+
+<span class="fc" id="L96">        policyFinder = pdpConfig.getPolicyFinder();</span>
+<span class="fc" id="L97">        policyFinder.init();</span>
+<span class="fc" id="L98">    }</span>
+
+    /**
+     * Attempts to evaluate the request against the policies known to this PDP. This is really the
+     * core method of the entire XACML specification, and for most people will provide what you
+     * want. If you need any special handling, you should look at the version of this method that
+     * takes an &lt;code&gt;EvaluationCtx&lt;/code&gt;.
+     * &lt;p&gt;
+     * Note that if the request is somehow invalid (it was missing a required attribute, it was
+     * using an unsupported scope, etc), then the result will be a decision of INDETERMINATE.
+     *
+     * @param request the request to evaluate
+     * @return a response paired to the request
+     */
+    public String evaluate(String request) {
+
+        AbstractRequestCtx requestCtx;
+        ResponseCtx responseCtx;
+
+        try {
+<span class="nc" id="L118">            requestCtx = RequestCtxFactory.getFactory().getRequestCtx(request.replaceAll(&quot;&gt;\\s+&lt;&quot;, &quot;&gt;&lt;&quot;));</span>
+<span class="nc" id="L119">            responseCtx = evaluate(requestCtx);</span>
+<span class="nc" id="L120">        } catch (ParsingException e) {</span>
+<span class="nc" id="L121">            String error = &quot;Invalid request  : &quot; + e.getMessage();</span>
+<span class="nc" id="L122">            logger.error(error);</span>
+            // there was something wrong with the request, so we return
+            // Indeterminate with a status of syntax error...though this
+            // may change if a more appropriate status type exists
+<span class="nc" id="L126">            ArrayList&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L127">            code.add(Status.STATUS_SYNTAX_ERROR);</span>
+<span class="nc" id="L128">            Status status = new Status(code, error);</span>
+            //As invalid request, by default XACML 3.0 response is created. 
+<span class="nc" id="L130">            responseCtx = new ResponseCtx(new Result(AbstractResult.DECISION_INDETERMINATE, status));</span>
+<span class="nc" id="L131">        }</span>
+
+<span class="nc" id="L133">        return responseCtx.encode();</span>
+    }
+
+
+    /**
+     * Attempts to evaluate the request against the policies known to this PDP. This is really the
+     * core method of the entire XACML specification, and for most people will provide what you
+     * want. If you need any special handling, you should look at the version of this method that
+     * takes an &lt;code&gt;EvaluationCtx&lt;/code&gt;.
+     * &lt;p&gt;
+     * Note that if the request is somehow invalid (it was missing a required attribute, it was
+     * using an unsupported scope, etc), then the result will be a decision of INDETERMINATE.
+     *
+     * @param request the request to evaluate
+     * @return a response paired to the request
+     */
+    public ResponseCtx evaluate(AbstractRequestCtx request) {
+
+<span class="fc" id="L151">        EvaluationCtx evalContext = null;</span>
+        try {
+<span class="fc" id="L153">            evalContext = EvaluationCtxFactory.getFactory().getEvaluationCtx(request, pdpConfig);</span>
+<span class="fc" id="L154">            return evaluate(evalContext);</span>
+<span class="nc" id="L155">        } catch (ParsingException e) {</span>
+<span class="nc" id="L156">            logger.error(&quot;Invalid request  : &quot; + e.getMessage());</span>
+            // there was something wrong with the request, so we return
+            // Indeterminate with a status of syntax error...though this
+            // may change if a more appropriate status type exists
+<span class="nc" id="L160">            ArrayList&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L161">            code.add(Status.STATUS_SYNTAX_ERROR);</span>
+<span class="nc" id="L162">            Status status = new Status(code, e.getMessage());</span>
+<span class="nc" id="L163">            return new ResponseCtx(ResultFactory.getFactory().</span>
+<span class="nc" id="L164">                    getResult(AbstractResult.DECISION_INDETERMINATE, status, request.getXacmlVersion()));</span>
+
+        }
+    }
+
+    /**
+     * Uses the given &lt;code&gt;EvaluationCtx&lt;/code&gt; against the available policies to determine a
+     * response. If you are starting with a standard XACML Request, then you should use the version
+     * of this method that takes a &lt;code&gt;RequestCtx&lt;/code&gt;. This method should be used only if you
+     * have a real need to directly construct an evaluation context (or if you need to use an
+     * &lt;code&gt;EvaluationCtx&lt;/code&gt; implementation other than &lt;code&gt;XACML3EvaluationCtx&lt;/code&gt; and
+     * &lt;code&gt;XACML2EvaluationCtx&lt;/code&gt;).
+     *
+     * @param context representation of the request and the context used for evaluation
+     * @return a response based on the contents of the context
+     */
+    public ResponseCtx evaluate(EvaluationCtx context) {
+
+        // check whether this PDP configure to support multiple decision profile
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (pdpConfig.isMultipleRequestHandle()) {</span>
+
+            Set&lt;EvaluationCtx&gt; evaluationCtxSet;
+<span class="fc" id="L186">            MultipleCtxResult multipleCtxResult = context.getMultipleEvaluationCtx();</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">            if (multipleCtxResult.isIndeterminate()) {</span>
+<span class="nc" id="L188">                return new ResponseCtx(ResultFactory.getFactory().</span>
+<span class="nc" id="L189">                        getResult(AbstractResult.DECISION_INDETERMINATE, multipleCtxResult.getStatus(), context));</span>
+            } else {
+<span class="fc" id="L191">                evaluationCtxSet = multipleCtxResult.getEvaluationCtxSet();</span>
+<span class="fc" id="L192">                HashSet&lt;AbstractResult&gt; results = new HashSet&lt;AbstractResult&gt;();</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">                for (EvaluationCtx ctx : evaluationCtxSet) {</span>
+                    // do the evaluation, for all evaluate context
+<span class="fc" id="L195">                    AbstractResult result = evaluateContext(ctx);</span>
+                    // add the result
+<span class="fc" id="L197">                    results.add(result);</span>
+<span class="fc" id="L198">                }</span>
+                // XACML 3.0.version
+<span class="fc" id="L200">                return new ResponseCtx(results, XACMLConstants.XACML_VERSION_3_0);</span>
+            }
+        } else {
+            // this is special case that specific to XACML3 request
+
+<span class="fc bfc" id="L205" title="All 2 branches covered.">            if (context instanceof XACML3EvaluationCtx &amp;&amp; ((XACML3EvaluationCtx) context).</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">                    isMultipleAttributes()) {</span>
+<span class="nc" id="L207">                ArrayList&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L208">                code.add(Status.STATUS_SYNTAX_ERROR);</span>
+<span class="nc" id="L209">                Status status = new Status(code, &quot;PDP does not supports multiple decision profile. &quot; +</span>
+                        &quot;Multiple AttributesType elements with the same Category can be existed&quot;);
+<span class="nc" id="L211">                return new ResponseCtx(ResultFactory.getFactory().</span>
+<span class="nc" id="L212">                        getResult(AbstractResult.DECISION_INDETERMINATE,</span>
+                                status, context));
+<span class="fc bfc" id="L214" title="All 2 branches covered.">            } else if (context instanceof XACML3EvaluationCtx &amp;&amp; ((RequestCtx) context.</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">                    getRequestCtx()).isCombinedDecision()) {</span>
+<span class="nc" id="L216">                List&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L217">                code.add(Status.STATUS_PROCESSING_ERROR);</span>
+<span class="nc" id="L218">                Status status = new Status(code, &quot;PDP does not supports multiple decision profile. &quot; +</span>
+                        &quot;Multiple decision is not existed to combine them&quot;);
+<span class="nc" id="L220">                return new ResponseCtx(ResultFactory.getFactory().</span>
+<span class="nc" id="L221">                        getResult(AbstractResult.DECISION_INDETERMINATE,</span>
+                                status, context));
+            } else {
+<span class="fc" id="L224">                return new ResponseCtx(evaluateContext(context));</span>
+            }
+        }
+
+    }
+
+    /**
+     * A private helper routine that resolves a policy for the given context, and then tries to
+     * evaluate based on the policy
+     *
+     * @param context context
+     * @return a response
+     */
+    private AbstractResult evaluateContext(EvaluationCtx context) {
+        // first off, try to find a policy
+<span class="fc" id="L239">        PolicyFinderResult finderResult = policyFinder.findPolicy(context);</span>
+
+        // see if there weren't any applicable policies
+<span class="fc bfc" id="L242" title="All 2 branches covered.">        if (finderResult.notApplicable()) {</span>
+<span class="fc" id="L243">            return ResultFactory.getFactory().getResult(AbstractResult.DECISION_NOT_APPLICABLE, context);</span>
+        }
+        // see if there were any errors in trying to get a policy
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        if (finderResult.indeterminate()) {</span>
+<span class="nc" id="L247">            return ResultFactory.getFactory().getResult(AbstractResult.DECISION_INDETERMINATE,</span>
+<span class="nc" id="L248">                    finderResult.getStatus(), context);</span>
+        }
+
+        // we found a valid policy,
+
+        // list all found policies if XACML 3.0
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        if (context instanceof XACML3EvaluationCtx &amp;&amp; ((RequestCtx) context.getRequestCtx()).</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">                isReturnPolicyIdList()) {</span>
+<span class="nc" id="L256">            Set&lt;PolicyReference&gt; references = new HashSet&lt;PolicyReference&gt;();</span>
+<span class="nc" id="L257">            processPolicyReferences(finderResult.getPolicy(), references);</span>
+<span class="nc" id="L258">            ((XACML3EvaluationCtx) context).setPolicyReferences(references);</span>
+        }
+
+        // so we can do the evaluation
+<span class="fc" id="L262">        return finderResult.getPolicy().evaluate(context);</span>
+    }
+
+    /**
+     * Attempts to evaluate the request against the policies known to this PDP. This is really the
+     * core method of the entire XACML specification, and for most people will provide what you
+     * want. If you need any special handling, you should look at the version of this method that
+     * takes an &lt;code&gt;EvaluationCtx&lt;/code&gt;.
+     * &lt;p&gt;
+     * Note that if the request is somehow invalid (it was missing a required attribute, it was
+     * using an unsupported scope, etc), then the result will be a decision of INDETERMINATE.
+     *
+     * @param request the request to evaluate
+     * @return a ResponseCtx response paired to the request
+     */
+    public ResponseCtx evaluateReturnResponseCtx(String request) {
+
+        AbstractRequestCtx requestCtx;
+        ResponseCtx responseCtx;
+
+        try {
+<span class="nc" id="L283">            requestCtx = RequestCtxFactory.getFactory().getRequestCtx(request.replaceAll(&quot;&gt;\\s+&lt;&quot;, &quot;&gt;&lt;&quot;));</span>
+<span class="nc" id="L284">            responseCtx = evaluate(requestCtx);</span>
+<span class="nc" id="L285">        } catch (ParsingException e) {</span>
+<span class="nc" id="L286">            String error = &quot;Invalid request  : &quot; + e.getMessage();</span>
+<span class="nc" id="L287">            logger.error(error);</span>
+            // there was something wrong with the request, so we return
+            // Indeterminate with a status of syntax error...though this
+            // may change if a more appropriate status type exists
+<span class="nc" id="L291">            ArrayList&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L292">            code.add(Status.STATUS_SYNTAX_ERROR);</span>
+<span class="nc" id="L293">            Status status = new Status(code, error);</span>
+            //As invalid request, by default XACML 3.0 response is created.
+<span class="nc" id="L295">            responseCtx = new ResponseCtx(new Result(AbstractResult.DECISION_INDETERMINATE, status));</span>
+<span class="nc" id="L296">        }</span>
+
+<span class="nc" id="L298">        return responseCtx;</span>
+    }
+
+    /**
+     * A utility method that wraps the functionality of the other evaluate method with input and
+     * output streams. This is useful if you've got a PDP that is taking inputs from some stream and
+     * is returning responses through the same stream system. If the Request is invalid, then this
+     * will always return a decision of INDETERMINATE.
+     *
+     * @param input a stream that contains an XML RequestType
+     * @return a stream that contains an XML ResponseType
+     * @deprecated As of 1.2 this method should not be used. Instead, you should do your own stream
+     * handling, and then use one of the other &lt;code&gt;evaluate&lt;/code&gt; methods. The
+     * problem with this method is that it often doesn't handle stream termination
+     * correctly (eg, with sockets).
+     */
+    public OutputStream evaluate(InputStream input) {
+<span class="nc" id="L315">        AbstractRequestCtx request = null;</span>
+<span class="nc" id="L316">        ResponseCtx response = null;</span>
+
+        try {
+<span class="nc" id="L319">            request = RequestCtxFactory.getFactory().getRequestCtx(input);</span>
+<span class="nc" id="L320">        } catch (Exception pe) {</span>
+            // the request wasn't formed correctly
+<span class="nc" id="L322">            ArrayList&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L323">            code.add(Status.STATUS_SYNTAX_ERROR);</span>
+<span class="nc" id="L324">            Status status = new Status(code, &quot;invalid request: &quot; + pe.getMessage());</span>
+            // can not determine XACML version at here. therefore return assume as XACML 3
+<span class="nc" id="L326">            response = new ResponseCtx(ResultFactory.getFactory().</span>
+<span class="nc" id="L327">                    getResult(AbstractResult.DECISION_INDETERMINATE, status, XACMLConstants.XACML_VERSION_3_0));</span>
+<span class="nc" id="L328">        }</span>
+
+        // if we didn't have a problem above, then we should go ahead
+        // with the evaluation
+<span class="nc bnc" id="L332" title="All 2 branches missed.">        if (response == null) {</span>
+<span class="nc" id="L333">            response = evaluate(request);</span>
+        }
+
+<span class="nc" id="L336">        ByteArrayOutputStream out = new ByteArrayOutputStream();</span>
+
+        try {
+<span class="nc" id="L339">            out.write(response.encode().getBytes());</span>
+<span class="nc" id="L340">        } catch (IOException e) {</span>
+<span class="nc" id="L341">            logger.error(&quot;Error creating output stream of XACML response&quot;, e);</span>
+<span class="nc" id="L342">        }</span>
+
+<span class="nc" id="L344">        return out;</span>
+    }
+
+    /**
+     * @param policy
+     * @param references
+     */
+    private void processPolicyReferences(AbstractPolicy policy, Set&lt;PolicyReference&gt; references) {
+
+<span class="nc bnc" id="L353" title="All 2 branches missed.">        if (policy instanceof Policy) {</span>
+<span class="nc" id="L354">            references.add(new PolicyReference(policy.getId(),</span>
+                    PolicyReference.POLICY_REFERENCE, null, null));
+<span class="nc bnc" id="L356" title="All 2 branches missed.">        } else if (policy instanceof PolicySet) {</span>
+<span class="nc" id="L357">            List&lt;CombinerElement&gt; elements = policy.getChildElements();</span>
+<span class="nc bnc" id="L358" title="All 4 branches missed.">            if (elements != null &amp;&amp; elements.size() &gt; 0) {</span>
+<span class="nc bnc" id="L359" title="All 2 branches missed.">                for (CombinerElement element : elements) {</span>
+<span class="nc" id="L360">                    PolicyTreeElement treeElement = element.getElement();</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">                    if (treeElement instanceof AbstractPolicy) {</span>
+<span class="nc" id="L362">                        processPolicyReferences((AbstractPolicy) treeElement, references);</span>
+                    } else {
+<span class="nc" id="L364">                        references.add(new PolicyReference(policy.getId(),</span>
+                                PolicyReference.POLICYSET_REFERENCE, null, null));
+                    }
+<span class="nc" id="L367">                }</span>
+            }
+        }
+<span class="nc" id="L370">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

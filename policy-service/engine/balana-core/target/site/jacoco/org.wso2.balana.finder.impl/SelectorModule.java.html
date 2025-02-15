@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SelectorModule.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.finder.impl</a> &gt; <span class="el_source">SelectorModule.java</span></div><h1>SelectorModule.java</h1><pre class="source lang-java linenums">/*
+ * @(#)SelectorModule.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.finder.impl;
+
+
+import org.w3c.dom.Document;
+import org.wso2.balana.*;
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.ctx.EvaluationCtx;
+
+import org.wso2.balana.attr.AttributeFactory;
+import org.wso2.balana.attr.BagAttribute;
+
+import org.wso2.balana.cond.EvaluationResult;
+
+import org.wso2.balana.ctx.Status;
+
+import org.wso2.balana.finder.AttributeFinderModule;
+
+import java.net.URI;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.utils.Utils;
+
+import javax.xml.namespace.NamespaceContext;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.*;
+
+/**
+ * This module implements the basic behavior of the AttributeSelectorType, looking for attribute
+ * values in the physical request document using the given XPath expression. This is implemented as
+ * a separate module (instead of being implemented directly in &lt;code&gt;AttributeSelector&lt;/code&gt; so
+ * that programmers can remove this functionality if they want (it's optional in the spec), so they
+ * can replace this code with more efficient, specific code as needed, and so they can easily swap
+ * in different XPath libraries.
+ * &lt;p&gt;
+ * Note that if no matches are found, this module will return an empty bag (unless some error
+ * occurred). The &lt;code&gt;AttributeSelector&lt;/code&gt; is still deciding what to return to the policy
+ * based on the MustBePresent attribute.
+ * &lt;p&gt;
+ * This module uses the Xalan XPath implementation, and supports only version 1.0 of XPath. It is a
+ * fully functional, correct implementation of XACML's AttributeSelector functionality, but is not
+ * designed for environments that make significant use of XPath queries. Developers for any such
+ * environment should consider implementing their own module.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+<span class="fc" id="L90">public class SelectorModule extends AttributeFinderModule {</span>
+
+    /**
+     * Returns true since this module supports retrieving attributes based on the data provided in
+     * an AttributeSelectorType.
+     * 
+     * @return true
+     */
+    public boolean isSelectorSupported() {
+<span class="fc" id="L99">        return true;</span>
+    }
+
+
+    @Override
+    public EvaluationResult findAttribute(String contextPath, URI attributeType,
+                  String contextSelector, Node root, EvaluationCtx context, String xpathVersion) {
+
+<span class="fc" id="L107">        Node contextNode = null;</span>
+<span class="fc" id="L108">        NamespaceContext namespaceContext = null;</span>
+
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if(root == null){</span>
+            // root == null means there is not content element defined with the attributes element
+            // therefore complete request is evaluated.
+            // get the DOM root of the request document
+<span class="nc" id="L114">            contextNode = context.getRequestRoot();</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        } else if(contextSelector != null) {</span>
+            // root != null  means content element is there.  we can find the context node by
+            // evaluating the contextSelector
+
+            // 1st assume context node as the root
+<span class="fc" id="L120">            contextNode = root;</span>
+
+<span class="fc" id="L122">            XPathFactory factory = XPathFactory.newInstance();</span>
+<span class="fc" id="L123">            XPath xpath = factory.newXPath();</span>
+
+            //see if the request root is in a namespace
+<span class="fc" id="L126">            String namespace = null;</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">            if(contextNode != null){</span>
+<span class="fc" id="L128">                namespace = contextNode.getNamespaceURI();</span>
+            }
+            // name spaces are used, so we need to lookup the correct
+            // prefix to use in the search string
+<span class="fc" id="L132">            NamedNodeMap namedNodeMap = contextNode.getAttributes();</span>
+
+<span class="fc" id="L134">            Map&lt;String, String&gt; nsMap = new HashMap&lt;String, String&gt;();</span>
+
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            for (int i = 0; i &lt; namedNodeMap.getLength(); i++) {</span>
+<span class="fc" id="L137">                Node n = namedNodeMap.item(i);</span>
+                // we found the matching namespace, so get the prefix
+                // and then break out
+<span class="fc" id="L140">                String prefix = DOMHelper.getLocalName(n);</span>
+<span class="fc" id="L141">                String nodeValue= n.getNodeValue();</span>
+<span class="fc" id="L142">                nsMap.put(prefix, nodeValue);</span>
+            }
+
+            // if there is not any namespace is defined for content element, default XACML request
+            //  name space would be there.
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">            if(XACMLConstants.REQUEST_CONTEXT_3_0_IDENTIFIER.equals(namespace) ||</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">                    XACMLConstants.REQUEST_CONTEXT_2_0_IDENTIFIER.equals(namespace) ||</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">                    XACMLConstants.REQUEST_CONTEXT_1_0_IDENTIFIER.equals(namespace)){</span>
+<span class="nc" id="L150">                nsMap.put(&quot;xacml&quot;, namespace);</span>
+            }
+
+<span class="fc" id="L153">            namespaceContext = new DefaultNamespaceContext(nsMap);</span>
+<span class="fc" id="L154">            xpath.setNamespaceContext(namespaceContext);</span>
+
+            try{
+<span class="fc" id="L157">                XPathExpression expression = xpath.compile(contextSelector);</span>
+<span class="fc" id="L158">                NodeList result = (NodeList) expression.evaluate(contextNode, XPathConstants.NODESET);                </span>
+<span class="pc bpc" id="L159" title="1 of 4 branches missed.">                if(result == null || result.getLength() == 0){</span>
+<span class="fc" id="L160">                    throw new Exception(&quot;No node is found from context selector id evaluation&quot;);    </span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">                } else if(result.getLength() != 1){</span>
+<span class="fc" id="L162">                    throw new Exception(&quot;More than one node is found from context selector id evaluation&quot;);</span>
+                }
+<span class="fc" id="L164">                contextNode = result.item(0);</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">                if(contextNode != null){</span>
+                    // make the node appear to be a direct child of the Document
+                    try{
+<span class="fc" id="L168">                        DocumentBuilderFactory dbf = Utils.getSecuredDocumentBuilderFactory();</span>
+<span class="fc" id="L169">                        DocumentBuilder builder = dbf.newDocumentBuilder();</span>
+<span class="fc" id="L170">                        dbf.setNamespaceAware(true);</span>
+<span class="fc" id="L171">                        Document docRoot = builder.newDocument();</span>
+<span class="fc" id="L172">                        Node topRoot = docRoot.importNode(contextNode, true);</span>
+<span class="fc" id="L173">                        docRoot.appendChild(topRoot);</span>
+<span class="fc" id="L174">                        contextNode = docRoot.getDocumentElement();</span>
+<span class="nc" id="L175">                    } catch (Exception e){</span>
+                        //
+<span class="fc" id="L177">                    }</span>
+                }
+<span class="fc" id="L179">            } catch (Exception e) {</span>
+<span class="fc" id="L180">                List&lt;String&gt; codes = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L181">                codes.add(Status.STATUS_SYNTAX_ERROR);</span>
+<span class="fc" id="L182">                Status status = new Status(codes, e.getMessage());</span>
+<span class="fc" id="L183">                return new EvaluationResult(status);</span>
+<span class="fc" id="L184">            }</span>
+<span class="fc" id="L185">        } else {</span>
+<span class="fc" id="L186">            contextNode = root;</span>
+        }
+
+
+<span class="fc" id="L190">        XPathFactory factory = XPathFactory.newInstance();</span>
+<span class="fc" id="L191">        XPath xpath = factory.newXPath();</span>
+
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        if(namespaceContext == null){</span>
+
+            //see if the request root is in a namespace
+<span class="fc" id="L196">            String namespace = null;</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">            if(contextNode != null){</span>
+<span class="fc" id="L198">                namespace = contextNode.getNamespaceURI();</span>
+            }
+            // name spaces are used, so we need to lookup the correct
+            // prefix to use in the search string
+<span class="fc" id="L202">            NamedNodeMap namedNodeMap = contextNode.getAttributes();</span>
+
+<span class="fc" id="L204">            Map&lt;String, String&gt; nsMap = new HashMap&lt;String, String&gt;();</span>
+
+<span class="fc bfc" id="L206" title="All 2 branches covered.">            for (int i = 0; i &lt; namedNodeMap.getLength(); i++) {</span>
+<span class="fc" id="L207">                Node n = namedNodeMap.item(i);</span>
+                // we found the matching namespace, so get the prefix
+                // and then break out
+<span class="fc" id="L210">                String prefix = DOMHelper.getLocalName(n);</span>
+<span class="fc" id="L211">                String nodeValue= n.getNodeValue();</span>
+<span class="fc" id="L212">                nsMap.put(prefix, nodeValue);</span>
+            }
+            
+            // if there is not any namespace is defined for content element, default XACML request
+            //  name space would be there.
+<span class="fc bfc" id="L217" title="All 2 branches covered.">            if(XACMLConstants.REQUEST_CONTEXT_3_0_IDENTIFIER.equals(namespace) ||</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">                    XACMLConstants.REQUEST_CONTEXT_2_0_IDENTIFIER.equals(namespace) ||</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">                    XACMLConstants.REQUEST_CONTEXT_1_0_IDENTIFIER.equals(namespace)){</span>
+<span class="fc" id="L220">                nsMap.put(&quot;xacml&quot;, namespace);</span>
+            }
+
+<span class="fc" id="L223">            namespaceContext = new DefaultNamespaceContext(nsMap);</span>
+        }
+
+<span class="fc" id="L226">        xpath.setNamespaceContext(namespaceContext);</span>
+
+        NodeList matches;
+        
+        try {
+<span class="fc" id="L231">            XPathExpression expression = xpath.compile(contextPath);</span>
+<span class="fc" id="L232">            matches = (NodeList) expression.evaluate(contextNode, XPathConstants.NODESET);</span>
+<span class="pc bpc" id="L233" title="2 of 4 branches missed.">            if(matches == null || matches.getLength() &lt; 1){</span>
+<span class="nc" id="L234">                throw new Exception(&quot;No node is found from xpath evaluation&quot;);                 </span>
+            }
+<span class="fc" id="L236">        } catch (XPathExpressionException e) {</span>
+<span class="fc" id="L237">            List&lt;String&gt; codes = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L238">            codes.add(Status.STATUS_SYNTAX_ERROR);</span>
+<span class="fc" id="L239">            Status status = new Status(codes, e.getMessage());</span>
+<span class="fc" id="L240">            return new EvaluationResult(status);</span>
+<span class="nc" id="L241">        } catch (Exception e) {</span>
+<span class="nc" id="L242">            List&lt;String&gt; codes = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L243">            codes.add(Status.STATUS_SYNTAX_ERROR);</span>
+<span class="nc" id="L244">            Status status = new Status(codes, e.getMessage());</span>
+<span class="nc" id="L245">            return new EvaluationResult(status);</span>
+<span class="fc" id="L246">        }</span>
+
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">        if (matches.getLength() == 0) {</span>
+            // we didn't find anything, so we return an empty bag
+<span class="nc" id="L250">            return new EvaluationResult(BagAttribute.createEmptyBag(attributeType));</span>
+        }
+
+        // there was at least one match, so try to generate the values
+        try {
+<span class="fc" id="L255">            ArrayList&lt;AttributeValue&gt; list = new ArrayList&lt;AttributeValue&gt;();</span>
+<span class="fc" id="L256">            AttributeFactory attrFactory = Balana.getInstance().getAttributeFactory();</span>
+
+<span class="fc bfc" id="L258" title="All 2 branches covered.">            for (int i = 0; i &lt; matches.getLength(); i++) {</span>
+<span class="fc" id="L259">                String text = null;</span>
+<span class="fc" id="L260">                Node node = matches.item(i);</span>
+<span class="fc" id="L261">                short nodeType = node.getNodeType();</span>
+
+                // see if this is straight text, or a node with data under
+                // it and then get the values accordingly
+<span class="pc bpc" id="L265" title="5 of 8 branches missed.">                if ((nodeType == Node.CDATA_SECTION_NODE) || (nodeType == Node.COMMENT_NODE)</span>
+                        || (nodeType == Node.TEXT_NODE) || (nodeType == Node.ATTRIBUTE_NODE)) {
+                    // there is no child to this node
+<span class="fc" id="L268">                    text = node.getNodeValue();</span>
+                } else {
+                    // the data is in a child node
+<span class="nc" id="L271">                    text = node.getFirstChild().getNodeValue();</span>
+                }
+
+<span class="fc" id="L274">                list.add(attrFactory.createValue(attributeType, text));</span>
+            }
+
+<span class="fc" id="L277">            return new EvaluationResult(new BagAttribute(attributeType, list));</span>
+            
+<span class="nc" id="L279">        } catch (ParsingException pe) {</span>
+<span class="nc" id="L280">            ArrayList&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L281">            code.add(Status.STATUS_PROCESSING_ERROR);</span>
+<span class="nc" id="L282">            return new EvaluationResult(new Status(code, pe.getMessage()));</span>
+<span class="nc" id="L283">        } catch (UnknownIdentifierException uie) {</span>
+<span class="nc" id="L284">            ArrayList&lt;String&gt; code = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L285">            code.add(Status.STATUS_PROCESSING_ERROR);</span>
+<span class="nc" id="L286">            return new EvaluationResult(new Status(code, &quot;Unknown attribute type : &quot; + attributeType));</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

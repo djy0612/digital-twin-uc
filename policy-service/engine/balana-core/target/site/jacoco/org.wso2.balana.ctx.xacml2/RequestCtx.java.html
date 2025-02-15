@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RequestCtx.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.ctx.xacml2</a> &gt; <span class="el_source">RequestCtx.java</span></div><h1>RequestCtx.java</h1><pre class="source lang-java linenums">/*
+ * @(#)RequestCtx.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.ctx.xacml2;
+
+import org.wso2.balana.DOMHelper;
+import org.wso2.balana.ctx.Attribute;
+import org.wso2.balana.Indenter;
+import org.wso2.balana.ParsingException;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import java.net.URI;
+import java.util.*;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.XACMLConstants;
+import org.wso2.balana.ctx.*;
+import org.wso2.balana.xacml3.Attributes;
+
+/**
+ * Represents a XACML2 request made to the PDP. This is the class that contains all the data used to start
+ * a policy evaluation.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ * @author Marco Barreno
+ */
+public class RequestCtx extends AbstractRequestCtx {
+
+    /**
+     * The optional, generic resource content
+     */
+    private String resourceContent;
+
+    // There must be at least one subject
+<span class="pc" id="L71">    private Set&lt;Subject&gt; subjects = null;</span>
+
+    // There must be exactly one resource
+<span class="pc" id="L74">    private Set resource = null;</span>
+
+    // There must be exactly one action
+<span class="pc" id="L77">    private Set action = null;</span>
+
+    // There may be any number of environment attributes
+<span class="pc" id="L80">    private Set environment = null;</span>
+    
+    /**
+     * Constructor that creates a &lt;code&gt;RequestCtx&lt;/code&gt; from components.
+     *
+     */
+    public RequestCtx(Set&lt;Attributes&gt; attributesSet, Node documentRoot) {
+<span class="nc" id="L87">        this(attributesSet, documentRoot, null);</span>
+<span class="nc" id="L88">    }</span>
+
+
+    /**
+     * Constructor that creates a &lt;code&gt;RequestCtx&lt;/code&gt; from components.
+     *
+     * @param documentRoot the root node of the DOM tree for this request
+     * @param version xacml version of the request
+     */
+    public RequestCtx(Set&lt;Attributes&gt; attributesSet, Node documentRoot, int version) {
+<span class="nc" id="L98">        this(attributesSet, documentRoot,  null);</span>
+<span class="nc" id="L99">    }</span>
+
+    /**
+     * Constructor that creates a &lt;code&gt;RequestCtx&lt;/code&gt; from components.
+     *
+     * @param resourceContent a text-encoded version of the content, suitable for including in the
+     *            RequestType, including the root &lt;code&gt;RequestContent&lt;/code&gt; node
+     */
+    public RequestCtx(Set&lt;Attributes&gt; attributesSet,  String resourceContent) {
+<span class="nc" id="L108">        this( attributesSet, null, resourceContent);</span>
+<span class="nc" id="L109">    }</span>
+
+    /**
+     * Constructor that creates a &lt;code&gt;RequestCtx&lt;/code&gt; from components.
+     *
+     * @param attributesSet
+     * @param documentRoot the root node of the DOM tree for this request
+     * @param resourceContent a text-encoded version of the content, suitable for including in the
+     *            RequestType, including the root &lt;code&gt;RequestContent&lt;/code&gt; node
+     * 
+     * @throws IllegalArgumentException if the inputs are not well formed
+     */
+    public RequestCtx(Set&lt;Attributes&gt; attributesSet, Node documentRoot, String resourceContent)
+<span class="nc" id="L122">                                                                    throws IllegalArgumentException {</span>
+
+<span class="nc" id="L124">        this.attributesSet = attributesSet;</span>
+<span class="nc" id="L125">        this.documentRoot = documentRoot;</span>
+<span class="nc" id="L126">        this.resourceContent = resourceContent;</span>
+<span class="nc" id="L127">        this.xacmlVersion = XACMLConstants.XACML_VERSION_2_0;</span>
+<span class="nc" id="L128">    }</span>
+
+    /**
+     *
+     * @param subjects
+     * @param resource
+     * @param action
+     * @param environment
+     * @throws IllegalArgumentException
+     */
+    public RequestCtx(Set&lt;Subject&gt; subjects, Set&lt;Attribute&gt; resource, Set&lt;Attribute&gt; action,
+                      Set&lt;Attribute&gt; environment) throws IllegalArgumentException {
+<span class="nc" id="L140">        this(null, null, subjects, resource, action, environment, null);</span>
+
+<span class="nc" id="L142">    }</span>
+
+    /**
+     * Constructor that creates a &lt;code&gt;RequestCtx&lt;/code&gt; from components.
+     *
+     * @param attributesSet
+     * @param documentRoot the root node of the DOM tree for this request
+     * @param resourceContent a text-encoded version of the content, suitable for including in the
+     *            RequestType, including the root &lt;code&gt;RequestContent&lt;/code&gt; node
+     *
+     * @throws IllegalArgumentException if the inputs are not well formed
+     */
+    public RequestCtx(Set&lt;Attributes&gt; attributesSet, Node documentRoot, Set&lt;Subject&gt; subjects,
+                      Set&lt;Attribute&gt; resource, Set&lt;Attribute&gt; action,  Set&lt;Attribute&gt; environment,
+<span class="fc" id="L156">                      String resourceContent) throws IllegalArgumentException {</span>
+
+<span class="fc" id="L158">        this.attributesSet = attributesSet;</span>
+<span class="fc" id="L159">        this.documentRoot = documentRoot;</span>
+<span class="fc" id="L160">        this.subjects = subjects;</span>
+<span class="fc" id="L161">        this.resource = resource;</span>
+<span class="fc" id="L162">        this.action = action;</span>
+<span class="fc" id="L163">        this.environment = environment;</span>
+<span class="fc" id="L164">        this.resourceContent = resourceContent;</span>
+<span class="fc" id="L165">        this.xacmlVersion = XACMLConstants.XACML_VERSION_2_0;</span>
+<span class="fc" id="L166">    }</span>
+
+    /**
+     * Create a new &lt;code&gt;RequestCtx&lt;/code&gt; by parsing a node. This node should be created by
+     * schema-verified parsing of an &lt;code&gt;XML&lt;/code&gt; document.
+     * 
+     * @param root the node to parse for the &lt;code&gt;RequestCtx&lt;/code&gt;
+     * 
+     * @return a new &lt;code&gt;RequestCtx&lt;/code&gt; constructed by parsing
+     * 
+     * @throws ParsingException if the DOM node is invalid
+     */
+    public static RequestCtx getInstance(Node root) throws ParsingException {
+
+<span class="fc" id="L180">        Set&lt;Subject&gt; newSubjects = new HashSet&lt;Subject&gt;();</span>
+<span class="fc" id="L181">        Set&lt;Attributes&gt; attributesSet =  new HashSet&lt;Attributes&gt;();</span>
+<span class="fc" id="L182">        Node content = null;</span>
+<span class="fc" id="L183">        Set&lt;Attribute&gt; newResource = null;</span>
+<span class="fc" id="L184">        Set&lt;Attribute&gt; newAction = null;</span>
+<span class="fc" id="L185">        Set&lt;Attribute&gt; newEnvironment = null;</span>
+
+        // First check to be sure the node passed is indeed a Request node.
+<span class="fc" id="L188">        String tagName = DOMHelper.getLocalName(root);</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        if (!tagName.equals(&quot;Request&quot;)) {</span>
+<span class="nc" id="L190">            throw new ParsingException(&quot;Request cannot be constructed using &quot; + &quot;type: &quot;</span>
+<span class="nc" id="L191">                    + DOMHelper.getLocalName(root));</span>
+        }
+
+        // Now go through its child nodes, finding Subject,
+        // Resource, Action, and Environment data
+<span class="fc" id="L196">        NodeList children = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L199">            Node node = children.item(i);</span>
+<span class="fc" id="L200">            String tag = DOMHelper.getLocalName(node);</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">            if (tag.equals(&quot;Subject&quot;)) {</span>
+                // see if there is a category
+<span class="fc" id="L203">                Node catNode = node.getAttributes().getNamedItem(&quot;SubjectCategory&quot;);</span>
+<span class="fc" id="L204">                URI category = null;</span>
+
+<span class="fc bfc" id="L206" title="All 2 branches covered.">                if (catNode != null) {</span>
+                    try {
+<span class="fc" id="L208">                        category = new URI(catNode.getNodeValue());</span>
+<span class="nc" id="L209">                    } catch (Exception e) {</span>
+<span class="nc" id="L210">                        throw new ParsingException(&quot;Invalid Category URI&quot;, e);</span>
+<span class="fc" id="L211">                    }</span>
+                }
+                
+                // now we get the attributes
+<span class="fc" id="L215">                Set&lt;Attribute&gt; attributes = parseAttributes(node);</span>
+                // finally, add the list to the set of subject attributes
+<span class="fc" id="L217">                newSubjects.add(new Subject(category, attributes));</span>
+                // finally, add the list to the set of subject attributes
+<span class="fc" id="L219">                attributesSet.add(new Attributes(category, null, attributes, null));</span>
+
+                // make sure that there is at least one Subject
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">                if(newSubjects.size() &lt; 1){</span>
+<span class="nc" id="L223">                    throw new ParsingException(&quot;Request must a contain subject&quot;);</span>
+                }
+
+<span class="fc bfc" id="L226" title="All 2 branches covered.">            } else if (tag.equals(&quot;Resource&quot;)) {</span>
+
+<span class="fc" id="L228">                NodeList nodes = node.getChildNodes();</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">                for (int j = 0; j &lt; nodes.getLength(); j++) {</span>
+<span class="fc" id="L230">                    Node child = nodes.item(j);</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">                    if (DOMHelper.getLocalName(node).equals(XACMLConstants.RESOURCE_CONTENT)) {</span>
+                        // only one value can be in an Attribute
+<span class="nc bnc" id="L233" title="All 2 branches missed.">                        if (content != null){</span>
+<span class="nc" id="L234">                            throw new ParsingException(&quot;Too many resource content elements are defined.&quot;);</span>
+                        }
+                        // now get the value
+<span class="nc" id="L237">                        content = node;</span>
+                    }
+                }
+                // For now, this code doesn't parse the content, since it's
+                // a set of anys with a set of anyAttributes, and therefore
+                // no useful data can be gleaned from it anyway. The theory
+                // here is that it's only useful in the instance doc, so
+                // we won't bother parse it, but we may still want to go
+                // back and provide some support at some point...
+
+<span class="fc" id="L247">                newResource = parseAttributes(node);</span>
+<span class="fc" id="L248">                attributesSet.add(new Attributes(null, content, newResource, null));</span>
+
+<span class="fc bfc" id="L250" title="All 2 branches covered.">            } else if (tag.equals(&quot;Action&quot;)) {</span>
+<span class="fc" id="L251">                newAction = parseAttributes(node);</span>
+<span class="fc" id="L252">                attributesSet.add(new Attributes(null, content, newAction, null));</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">            } else if (tag.equals(&quot;Environment&quot;)) {</span>
+<span class="fc" id="L254">                newEnvironment = parseAttributes(node);</span>
+<span class="fc" id="L255">                attributesSet.add(new Attributes(null, content, newEnvironment, null));</span>
+            }
+        }
+
+        // if we didn't have an environment section, the only optional section
+        // of the four, then create a new empty set for it
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">        if (newEnvironment == null){</span>
+<span class="nc" id="L262">            newEnvironment = new HashSet&lt;Attribute&gt;();</span>
+<span class="nc" id="L263">            attributesSet.add(new Attributes(null, content, newEnvironment, null));</span>
+        }
+        // Now create and return the RequestCtx from the information
+        // gathered
+<span class="fc" id="L267">        return new RequestCtx(attributesSet, root,newSubjects, newResource,</span>
+                newAction, newEnvironment, null);
+    }
+
+    /*
+     * Helper method that parses a set of Attribute types. The Subject, Action and Environment
+     * sections all look like this.
+     */
+    private static Set&lt;Attribute&gt; parseAttributes(Node root) throws ParsingException {
+<span class="fc" id="L276">        Set&lt;Attribute&gt; set = new HashSet&lt;Attribute&gt;();</span>
+
+        // the Environment section is just a list of Attributes
+<span class="fc" id="L279">        NodeList nodes = root.getChildNodes();</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L281">            Node node = nodes.item(i);</span>
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">            if (DOMHelper.getLocalName(node).equals(&quot;Attribute&quot;))</span>
+<span class="fc" id="L283">                set.add(Attribute.getInstance(node, XACMLConstants.XACML_VERSION_2_0));</span>
+        }
+
+<span class="fc" id="L286">        return set;</span>
+    }
+    
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing &lt;code&gt;Subject&lt;/code&gt; objects.
+     *
+     * @return the request's subject attributes
+     */
+    public Set getSubjects() {
+<span class="fc" id="L295">        return subjects;</span>
+    }
+
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing &lt;code&gt;Attribute&lt;/code&gt; objects.
+     *
+     * @return the request's resource attributes
+     */
+    public Set getResource() {
+<span class="fc" id="L304">        return resource;</span>
+    }
+
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing &lt;code&gt;Attribute&lt;/code&gt; objects.
+     *
+     * @return the request's action attributes
+     */
+    public Set getAction() {
+<span class="fc" id="L313">        return action;</span>
+    }
+
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing &lt;code&gt;Attribute&lt;/code&gt; objects.
+     *
+     * @return the request's environment attributes
+     */
+    public Set getEnvironmentAttributes() {
+<span class="fc" id="L322">        return environment;</span>
+    }
+
+    /**
+     * Returns the root DOM node of the document used to create this object, or null if this object
+     * was created by hand (ie, not through the &lt;code&gt;getInstance&lt;/code&gt; method) or if the root node
+     * was not provided to the constructor.
+     *
+     * @return the root DOM node or null
+     */
+    public Node getDocumentRoot() {
+<span class="fc" id="L333">        return documentRoot;</span>
+    }    
+
+    /**
+     * Encodes this  &lt;code&gt;AbstractRequestCtx&lt;/code&gt;  into its XML representation and writes this encoding to the given
+     * &lt;code&gt;OutputStream&lt;/code&gt;. No indentation is used.
+     * 
+     * @param output a stream into which the XML-encoded data is written
+     */
+    public void encode(OutputStream output) {
+<span class="nc" id="L343">        encode(output, new Indenter(0));</span>
+<span class="nc" id="L344">    }</span>
+
+    /**
+     * Encodes this  &lt;code&gt;AbstractRequestCtx&lt;/code&gt;  into its XML representation and writes this encoding to the given
+     * &lt;code&gt;OutputStream&lt;/code&gt; with indentation.
+     * 
+     * @param output a stream into which the XML-encoded data is written
+     * @param indenter an object that creates indentation strings
+     */
+    public void encode(OutputStream output, Indenter indenter) {
+
+        // Make a PrintStream for a nicer printing interface
+<span class="nc" id="L356">        PrintStream out = new PrintStream(output);</span>
+
+        // Prepare the indentation string
+<span class="nc" id="L359">        String topIndent = indenter.makeString();</span>
+<span class="nc" id="L360">        out.println(topIndent + &quot;&lt;Request xmlns=\&quot;&quot; + XACMLConstants.REQUEST_CONTEXT_2_0_IDENTIFIER + &quot;\&quot; &gt;&quot;);</span>
+
+        // go in one more for next-level elements...
+<span class="nc" id="L363">        indenter.in();</span>
+<span class="nc" id="L364">        String indent = indenter.makeString();</span>
+
+        // ...and go in again for everything else
+<span class="nc" id="L367">        indenter.in();</span>
+
+        // first off, go through all subjects
+<span class="nc" id="L370">        Iterator it = subjects.iterator();</span>
+<span class="nc bnc" id="L371" title="All 2 branches missed.">        while (it.hasNext()) {</span>
+<span class="nc" id="L372">            Subject subject = (Subject) (it.next());</span>
+
+<span class="nc" id="L374">            out.print(indent + &quot;&lt;Subject SubjectCategory=\&quot;&quot; + subject.getCategory().toString()</span>
+                    + &quot;\&quot;&quot;);
+
+<span class="nc" id="L377">            Set subjectAttrs = subject.getAttributes();</span>
+
+<span class="nc bnc" id="L379" title="All 2 branches missed.">            if (subjectAttrs.size() == 0) {</span>
+                // there's nothing in this Subject, so just close the tag
+<span class="nc" id="L381">                out.println(&quot;/&gt;&quot;);</span>
+            } else {
+                // there's content, so fill it in
+<span class="nc" id="L384">                out.println(&quot;&gt;&quot;);</span>
+
+<span class="nc" id="L386">                encodeAttributes(subjectAttrs, out, indenter);</span>
+
+<span class="nc" id="L388">                out.println(indent + &quot;&lt;/Subject&gt;&quot;);</span>
+            }
+<span class="nc" id="L390">        }</span>
+
+        // next do the resource
+<span class="nc bnc" id="L393" title="All 4 branches missed.">        if ((resource.size() != 0) || (resourceContent != null)) {</span>
+<span class="nc" id="L394">            out.println(indent + &quot;&lt;Resource&gt;&quot;);</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">            if (resourceContent != null)</span>
+<span class="nc" id="L396">                out.println(indenter.makeString() + &quot;&lt;ResourceContent&gt;&quot; + resourceContent</span>
+                        + &quot;&lt;/ResourceContent&gt;&quot;);
+<span class="nc" id="L398">            encodeAttributes(resource, out, indenter);</span>
+<span class="nc" id="L399">            out.println(indent + &quot;&lt;/Resource&gt;&quot;);</span>
+        } else {
+<span class="nc" id="L401">            out.println(indent + &quot;&lt;Resource/&gt;&quot;);</span>
+        }
+
+        // now the action
+<span class="nc bnc" id="L405" title="All 2 branches missed.">        if (action.size() != 0) {</span>
+<span class="nc" id="L406">            out.println(indent + &quot;&lt;Action&gt;&quot;);</span>
+<span class="nc" id="L407">            encodeAttributes(action, out, indenter);</span>
+<span class="nc" id="L408">            out.println(indent + &quot;&lt;/Action&gt;&quot;);</span>
+        } else {
+<span class="nc" id="L410">            out.println(indent + &quot;&lt;Action/&gt;&quot;);</span>
+        }
+
+        // finally the environment, if there are any attrs
+<span class="nc bnc" id="L414" title="All 2 branches missed.">        if (environment.size() != 0) {</span>
+<span class="nc" id="L415">            out.println(indent + &quot;&lt;Environment&gt;&quot;);</span>
+<span class="nc" id="L416">            encodeAttributes(environment, out, indenter);</span>
+<span class="nc" id="L417">            out.println(indent + &quot;&lt;/Environment&gt;&quot;);</span>
+        }
+
+        // we're back to the top
+<span class="nc" id="L421">        indenter.out();</span>
+<span class="nc" id="L422">        indenter.out();</span>
+
+<span class="nc" id="L424">        out.println(topIndent + &quot;&lt;/Request&gt;&quot;);</span>
+<span class="nc" id="L425">    }</span>
+
+    /**
+     * Private helper function to encode the attribute sets
+     */
+    private void encodeAttributes(Set attributes, PrintStream out, Indenter indenter) {
+<span class="nc" id="L431">        indenter.in();</span>
+        
+<span class="nc" id="L433">        Iterator it = attributes.iterator();</span>
+<span class="nc bnc" id="L434" title="All 2 branches missed.">        while (it.hasNext()) {</span>
+<span class="nc" id="L435">            Attribute attr = (Attribute) (it.next());</span>
+<span class="nc" id="L436">            out.print(indenter.makeString() + attr.encode());</span>
+<span class="nc" id="L437">        }</span>
+        
+<span class="nc" id="L439">        indenter.out();</span>
+<span class="nc" id="L440">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

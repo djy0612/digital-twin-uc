@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Condition.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">Condition.java</span></div><h1>Condition.java</h1><pre class="source lang-java linenums">/*
+ * @(#)Condition.java
+ *
+ * Copyright 2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.*;
+
+import org.wso2.balana.attr.BooleanAttribute;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import java.net.URI;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.ctx.EvaluationCtx;
+
+/**
+ * Represents the XACML ConditionType type. It contains exactly one child expression that is boolean
+ * and returns a single value. This class was added in XACML 2.0
+ * 
+ * @since 2.0
+ * @author Seth Proctor
+ */
+public class Condition implements Evaluatable {
+
+    // a local Boolean URI that is used as the return type
+    private static URI booleanIdentifier;
+
+    // regardless of version, this contains the Condition's children
+    private List&lt;Expression&gt; children;
+
+    // regardless of version, this is an expression that can be evaluated
+    // directly
+    private Expression expression;
+
+    // the condition function, which is only used if this is a 1.x condition
+    private Function function;
+
+    // flags whether this is XACML 1.x or 2.0
+    private boolean isVersionOne;
+
+    // initialize the boolean identifier
+    static {
+        try {
+<span class="fc" id="L84">            booleanIdentifier = new URI(BooleanAttribute.identifier);</span>
+<span class="nc" id="L85">        } catch (Exception e) {</span>
+            // we ignore this, since it cannot happen, but it should be
+            // flagged in case something changes to trip this case
+<span class="nc" id="L88">            booleanIdentifier = null;</span>
+<span class="fc" id="L89">        }</span>
+<span class="fc" id="L90">    }</span>
+
+    /**
+     * Constructs a &lt;code&gt;Condition&lt;/code&gt; as used in XACML 1.x.
+     * 
+     * @param function the &lt;code&gt;Function&lt;/code&gt; to use in evaluating the elements in the Condition
+     * @param expressions the contents of the Condition which will be the parameters to the function, each
+     *            of which is an &lt;code&gt;Expression&lt;/code&gt;
+     * 
+     * @throws IllegalArgumentException if the input expressions don't match the signature of the
+     *             function or if the function is invalid for use in a Condition
+     */
+<span class="nc" id="L102">    public Condition(Function function, List expressions) throws IllegalArgumentException {</span>
+<span class="nc" id="L103">        isVersionOne = true;</span>
+
+        // check that the function is valid for a Condition
+<span class="nc" id="L106">        checkExpression(function);</span>
+
+        // turn the parameters into an Apply for simplicity
+<span class="nc" id="L109">        expression = new Apply(function, expressions);</span>
+
+        // keep track of the function and the children
+<span class="nc" id="L112">        this.function = function;</span>
+<span class="nc" id="L113">        children = ((Apply) expression).getChildren();</span>
+<span class="nc" id="L114">    }</span>
+
+    /**
+     * Constructs a &lt;code&gt;Condition&lt;/code&gt; as used in XACML 2.0.
+     * 
+     * @param expression the child &lt;code&gt;Expression&lt;/code&gt;
+     * 
+     * @throws IllegalArgumentException if the expression is not boolean or returns a bag
+     */
+<span class="fc" id="L123">    public Condition(Expression expression) throws IllegalArgumentException {</span>
+<span class="fc" id="L124">        isVersionOne = false;</span>
+
+        // check that the function is valid for a Condition
+<span class="fc" id="L127">        checkExpression(expression);</span>
+
+        // store the expression
+<span class="fc" id="L130">        this.expression = expression;</span>
+
+        // there is no function in a 2.0 Condition
+<span class="fc" id="L133">        function = null;</span>
+
+        // store the expression as the child
+<span class="fc" id="L136">        List list = new ArrayList();</span>
+<span class="fc" id="L137">        list.add(this.expression);</span>
+<span class="fc" id="L138">        children = Collections.unmodifiableList(list);</span>
+<span class="fc" id="L139">    }</span>
+
+    /**
+     * Private helper for the constructors that checks if a given expression is valid for the root
+     * of a Condition
+     */
+    private void checkExpression(Expression xpr) {
+        // make sure it's a boolean expression...
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        if (!xpr.getType().equals(booleanIdentifier))</span>
+<span class="nc" id="L148">            throw new IllegalArgumentException(&quot;A Condition must return a &quot;</span>
+<span class="nc" id="L149">                    + &quot;boolean...cannot create &quot; + &quot;with &quot; + xpr.getType());</span>
+
+        // ...and that it never returns a bag
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">        if (xpr.returnsBag())</span>
+<span class="nc" id="L153">            throw new IllegalArgumentException(&quot;A Condition must not return &quot; + &quot;a Bag&quot;);</span>
+<span class="fc" id="L154">    }</span>
+
+    /**
+     * Returns an instance of &lt;code&gt;Condition&lt;/code&gt; based on the given DOM root.
+     * 
+     * @param root the DOM root of a ConditionType XML type
+     * @param metaData the meta-data associated with the containing policy
+     * @param manager &lt;code&gt;VariableManager&lt;/code&gt; used to connect references and definitions while
+     *            parsing
+     * 
+     * @throws ParsingException if this is not a valid ConditionType
+     */
+    public static Condition getInstance(Node root, PolicyMetaData metaData, VariableManager manager)
+            throws ParsingException {
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (metaData.getXACMLVersion() &lt; XACMLConstants.XACML_VERSION_2_0) {</span>
+<span class="nc" id="L169">            Apply cond = Apply.getConditionInstance(root, metaData.getXPathIdentifier(), manager);</span>
+<span class="nc" id="L170">            return new Condition(cond.getFunction(), cond.getChildren());</span>
+        } else {
+<span class="fc" id="L172">            Expression xpr = null;</span>
+<span class="fc" id="L173">            NodeList nodes = root.getChildNodes();</span>
+
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">            for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">                if (nodes.item(i).getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="fc" id="L177">                    xpr = ExpressionHandler.parseExpression(nodes.item(i), metaData, manager);</span>
+<span class="fc" id="L178">                    break;</span>
+                }
+            }
+
+<span class="fc" id="L182">            return new Condition(xpr);</span>
+        }
+    }
+
+    /**
+     * Returns the &lt;code&gt;Function&lt;/code&gt; used by this &lt;code&gt;Condition&lt;/code&gt; if this is a 1.x
+     * condition, or null if this is a 2.0 condition.
+     * 
+     * @return a &lt;code&gt;Function&lt;/code&gt; or null
+     */
+    public Function getFunction() {
+<span class="nc" id="L193">        return function;</span>
+    }
+
+    /**
+     * Returns the &lt;code&gt;List&lt;/code&gt; of children for this &lt;code&gt;Condition&lt;/code&gt;. The
+     * &lt;code&gt;List&lt;/code&gt; contains &lt;code&gt;Expression&lt;/code&gt;s. The list is unmodifiable.
+     * 
+     * @return a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Expression&lt;/code&gt;s
+     */
+    public List getChildren() {
+<span class="nc" id="L203">        return children;</span>
+    }
+
+    /**
+     * Returns the type of attribute that this object will return on a call to &lt;code&gt;evaluate&lt;/code&gt;
+     * . This is always a boolean, since that's all that a Condition is allowed to return.
+     * 
+     * @return the boolean type
+     */
+    public URI getType() {
+<span class="nc" id="L213">        return booleanIdentifier;</span>
+    }
+
+    /**
+     * Returns whether or not this &lt;code&gt;Condition&lt;/code&gt; will return a bag of values on evaluation.
+     * This always returns false, since a Condition isn't allowed to return a bag.
+     * 
+     * @return false
+     */
+    public boolean returnsBag() {
+<span class="nc" id="L223">        return false;</span>
+    }
+
+    /**
+     * Returns whether or not this &lt;code&gt;Condition&lt;/code&gt; will return a bag of values on evaluation.
+     * This always returns false, since a Condition isn't allowed to return a bag.
+     * 
+     * @deprecated As of 2.0, you should use the &lt;code&gt;returnsBag&lt;/code&gt; method from the
+     *             super-interface &lt;code&gt;Expression&lt;/code&gt;.
+     * 
+     * @return false
+     */
+    public boolean evaluatesToBag() {
+<span class="nc" id="L236">        return false;</span>
+    }
+
+    /**
+     * Evaluates the &lt;code&gt;Condition&lt;/code&gt; by evaluating its child &lt;code&gt;Expression&lt;/code&gt;.
+     * 
+     * @param context the representation of the request
+     * 
+     * @return the result of trying to evaluate this condition object
+     */
+    public EvaluationResult evaluate(EvaluationCtx context) {
+        // Note that it's technically possible for this expression to
+        // be something like a Function, which isn't Evaluatable. It
+        // wouldn't make sense to have this, but it is possible. Because
+        // it makes no sense, however, it's unlcear exactly what the
+        // error should be, so raising the ClassCastException here seems
+        // as good an approach as any for now...
+<span class="fc" id="L253">        return ((Evaluatable) expression).evaluate(context);</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;Condition&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="nc" id="L262">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L263">        encode(builder);</span>
+<span class="nc" id="L264">        return builder.toString();</span>
+    }
+
+
+    /**
+     * Encodes this &lt;code&gt;Condition&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="nc bnc" id="L276" title="All 2 branches missed.">        if (isVersionOne) {</span>
+<span class="nc" id="L277">            builder.append(&quot;&lt;Condition FunctionId=\&quot;&quot;).append(function.getIdentifier()).append(&quot;\&quot;&gt;\n&quot;);</span>
+
+<span class="nc bnc" id="L279" title="All 2 branches missed.">            for (Expression aChildren : children) {</span>
+<span class="nc" id="L280">                aChildren.encode(builder);</span>
+<span class="nc" id="L281">            }</span>
+        } else {
+<span class="nc" id="L283">            builder.append(&quot;&lt;Condition&gt;\n&quot;);</span>
+<span class="nc" id="L284">            expression.encode(builder);</span>
+        }
+
+<span class="nc" id="L287">        builder.append(&quot;&lt;/Condition&gt;\n&quot;);</span>
+<span class="nc" id="L288">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

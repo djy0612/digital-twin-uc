@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TargetMatchGroup.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.xacml2</a> &gt; <span class="el_source">TargetMatchGroup.java</span></div><h1>TargetMatchGroup.java</h1><pre class="source lang-java linenums">/*
+ * @(#)TargetMatchGroup.java
+ *
+ * Copyright 2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.xacml2;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.*;
+import org.wso2.balana.ctx.EvaluationCtx;
+
+/**
+ * This class contains a group of &lt;code&gt;TargetMatch&lt;/code&gt; instances and represents the Subject,
+ * Resource, Action, and Environment elements in an XACML Target.
+ * 
+ * @since 2.0
+ * @author Seth Proctor
+ */
+public class TargetMatchGroup {
+
+    // the list of matches
+    private List&lt;TargetMatch&gt; matches;
+
+    // the match type contained in this group
+    private int matchType;
+
+    // the logger we'll use for all messages
+<span class="fc" id="L69">    private static final Log logger = LogFactory.getLog(TargetMatchGroup.class);</span>
+
+
+    /**
+     * Constructor that creates a new &lt;code&gt;TargetMatchGroup&lt;/code&gt; based on the given elements.
+     * 
+     * @param matchElements a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;TargetMatch&lt;/code&gt;
+     * @param matchType the match type as defined in &lt;code&gt;TargetMatch&lt;/code&gt;
+     */
+<span class="fc" id="L78">    public TargetMatchGroup(List&lt;TargetMatch&gt; matchElements, int matchType) {</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (matchElements == null)</span>
+<span class="nc" id="L80">            matches = Collections.unmodifiableList(new ArrayList&lt;TargetMatch&gt;());</span>
+        else
+<span class="fc" id="L82">            matches = Collections.unmodifiableList(new ArrayList&lt;TargetMatch&gt;(matchElements));</span>
+<span class="fc" id="L83">        this.matchType = matchType;</span>
+<span class="fc" id="L84">    }</span>
+
+    /**
+     * Creates a &lt;code&gt;Target&lt;/code&gt; based on its DOM node.
+     * 
+     * @param root the node to parse for the target group
+     * @param matchType the type of the match
+     * @param metaData meta-date associated with the policy
+     * 
+     * @return a new &lt;code&gt;TargetMatchGroup&lt;/code&gt; constructed by parsing
+     * 
+     * @throws org.wso2.balana.ParsingException if the DOM node is invalid
+     */
+    public static TargetMatchGroup getInstance(Node root, int matchType, PolicyMetaData metaData)
+            throws ParsingException {
+<span class="fc" id="L99">        List&lt;TargetMatch&gt; matches = new ArrayList&lt;TargetMatch&gt;();</span>
+<span class="fc" id="L100">        NodeList children = root.getChildNodes();</span>
+
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        for (int i = 0; i &lt; children.getLength(); i++) {</span>
+<span class="fc" id="L103">            Node child = children.item(i);</span>
+<span class="fc" id="L104">            String name = DOMHelper.getLocalName(child);</span>
+<span class="fc" id="L105">            String matchName = TargetMatch.NAMES[matchType] + &quot;Match&quot;;</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if (name.equals(matchName)) {</span>
+<span class="fc" id="L107">                matches.add(TargetMatch.getInstance(child, matchType, metaData));</span>
+            }
+        }
+
+<span class="fc" id="L111">        return new TargetMatchGroup(matches, matchType);</span>
+    }
+
+    /**
+     * Determines whether this &lt;code&gt;TargetMatchGroup&lt;/code&gt; matches the input request (whether it
+     * is applicable).
+     * 
+     * @param context the representation of the request
+     * 
+     * @return the result of trying to match the group with the context
+     */
+    public MatchResult match(EvaluationCtx context) {
+<span class="fc" id="L123">        MatchResult result = null;</span>
+        
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (matches.isEmpty()) {</span>
+            // nothing in target, return match
+<span class="nc" id="L127">            return new MatchResult(MatchResult.MATCH);</span>
+        }
+
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (TargetMatch targetMatch : matches) {</span>
+<span class="fc" id="L131">            result = targetMatch.match(context);</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            if (result.getResult() != MatchResult.MATCH)</span>
+<span class="fc" id="L133">                break;</span>
+<span class="fc" id="L134">        }</span>
+
+<span class="fc" id="L136">        return result;</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;TargetMatchGroup&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="nc" id="L145">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L146">        encode(builder);</span>
+<span class="nc" id="L147">        return builder.toString();</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;TargetMatchGroup&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L158">        String name = TargetMatch.NAMES[matchType];</span>
+
+<span class="nc" id="L160">        builder.append(&quot;&lt;&quot;).append(name).append(&quot;&gt;\n&quot;);</span>
+
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        for (TargetMatch targetMatch : matches) {</span>
+<span class="nc" id="L163">            targetMatch.encode(builder);</span>
+<span class="nc" id="L164">        }</span>
+
+<span class="nc" id="L166">        builder.append(&quot;&lt;/&quot;).append(name).append(&quot;&gt;\n&quot;);</span>
+<span class="nc" id="L167">    }</span>
+
+    
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

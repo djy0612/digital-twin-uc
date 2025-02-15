@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Balana.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana</a> &gt; <span class="el_source">Balana.java</span></div><h1>Balana.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+package org.wso2.balana;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.wso2.balana.attr.AttributeFactory;
+import org.wso2.balana.combine.CombiningAlgFactory;
+import org.wso2.balana.cond.FunctionFactory;
+import org.wso2.balana.finder.AttributeFinder;
+import org.wso2.balana.finder.AttributeFinderModule;
+import org.wso2.balana.finder.PolicyFinder;
+import org.wso2.balana.finder.PolicyFinderModule;
+import org.wso2.balana.finder.impl.CurrentEnvModule;
+import org.wso2.balana.finder.impl.FileBasedPolicyFinderModule;
+import org.wso2.balana.finder.impl.SelectorModule;
+import org.wso2.balana.utils.Utils;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * This is the core class for the Balana project providing the init point of Balana engine.
+ *
+ */
+public class Balana {
+
+    /**
+     * PDP configuration of Balana engine  instance
+     */
+    private PDPConfig pdpConfig;
+
+    /**
+     * Attribute factory that supports in Balana engine instance
+     */
+    private AttributeFactory attributeFactory;
+
+    /**
+     * Target Function factory that supports in Balana engine instance
+     */
+    private FunctionFactory functionTargetFactory;
+
+    /**
+     * Condition Function factory that supports in Balana engine instance
+     */
+    private FunctionFactory functionConditionFactory;
+
+    /**
+     * General function factory that supports in Balana engine instance
+     */
+    private FunctionFactory functionGeneralFactory;
+
+    /**
+     * combining factory that supports in Balana engine instance
+     */
+    private CombiningAlgFactory combiningAlgFactory;
+
+    /**
+     * builders to build XACML request
+     */
+    private DocumentBuilderFactory builder;
+
+    /**
+     * lock
+     */
+<span class="fc" id="L86">    private final static Object lock = new Object();</span>
+
+    /**
+     * One instance of Balana engine is created.
+     */
+    private static Balana balana;
+
+    /**
+     * Logger instance
+     */
+<span class="fc" id="L96">    private static final Log logger = LogFactory.getLog(Balana.class);</span>
+
+    /**
+     * This constructor creates the Balana engine instance. First, it loads all configuration
+     * from store and creates Balan engine with given configuration names.
+     * If no configuration name is given, loads default configurations of the configuration store.
+     * If configuration store does not configured or any error in building, It create default Balana
+     * engine.
+     *
+     * @param pdpConfigName pdp configuration name
+     * @param attributeFactoryName  attribute factory name
+     * @param functionFactoryName  function factory name
+     * @param combiningAlgFactoryName combine factory name
+     */
+    private Balana(String pdpConfigName, String attributeFactoryName, String functionFactoryName,
+<span class="fc" id="L111">                                                                String combiningAlgFactoryName) {</span>
+<span class="fc" id="L112">        ConfigurationStore  store = null;</span>
+
+        try {
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">            if(System.getProperty(ConfigurationStore.PDP_CONFIG_PROPERTY) != null){</span>
+<span class="nc" id="L116">                store = new ConfigurationStore();</span>
+            } else {
+<span class="fc" id="L118">                String configFile = (new File(&quot;.&quot;)).getCanonicalPath() + File.separator + &quot;src&quot; +</span>
+                File.separator + &quot;main&quot; + File.separator +  &quot;resources&quot; + File.separator + &quot;config.xml&quot;;
+<span class="fc" id="L120">                File file = new File(configFile);</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">                if(file.exists()) {</span>
+<span class="fc" id="L122">                    store = new ConfigurationStore(new File(configFile));</span>
+                }
+            }
+
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">            if(store != null){</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">                if(pdpConfigName != null){</span>
+<span class="nc" id="L128">                    pdpConfig = store.getPDPConfig(pdpConfigName);</span>
+                } else {
+<span class="fc" id="L130">                    pdpConfig = store.getDefaultPDPConfig();</span>
+                }
+
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">                if(attributeFactoryName != null){</span>
+<span class="nc" id="L134">                    this.attributeFactory = store.getAttributeFactory(attributeFactoryName);</span>
+                } else {
+<span class="fc" id="L136">                    this.attributeFactory = store.getDefaultAttributeFactoryProxy().getFactory();</span>
+                }
+
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">                if(functionFactoryName != null){</span>
+<span class="nc" id="L140">                    this.functionTargetFactory = store.</span>
+<span class="nc" id="L141">                                    getFunctionFactoryProxy(functionFactoryName).getTargetFactory();</span>
+                } else {
+<span class="fc" id="L143">                    this.functionTargetFactory = store.</span>
+<span class="fc" id="L144">                                    getDefaultFunctionFactoryProxy().getTargetFactory();</span>
+                }
+
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">                if(functionFactoryName != null){</span>
+<span class="nc" id="L148">                    this.functionConditionFactory = store.</span>
+<span class="nc" id="L149">                                    getFunctionFactoryProxy(functionFactoryName).getConditionFactory();</span>
+                } else {
+<span class="fc" id="L151">                    this.functionConditionFactory = store.</span>
+<span class="fc" id="L152">                                    getDefaultFunctionFactoryProxy().getConditionFactory();</span>
+                }
+
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">                if(functionFactoryName != null){</span>
+<span class="nc" id="L156">                    this.functionGeneralFactory = store.</span>
+<span class="nc" id="L157">                                    getFunctionFactoryProxy(functionFactoryName).getGeneralFactory();</span>
+                } else {
+<span class="fc" id="L159">                    this.functionGeneralFactory = store.</span>
+<span class="fc" id="L160">                                    getDefaultFunctionFactoryProxy().getGeneralFactory();</span>
+                }
+
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">                if(functionFactoryName != null){</span>
+<span class="nc" id="L164">                    this.combiningAlgFactory = store.getCombiningAlgFactory(functionFactoryName);</span>
+                } else {
+<span class="fc" id="L166">                    this.combiningAlgFactory = store.getDefaultCombiningFactoryProxy().getFactory();</span>
+                }
+            }
+
+<span class="nc" id="L170">        } catch (Exception e) {</span>
+            // just ignore all exceptions as all are init again with default configurations
+<span class="fc" id="L172">        }</span>
+
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if(pdpConfig == null){</span>
+            
+            //creating default one with Balana engine.
+<span class="nc" id="L177">            PolicyFinder policyFinder = new PolicyFinder();</span>
+<span class="nc" id="L178">            Set&lt;PolicyFinderModule&gt; policyFinderModules = new HashSet&lt;PolicyFinderModule&gt;();</span>
+<span class="nc" id="L179">            FileBasedPolicyFinderModule fileBasedPolicyFinderModule = new FileBasedPolicyFinderModule();</span>
+<span class="nc" id="L180">            policyFinderModules.add(fileBasedPolicyFinderModule);</span>
+<span class="nc" id="L181">            policyFinder.setModules(policyFinderModules);</span>
+
+<span class="nc" id="L183">            AttributeFinder attributeFinder = new AttributeFinder();</span>
+<span class="nc" id="L184">            List&lt;AttributeFinderModule&gt; attributeFinderModules = new ArrayList&lt;AttributeFinderModule&gt;();</span>
+<span class="nc" id="L185">            SelectorModule selectorModule = new SelectorModule();</span>
+<span class="nc" id="L186">            CurrentEnvModule currentEnvModule = new CurrentEnvModule();</span>
+<span class="nc" id="L187">            attributeFinderModules.add(selectorModule);</span>
+<span class="nc" id="L188">            attributeFinderModules.add(currentEnvModule);</span>
+<span class="nc" id="L189">            attributeFinder.setModules(attributeFinderModules);</span>
+                        
+<span class="nc" id="L191">            pdpConfig = new PDPConfig(attributeFinder, policyFinder, null, false);</span>
+        }
+
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if(attributeFactory == null){</span>
+<span class="nc" id="L195">            attributeFactory = AttributeFactory.getInstance();</span>
+        }
+
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">        if(functionTargetFactory == null){</span>
+<span class="nc" id="L199">            functionTargetFactory = FunctionFactory.getInstance().getTargetFactory();</span>
+        }
+
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if(functionConditionFactory == null){</span>
+<span class="nc" id="L203">            functionConditionFactory = FunctionFactory.getInstance().getConditionFactory();</span>
+        }
+
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">        if(functionGeneralFactory == null){</span>
+<span class="nc" id="L207">            functionGeneralFactory = FunctionFactory.getInstance().getGeneralFactory();</span>
+        }
+
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">        if(combiningAlgFactory == null){</span>
+<span class="nc" id="L211">            combiningAlgFactory = CombiningAlgFactory.getInstance();</span>
+        }
+
+        // init builder
+<span class="fc" id="L215">        this.builder = Utils.getSecuredDocumentBuilderFactory();</span>
+<span class="fc" id="L216">    }</span>
+
+    /**
+     * Get instance of Balana engine
+     *
+     * @return returns &lt;code&gt;Balana&lt;/code&gt;
+     */
+    public static Balana getInstance(){
+
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        if(balana == null){</span>
+<span class="fc" id="L226">            synchronized (lock){</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">                if(balana == null){</span>
+<span class="fc" id="L228">                    balana = new Balana(null, null, null, null);</span>
+                }
+<span class="pc" id="L230">            }</span>
+        }
+
+<span class="fc" id="L233">        return balana;</span>
+    }
+
+    /**
+     * Get instance of Balana engine for given common identifier
+     *
+     * @param identifier identifier name
+     * @return returns &lt;code&gt;Balana&lt;/code&gt;
+     */
+    public Balana getInstance(String identifier){
+
+<span class="nc bnc" id="L244" title="All 2 branches missed.">        if(balana == null){</span>
+<span class="nc" id="L245">            synchronized (lock){</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">                if(balana == null){</span>
+<span class="nc" id="L247">                    balana = new Balana(identifier, identifier, identifier, identifier);</span>
+                }
+<span class="nc" id="L249">            }</span>
+        }
+
+<span class="nc" id="L252">        return balana;</span>
+    }
+
+    /**
+     * Get instance of Balana engine for given identifiers
+     *
+     * @param pdpConfigName pdp configuration name
+     * @param attributeFactoryName  attribute factory name
+     * @param functionFactoryName  function factory name
+     * @param combiningAlgFactoryName combine factory name
+     * @return returns &lt;code&gt;Balana&lt;/code&gt;
+     */
+    public Balana getInstance(String pdpConfigName, String attributeFactoryName, String functionFactoryName,
+                                                                String combiningAlgFactoryName){
+<span class="nc bnc" id="L266" title="All 2 branches missed.">        if(balana == null){</span>
+<span class="nc" id="L267">            synchronized (lock){</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">                if(balana == null){</span>
+<span class="nc" id="L269">                    balana = new Balana(pdpConfigName, attributeFactoryName, functionFactoryName,</span>
+                                                                        combiningAlgFactoryName);
+                }
+<span class="nc" id="L272">            }</span>
+        }
+<span class="nc" id="L274">        return balana;</span>
+    }
+
+
+    public PDPConfig getPdpConfig() {
+<span class="fc" id="L279">        return pdpConfig;</span>
+    }
+
+    public void setPdpConfig(PDPConfig pdpConfig) {
+<span class="nc" id="L283">        this.pdpConfig = pdpConfig;</span>
+<span class="nc" id="L284">    }</span>
+
+    public AttributeFactory getAttributeFactory() {
+<span class="fc" id="L287">        return attributeFactory;</span>
+    }
+
+    public void setAttributeFactory(AttributeFactory attributeFactory) {
+<span class="nc" id="L291">        this.attributeFactory = attributeFactory;</span>
+<span class="nc" id="L292">    }</span>
+
+    public FunctionFactory getFunctionTargetFactory() {
+<span class="nc" id="L295">        return functionTargetFactory;</span>
+    }
+
+    public void setFunctionTargetFactory(FunctionFactory functionTargetFactory) {
+<span class="nc" id="L299">        this.functionTargetFactory = functionTargetFactory;</span>
+<span class="nc" id="L300">    }</span>
+
+    public FunctionFactory getFunctionConditionFactory() {
+<span class="nc" id="L303">        return functionConditionFactory;</span>
+    }
+
+    public void setFunctionConditionFactory(FunctionFactory functionConditionFactory) {
+<span class="nc" id="L307">        this.functionConditionFactory = functionConditionFactory;</span>
+<span class="nc" id="L308">    }</span>
+
+    public FunctionFactory getFunctionGeneralFactory() {
+<span class="nc" id="L311">        return functionGeneralFactory;</span>
+    }
+
+    public void setFunctionGeneralFactory(FunctionFactory functionGeneralFactory) {
+<span class="nc" id="L315">        this.functionGeneralFactory = functionGeneralFactory;</span>
+<span class="nc" id="L316">    }</span>
+
+    public CombiningAlgFactory getCombiningAlgFactory() {
+<span class="fc" id="L319">        return combiningAlgFactory;</span>
+    }
+
+    public void setCombiningAlgFactory(CombiningAlgFactory combiningAlgFactory) {
+<span class="nc" id="L323">        this.combiningAlgFactory = combiningAlgFactory;</span>
+<span class="nc" id="L324">    }</span>
+
+    public DocumentBuilderFactory getBuilder() {
+<span class="nc" id="L327">        return builder;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

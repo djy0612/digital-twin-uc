@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SetFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">SetFunction.java</span></div><h1>SetFunction.java</h1><pre class="source lang-java linenums">/*
+ * @(#)SetFunction.java
+ *
+ * Copyright 2003-2006 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.attr.AnyURIAttribute;
+import org.wso2.balana.attr.Base64BinaryAttribute;
+import org.wso2.balana.attr.BooleanAttribute;
+import org.wso2.balana.attr.DateAttribute;
+import org.wso2.balana.attr.DateTimeAttribute;
+import org.wso2.balana.attr.DayTimeDurationAttribute;
+import org.wso2.balana.attr.DNSNameAttribute;
+import org.wso2.balana.attr.DoubleAttribute;
+import org.wso2.balana.attr.HexBinaryAttribute;
+import org.wso2.balana.attr.IntegerAttribute;
+import org.wso2.balana.attr.IPAddressAttribute;
+import org.wso2.balana.attr.RFC822NameAttribute;
+import org.wso2.balana.attr.StringAttribute;
+import org.wso2.balana.attr.TimeAttribute;
+import org.wso2.balana.attr.X500NameAttribute;
+import org.wso2.balana.attr.YearMonthDurationAttribute;
+
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Represents all of the Set functions, though the actual implementations are in two sub-classes
+ * specific to the condition and general set functions.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public abstract class SetFunction extends FunctionBase {
+
+    /**
+     * Base name for the type-intersection funtions. To get the standard identifier for a given
+     * type, use &lt;code&gt;FunctionBase.FUNCTION_NS&lt;/code&gt; + the datatype's base name (e.g.,
+     * &lt;code&gt;string&lt;/code&gt;) + &lt;/code&gt;NAME_BASE_INTERSECTION&lt;/code&gt;.
+     */
+    public static final String NAME_BASE_INTERSECTION = &quot;-intersection&quot;;
+
+    /**
+     * Base name for the type-at-least-one-member-of funtions. To get the standard identifier for a
+     * given type, use &lt;code&gt;FunctionBase.FUNCTION_NS&lt;/code&gt; + the datatype's base name (e.g.,
+     * &lt;code&gt;string&lt;/code&gt;) + &lt;/code&gt;NAME_BASE_AT_LEAST_ONE_MEMBER_OF&lt;/code&gt;.
+     */
+    public static final String NAME_BASE_AT_LEAST_ONE_MEMBER_OF = &quot;-at-least-one-member-of&quot;;
+
+    /**
+     * Base name for the type-union funtions. To get the standard identifier for a given type, use
+     * &lt;code&gt;FunctionBase.FUNCTION_NS&lt;/code&gt; + the datatype's base name (e.g., &lt;code&gt;string&lt;/code&gt;)
+     * + &lt;/code&gt;NAME_BASE_UNION&lt;/code&gt;.
+     */
+    public static final String NAME_BASE_UNION = &quot;-union&quot;;
+
+    /**
+     * Base name for the type-subset funtions. To get the standard identifier for a given type, use
+     * &lt;code&gt;FunctionBase.FUNCTION_NS&lt;/code&gt; + the datatype's base name (e.g., &lt;code&gt;string&lt;/code&gt;)
+     * + &lt;/code&gt;NAME_BASE_SUBSET&lt;/code&gt;.
+     */
+    public static final String NAME_BASE_SUBSET = &quot;-subset&quot;;
+
+    /**
+     * Base name for the type-set-equals funtions. To get the standard identifier for a given type,
+     * use &lt;code&gt;FunctionBase.FUNCTION_NS&lt;/code&gt; + the datatype's base name (e.g.,
+     * &lt;code&gt;string&lt;/code&gt;) + &lt;/code&gt;NAME_BASE_SET_EQUALS&lt;/code&gt;.
+     */
+    public static final String NAME_BASE_SET_EQUALS = &quot;-set-equals&quot;;
+
+    /**
+     * A complete list of all the XACML datatypes supported by the Set functions in XACML 1.x
+     */
+<span class="fc" id="L105">    protected static String baseTypes[] = { StringAttribute.identifier,</span>
+            BooleanAttribute.identifier, IntegerAttribute.identifier, DoubleAttribute.identifier,
+            DateAttribute.identifier, DateTimeAttribute.identifier, TimeAttribute.identifier,
+            AnyURIAttribute.identifier, HexBinaryAttribute.identifier,
+            Base64BinaryAttribute.identifier, DayTimeDurationAttribute.identifier,
+            YearMonthDurationAttribute.identifier, X500NameAttribute.identifier,
+            RFC822NameAttribute.identifier };
+
+    /**
+     * A complete list of all the XACML datatypes newly supported by the Set functions in XACML 2.0
+     */
+<span class="fc" id="L116">    protected static String baseTypes2[] = { IPAddressAttribute.identifier,</span>
+            DNSNameAttribute.identifier };
+
+    /**
+     * A complete list of all the XACML datatypes supported by the Set functions in XACML 1.x, using
+     * the &quot;simple&quot; form of the names (eg, string instead of
+     * http://www.w3.org/2001/XMLSchema#string)
+     */
+<span class="fc" id="L124">    protected static String simpleTypes[] = { &quot;string&quot;, &quot;boolean&quot;, &quot;integer&quot;, &quot;double&quot;, &quot;date&quot;,</span>
+            &quot;dateTime&quot;, &quot;time&quot;, &quot;anyURI&quot;, &quot;hexBinary&quot;, &quot;base64Binary&quot;, &quot;dayTimeDuration&quot;,
+            &quot;yearMonthDuration&quot;, &quot;x500Name&quot;, &quot;rfc822Name&quot; };
+
+    /**
+     * A complete list of all the XACML datatypes newly supported by the Set functions in XACML 2.0,
+     * using the &quot;simple&quot; form of the names (eg, string instead of
+     * http://www.w3.org/2001/XMLSchema#string)
+     */
+<span class="fc" id="L133">    protected static String simpleTypes2[] = { &quot;ipAddress&quot;, &quot;dnsName&quot; };</span>
+
+    /**
+     * Creates a new instance of the intersection set function. This should be used to create
+     * support for any new attribute types and then the new &lt;code&gt;SetFunction&lt;/code&gt; object should
+     * be added to the factory (all set functions for the base types are already installed in the
+     * factory).
+     * 
+     * @param functionName the name of the function
+     * @param argumentType the attribute type this function will work with
+     * 
+     * @return a new &lt;code&gt;SetFunction&lt;/code&gt; for the given type
+     */
+    public static SetFunction getIntersectionInstance(String functionName, String argumentType) {
+<span class="nc" id="L147">        return new GeneralSetFunction(functionName, argumentType, NAME_BASE_INTERSECTION);</span>
+    }
+
+    /**
+     * Creates a new instance of the at-least-one-member-of set function. This should be used to
+     * create support for any new attribute types and then the new &lt;code&gt;SetFunction&lt;/code&gt; object
+     * should be added to the factory (all set functions for the base types are already installed in
+     * the factory).
+     * 
+     * @param functionName the name of the function
+     * @param argumentType the attribute type this function will work with
+     * 
+     * @return a new &lt;code&gt;SetFunction&lt;/code&gt; for the given type
+     */
+    public static SetFunction getAtLeastOneInstance(String functionName, String argumentType) {
+<span class="nc" id="L162">        return new ConditionSetFunction(functionName, argumentType,</span>
+                NAME_BASE_AT_LEAST_ONE_MEMBER_OF);
+    }
+
+    /**
+     * Creates a new instance of the union set function. This should be used to create support for
+     * any new attribute types and then the new &lt;code&gt;SetFunction&lt;/code&gt; object should be added to
+     * the factory (all set functions for the base types are already installed in the factory).
+     * 
+     * @param functionName the name of the function
+     * @param argumentType the attribute type this function will work with
+     * 
+     * @return a new &lt;code&gt;SetFunction&lt;/code&gt; for the given type
+     */
+    public static SetFunction getUnionInstance(String functionName, String argumentType) {
+<span class="nc" id="L177">        return new GeneralSetFunction(functionName, argumentType, NAME_BASE_UNION);</span>
+    }
+
+    /**
+     * Creates a new instance of the subset set function. This should be used to create support for
+     * any new attribute types and then the new &lt;code&gt;SetFunction&lt;/code&gt; object should be added to
+     * the factory (all set functions for the base types are already installed in the factory).
+     * 
+     * @param functionName the name of the function
+     * @param argumentType the attribute type this function will work with
+     * 
+     * @return a new &lt;code&gt;SetFunction&lt;/code&gt; for the given type
+     */
+    public static SetFunction getSubsetInstance(String functionName, String argumentType) {
+<span class="nc" id="L191">        return new ConditionSetFunction(functionName, argumentType, NAME_BASE_SUBSET);</span>
+    }
+
+    /**
+     * Creates a new instance of the equals set function. This should be used to create support for
+     * any new attribute types and then the new &lt;code&gt;SetFunction&lt;/code&gt; object should be added to
+     * the factory (all set functions for the base types are already installed in the factory).
+     * 
+     * @param functionName the name of the function
+     * @param argumentType the attribute type this function will work with
+     * 
+     * @return a new &lt;code&gt;SetFunction&lt;/code&gt; for the given type
+     */
+    public static SetFunction getSetEqualsInstance(String functionName, String argumentType) {
+<span class="nc" id="L205">        return new ConditionSetFunction(functionName, argumentType, NAME_BASE_SET_EQUALS);</span>
+    }
+
+    /**
+     * Protected constuctor used by the general and condition subclasses. If you need to create a
+     * new &lt;code&gt;SetFunction&lt;/code&gt; instance you should either use one of the
+     * &lt;code&gt;getInstance&lt;/code&gt; methods or construct one of the sub-classes directly.
+     * 
+     * @param functionName the identitifer for the function
+     * @param functionId an optional, internal numeric identifier
+     * @param argumentType the datatype this function accepts
+     * @param returnType the datatype this function returns
+     * @param returnsBag whether this function returns bags
+     */
+    protected SetFunction(String functionName, int functionId, String argumentType,
+            String returnType, boolean returnsBag) {
+<span class="fc" id="L221">        super(functionName, functionId, argumentType, true, 2, returnType, returnsBag);</span>
+<span class="fc" id="L222">    }</span>
+
+    /**
+     * Returns a &lt;code&gt;Set&lt;/code&gt; containing all the function identifiers supported by this class.
+     * 
+     * @return a &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;String&lt;/code&gt;s
+     */
+    public static Set getSupportedIdentifiers() {
+<span class="nc" id="L230">        Set set = new HashSet();</span>
+
+<span class="nc" id="L232">        set.addAll(ConditionSetFunction.getSupportedIdentifiers());</span>
+<span class="nc" id="L233">        set.addAll(GeneralSetFunction.getSupportedIdentifiers());</span>
+
+<span class="nc" id="L235">        return set;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

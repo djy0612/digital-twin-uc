@@ -1,0 +1,543 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DayTimeDurationAttribute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.attr</a> &gt; <span class="el_source">DayTimeDurationAttribute.java</span></div><h1>DayTimeDurationAttribute.java</h1><pre class="source lang-java linenums">/*
+ * @(#)DayTimeDurationAttribute.java
+ *
+ * Copyright 2003-2004 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.attr;
+
+import org.wso2.balana.ParsingException;
+
+import java.math.BigInteger;
+
+import java.net.URI;
+
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import java.util.regex.Matcher;
+
+import org.w3c.dom.Node;
+
+/**
+ * Representation of an xf:dayTimeDuration value. This class supports parsing xd:dayTimeDuration
+ * values. All objects of this class are immutable and thread-safe. The &lt;code&gt;Date&lt;/code&gt; objects
+ * returned are not, but these objects are cloned before being returned.
+ * 
+ * @since 1.0
+ * @author Steve Hanna
+ */
+public class DayTimeDurationAttribute extends AttributeValue {
+	/**
+	 * Official name of this type
+	 */
+	public static final String identifier = &quot;http://www.w3.org/TR/2002/WD-xquery-operators-20020816#&quot;
+			+ &quot;dayTimeDuration&quot;;
+
+	/**
+	 * URI version of name for this type
+	 * &lt;p&gt;
+	 * This field is initialized by a static initializer so that we can catch any exceptions thrown
+	 * by URI(String) and transform them into a RuntimeException, since this should never happen but
+	 * should be reported properly if it ever does.
+	 */
+	private static URI identifierURI;
+
+	/**
+	 * RuntimeException that wraps an Exception thrown during the creation of identifierURI, null if
+	 * none.
+	 */
+	private static RuntimeException earlyException;
+
+	/**
+	 * Static initializer that initializes the identifierURI class field so that we can catch any
+	 * exceptions thrown by URI(String) and transform them into a RuntimeException. Such exceptions
+	 * should never happen but should be reported properly if they ever do.
+	 */
+	static {
+		try {
+<span class="fc" id="L87">			identifierURI = new URI(identifier);</span>
+<span class="nc" id="L88">		} catch (Exception e) {</span>
+<span class="nc" id="L89">			earlyException = new IllegalArgumentException();</span>
+<span class="nc" id="L90">			earlyException.initCause(e);</span>
+<span class="fc" id="L91">		}</span>
+	};
+
+	/**
+	 * Regular expression for dayTimeDuration (a la java.util.regex)
+	 */
+	private static final String patternString = &quot;(\\-)?P((\\d+)?D)?(T((\\d+)?H)?((\\d+)?M)?((\\d+)?(.(\\d+)?)?S)?)?&quot;;
+
+	/**
+	 * The index of the capturing group for the negative sign.
+	 */
+	private static final int GROUP_SIGN = 1;
+
+	/**
+	 * The index of the capturing group for the number of days.
+	 */
+	private static final int GROUP_DAYS = 3;
+
+	/**
+	 * The index of the capturing group for the number of hours.
+	 */
+	private static final int GROUP_HOURS = 6;
+
+	/**
+	 * The index of the capturing group for the number of minutes.
+	 */
+	private static final int GROUP_MINUTES = 8;
+
+	/**
+	 * The index of the capturing group for the number of seconds.
+	 */
+	private static final int GROUP_SECONDS = 10;
+
+	/**
+	 * The index of the capturing group for the number of nanoseconds.
+	 */
+	private static final int GROUP_NANOSECONDS = 12;
+
+	/**
+	 * Static BigInteger values. We only use these if one of the components is bigger than
+	 * Integer.MAX_LONG and we want to detect overflow, so we don't initialize these until they're
+	 * needed.
+	 */
+<span class="fc" id="L134">	private static BigInteger big24 = BigInteger.valueOf(24);</span>
+<span class="fc" id="L135">	private static BigInteger big60 = BigInteger.valueOf(60);</span>
+<span class="fc" id="L136">	private static BigInteger big1000 = BigInteger.valueOf(1000);</span>
+<span class="fc" id="L137">	private static BigInteger bigMaxLong = BigInteger.valueOf(Long.MAX_VALUE);</span>
+
+	/**
+	 * A shared Pattern object, only initialized if needed
+	 */
+	private static Pattern pattern;
+
+	/**
+	 * Negative flag. true if duration is negative, false otherwise
+	 */
+	private boolean negative;
+
+	/**
+	 * Number of days
+	 */
+	private long days;
+
+	/**
+	 * Number of hours
+	 */
+	private long hours;
+
+	/**
+	 * Number of minutes
+	 */
+	private long minutes;
+
+	/**
+	 * Number of seconds
+	 */
+	private long seconds;
+
+	/**
+	 * Number of nanoseconds
+	 */
+	private int nanoseconds;
+
+	/**
+	 * Total number of round seconds (in milliseconds)
+	 */
+	private long totalMillis;
+
+	/**
+	 * Cached encoded value (null if not cached yet).
+	 */
+<span class="fc" id="L182">	private String encodedValue = null;</span>
+
+	/**
+	 * Creates a new &lt;code&gt;DayTimeDurationAttribute&lt;/code&gt; that represents the duration supplied.
+	 * 
+	 * @param negative true if the duration is negative, false otherwise
+	 * @param days the number of days in the duration
+	 * @param hours the number of hours in the duration
+	 * @param minutes the number of minutes in the duration
+	 * @param seconds the number of seconds in the duration
+	 * @param nanoseconds the number of nanoseconds in the duration
+	 * @throws IllegalArgumentException if the total number of milliseconds exceeds Long.MAX_LONG
+	 */
+	public DayTimeDurationAttribute(boolean negative, long days, long hours, long minutes,
+			long seconds, int nanoseconds) throws IllegalArgumentException {
+<span class="fc" id="L197">		super(identifierURI);</span>
+
+		// Shouldn't happen, but just in case...
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">		if (earlyException != null)</span>
+<span class="nc" id="L201">			throw earlyException;</span>
+
+<span class="fc" id="L203">		this.negative = negative;</span>
+<span class="fc" id="L204">		this.days = days;</span>
+<span class="fc" id="L205">		this.hours = hours;</span>
+<span class="fc" id="L206">		this.minutes = minutes;</span>
+<span class="fc" id="L207">		this.seconds = seconds;</span>
+<span class="fc" id="L208">		this.nanoseconds = nanoseconds;</span>
+
+		// Convert all the components except nanoseconds to milliseconds
+
+		// If any of the components is big (too big to be an int),
+		// use the BigInteger class to do the math so we can detect
+		// overflow.
+<span class="pc bpc" id="L215" title="4 of 8 branches missed.">		if ((days &gt; Integer.MAX_VALUE) || (hours &gt; Integer.MAX_VALUE)</span>
+				|| (minutes &gt; Integer.MAX_VALUE) || (seconds &gt; Integer.MAX_VALUE)) {
+
+<span class="nc" id="L218">			BigInteger bigDays = BigInteger.valueOf(days);</span>
+<span class="nc" id="L219">			BigInteger bigHours = BigInteger.valueOf(hours);</span>
+<span class="nc" id="L220">			BigInteger bigMinutes = BigInteger.valueOf(minutes);</span>
+<span class="nc" id="L221">			BigInteger bigSeconds = BigInteger.valueOf(seconds);</span>
+
+<span class="nc" id="L223">			BigInteger bigTotal = bigDays.multiply(big24).add(bigHours).multiply(big60)</span>
+<span class="nc" id="L224">					.add(bigMinutes).multiply(big60).add(bigSeconds).multiply(big1000);</span>
+
+			// If the result is bigger than Long.MAX_VALUE, we have an
+			// overflow. Indicate an error (should be a processing error,
+			// since it can be argued that we should handle gigantic
+			// values for this).
+<span class="nc bnc" id="L230" title="All 2 branches missed.">			if (bigTotal.compareTo(bigMaxLong) == 1)</span>
+<span class="nc" id="L231">				throw new IllegalArgumentException(&quot;total number of &quot; + &quot;milliseconds &quot;</span>
+						+ &quot;exceeds Long.MAX_VALUE&quot;);
+			// If no overflow, convert to a long.
+<span class="nc" id="L234">			totalMillis = bigTotal.longValue();</span>
+<span class="nc" id="L235">		} else {</span>
+			// The numbers are small, so do it the fast way.
+<span class="fc" id="L237">			totalMillis = ((((((days * 24) + hours) * 60) + minutes) * 60) + seconds) * 1000;</span>
+		}
+<span class="fc" id="L239">	}</span>
+
+	/**
+	 * Returns a new &lt;code&gt;DayTimeDurationAttribute&lt;/code&gt; that represents the xf:dayTimeDuration at
+	 * a particular DOM node.
+	 * 
+	 * @param root the &lt;code&gt;Node&lt;/code&gt; that contains the desired value
+	 * @return a new &lt;code&gt;DayTimeDurationAttribute&lt;/code&gt; representing the appropriate value (null
+	 *         if there is a parsing error)
+	 */
+	public static DayTimeDurationAttribute getInstance(Node root) throws ParsingException,
+			NumberFormatException {
+<span class="fc" id="L251">		return getInstance(root.getFirstChild().getNodeValue());</span>
+	}
+
+	/**
+	 * Returns the long value for the capturing group groupNumber. This method takes a Matcher that
+	 * has been used to match a Pattern against a String, fetches the value for the specified
+	 * capturing group, converts that value to an long, and returns the value. If that group did not
+	 * match, 0 is returned. If the matched value is not a valid long, NumberFormatException is
+	 * thrown.
+	 * 
+	 * @param matcher the Matcher from which to fetch the group
+	 * @param groupNumber the group number to fetch
+	 * @return the long value for that groupNumber
+	 * @throws NumberFormatException if the string value for that groupNumber is not a valid long
+	 */
+	private static long parseGroup(Matcher matcher, int groupNumber) throws NumberFormatException {
+<span class="fc" id="L267">		long groupLong = 0;</span>
+
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">		if (matcher.start(groupNumber) != -1) {</span>
+<span class="fc" id="L270">			String groupString = matcher.group(groupNumber);</span>
+<span class="fc" id="L271">			groupLong = Long.parseLong(groupString);</span>
+		}
+<span class="fc" id="L273">		return groupLong;</span>
+	}
+
+	/**
+	 * Returns a new &lt;code&gt;DayTimeDurationAttribute&lt;/code&gt; that represents the xf:dayTimeDuration
+	 * value indicated by the string provided.
+	 * 
+	 * @param value a string representing the desired value
+	 * @return a new &lt;code&gt;DayTimeDurationAttribute&lt;/code&gt; representing the desired value (null if
+	 *         there is a parsing error)
+	 */
+	public static DayTimeDurationAttribute getInstance(String value) throws ParsingException,
+			NumberFormatException {
+<span class="fc" id="L286">		boolean negative = false;</span>
+<span class="fc" id="L287">		long days = 0;</span>
+<span class="fc" id="L288">		long hours = 0;</span>
+<span class="fc" id="L289">		long minutes = 0;</span>
+<span class="fc" id="L290">		long seconds = 0;</span>
+<span class="fc" id="L291">		int nanoseconds = 0;</span>
+
+		// Compile the pattern, if not already done.
+		// No thread-safety problem here. The worst that can
+		// happen is that we initialize pattern several times.
+<span class="fc bfc" id="L296" title="All 2 branches covered.">		if (pattern == null) {</span>
+			try {
+<span class="fc" id="L298">				pattern = Pattern.compile(patternString);</span>
+<span class="nc" id="L299">			} catch (PatternSyntaxException e) {</span>
+				// This should never happen
+<span class="nc" id="L301">				throw new ParsingException(&quot;unexpected pattern match error&quot;);</span>
+<span class="fc" id="L302">			}</span>
+		}
+
+		// See if the value matches the pattern.
+<span class="fc" id="L306">		Matcher matcher = pattern.matcher(value);</span>
+<span class="fc" id="L307">		boolean matches = matcher.matches();</span>
+
+		// If not, syntax error!
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">		if (!matches) {</span>
+<span class="nc" id="L311">			throw new ParsingException(&quot;Syntax error in dayTimeDuration&quot;);</span>
+		}
+
+		// If the negative group matched, the value is negative.
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">		if (matcher.start(GROUP_SIGN) != -1)</span>
+<span class="nc" id="L316">			negative = true;</span>
+
+		try {
+			// If the days group matched, parse that value.
+<span class="fc" id="L320">			days = parseGroup(matcher, GROUP_DAYS);</span>
+
+			// If the hours group matched, parse that value.
+<span class="fc" id="L323">			hours = parseGroup(matcher, GROUP_HOURS);</span>
+
+			// If the minutes group matched, parse that value.
+<span class="fc" id="L326">			minutes = parseGroup(matcher, GROUP_MINUTES);</span>
+
+			// If the seconds group matched, parse that value.
+<span class="fc" id="L329">			seconds = parseGroup(matcher, GROUP_SECONDS);</span>
+
+			// Special handling for fractional seconds, since
+			// they can have any resolution.
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">			if (matcher.start(GROUP_NANOSECONDS) != -1) {</span>
+<span class="nc" id="L334">				String nanosecondString = matcher.group(GROUP_NANOSECONDS);</span>
+
+				// If there are less than 9 digits in the fractional seconds,
+				// pad with zeros on the right so it's nanoseconds.
+<span class="nc bnc" id="L338" title="All 2 branches missed.">				if (nanosecondString.length() &lt; 9) {</span>
+<span class="nc" id="L339">					StringBuffer buffer = new StringBuffer(nanosecondString);</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">					while (buffer.length() &lt; 9) {</span>
+<span class="nc" id="L341">						buffer.append(&quot;0&quot;);</span>
+					}
+<span class="nc" id="L343">					nanosecondString = buffer.toString();</span>
+				}
+
+				// If there are more than 9 digits in the fractional seconds,
+				// drop the least significant digits.
+<span class="nc bnc" id="L348" title="All 2 branches missed.">				if (nanosecondString.length() &gt; 9) {</span>
+<span class="nc" id="L349">					nanosecondString = nanosecondString.substring(0, 9);</span>
+				}
+
+<span class="nc" id="L352">				nanoseconds = Integer.parseInt(nanosecondString);</span>
+			}
+<span class="nc" id="L354">		} catch (NumberFormatException e) {</span>
+			// If we run into a number that's too big to be a long
+			// that's an error. Really, it's a processing error,
+			// since one can argue that we should handle that.
+<span class="nc" id="L358">			throw e;</span>
+<span class="fc" id="L359">		}</span>
+
+		// Here's a requirement that's not checked for in the pattern.
+		// The designator 'T' must be absent if all the time
+		// items are absent. So the string can't end in 'T'.
+		// Note that we don't have to worry about a zero length
+		// string, since the pattern won't allow that.
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">		if (value.charAt(value.length() - 1) == 'T')</span>
+<span class="nc" id="L367">			throw new ParsingException(&quot;'T' must be absent if all&quot; + &quot;time items are absent&quot;);</span>
+
+		// If parsing went OK, create a new DayTimeDurationAttribute object and
+		// return it.
+<span class="fc" id="L371">		return new DayTimeDurationAttribute(negative, days, hours, minutes, seconds, nanoseconds);</span>
+	}
+
+	/**
+	 * Returns true if the duration is negative.
+	 * 
+	 * @return true if the duration is negative, false otherwise
+	 */
+	public boolean isNegative() {
+<span class="fc" id="L380">		return negative;</span>
+	}
+
+	/**
+	 * Gets the number of days.
+	 * 
+	 * @return the number of days
+	 */
+	public long getDays() {
+<span class="nc" id="L389">		return days;</span>
+	}
+
+	/**
+	 * Gets the number of hours.
+	 * 
+	 * @return the number of hours
+	 */
+	public long getHours() {
+<span class="nc" id="L398">		return hours;</span>
+	}
+
+	/**
+	 * Gets the number of minutes.
+	 * 
+	 * @return the number of minutes
+	 */
+	public long getMinutes() {
+<span class="nc" id="L407">		return minutes;</span>
+	}
+
+	/**
+	 * Gets the number of seconds.
+	 * 
+	 * @return the number of seconds
+	 */
+	public long getSeconds() {
+<span class="nc" id="L416">		return seconds;</span>
+	}
+
+	/**
+	 * Gets the number of nanoseconds.
+	 * 
+	 * @return the number of nanoseconds
+	 */
+	public int getNanoseconds() {
+<span class="fc" id="L425">		return nanoseconds;</span>
+	}
+
+	/**
+	 * Gets the total number of round seconds (in milliseconds).
+	 * 
+	 * @return the total number of seconds (in milliseconds)
+	 */
+	public long getTotalSeconds() {
+<span class="fc" id="L434">		return totalMillis;</span>
+	}
+
+	/**
+	 * Returns true if the input is an instance of this class and if its value equals the value
+	 * contained in this class.
+	 * 
+	 * @param o the object to compare
+	 * 
+	 * @return true if this object and the input represent the same value
+	 */
+	public boolean equals(Object o) {
+<span class="pc bpc" id="L446" title="1 of 2 branches missed.">		if (!(o instanceof DayTimeDurationAttribute))</span>
+<span class="nc" id="L447">			return false;</span>
+
+<span class="fc" id="L449">		DayTimeDurationAttribute other = (DayTimeDurationAttribute) o;</span>
+
+<span class="pc bpc" id="L451" title="3 of 6 branches missed.">		return ((totalMillis == other.totalMillis) &amp;&amp; (nanoseconds == other.nanoseconds) &amp;&amp; (negative == other.negative));</span>
+	}
+
+	/**
+	 * Returns the hashcode value used to index and compare this object with others of the same
+	 * type. Typically this is the hashcode of the backing data object.
+	 * 
+	 * @return the object's hashcode value
+	 */
+	public int hashCode() {
+		// The totalMillis, nanoseconds, and negative fields are all considered
+		// by the equals method, so it's best if the hashCode is derived
+		// from all of those fields.
+<span class="nc" id="L464">		int hashCode = (int) totalMillis ^ (int) (totalMillis &gt;&gt; 32);</span>
+<span class="nc" id="L465">		hashCode = 31 * hashCode + nanoseconds;</span>
+<span class="nc bnc" id="L466" title="All 2 branches missed.">		if (negative)</span>
+<span class="nc" id="L467">			hashCode = -hashCode;</span>
+<span class="nc" id="L468">		return hashCode;</span>
+	}
+
+	/**
+	 * Converts to a String representation.
+	 * 
+	 * @return the String representation
+	 */
+	public String toString() {
+<span class="nc" id="L477">		StringBuffer sb = new StringBuffer();</span>
+
+<span class="nc" id="L479">		sb.append(&quot;DayTimeDurationAttribute: [\n&quot;);</span>
+<span class="nc" id="L480">		sb.append(&quot;  Negative: &quot; + negative);</span>
+<span class="nc" id="L481">		sb.append(&quot;  Days: &quot; + days);</span>
+<span class="nc" id="L482">		sb.append(&quot;  Hours: &quot; + hours);</span>
+<span class="nc" id="L483">		sb.append(&quot;  Minutes: &quot; + minutes);</span>
+<span class="nc" id="L484">		sb.append(&quot;  Seconds: &quot; + seconds);</span>
+<span class="nc" id="L485">		sb.append(&quot;  Nanoseconds: &quot; + nanoseconds);</span>
+<span class="nc" id="L486">		sb.append(&quot;  TotalSeconds: &quot; + totalMillis);</span>
+<span class="nc" id="L487">		sb.append(&quot;]&quot;);</span>
+
+<span class="nc" id="L489">		return sb.toString();</span>
+	}
+
+	/**
+	 * Encodes the value in a form suitable for including in XML data like a request or an
+	 * obligation. This must return a value that could in turn be used by the factory to create a
+	 * new instance with the same value.
+	 * 
+	 * @return a &lt;code&gt;String&lt;/code&gt; form of the value
+	 */
+	public String encode() {
+<span class="nc bnc" id="L500" title="All 2 branches missed.">		if (encodedValue != null)</span>
+<span class="nc" id="L501">			return encodedValue;</span>
+
+		// Length is quite variable
+<span class="nc" id="L504">		StringBuffer buf = new StringBuffer(10);</span>
+
+<span class="nc bnc" id="L506" title="All 2 branches missed.">		if (negative)</span>
+<span class="nc" id="L507">			buf.append('-');</span>
+<span class="nc" id="L508">		buf.append('P');</span>
+<span class="nc bnc" id="L509" title="All 2 branches missed.">		if (days != 0) {</span>
+<span class="nc" id="L510">			buf.append(Long.toString(days));</span>
+<span class="nc" id="L511">			buf.append('D');</span>
+		}
+<span class="nc bnc" id="L513" title="All 8 branches missed.">		if ((hours != 0) || (minutes != 0) || (seconds != 0) || (nanoseconds != 0)) {</span>
+			// Only include the T if there are some time fields
+<span class="nc" id="L515">			buf.append('T');</span>
+		} else {
+			// Make sure that there's always at least one field specified
+<span class="nc bnc" id="L518" title="All 2 branches missed.">			if (days == 0)</span>
+<span class="nc" id="L519">				buf.append(&quot;0D&quot;);</span>
+		}
+<span class="nc bnc" id="L521" title="All 2 branches missed.">		if (hours != 0) {</span>
+<span class="nc" id="L522">			buf.append(Long.toString(hours));</span>
+<span class="nc" id="L523">			buf.append('H');</span>
+		}
+<span class="nc bnc" id="L525" title="All 2 branches missed.">		if (minutes != 0) {</span>
+<span class="nc" id="L526">			buf.append(Long.toString(minutes));</span>
+<span class="nc" id="L527">			buf.append('M');</span>
+		}
+<span class="nc bnc" id="L529" title="All 4 branches missed.">		if ((seconds != 0) || (nanoseconds != 0)) {</span>
+<span class="nc" id="L530">			buf.append(Long.toString(seconds));</span>
+<span class="nc bnc" id="L531" title="All 2 branches missed.">			if (nanoseconds != 0) {</span>
+<span class="nc" id="L532">				buf.append('.');</span>
+<span class="nc" id="L533">				buf.append(DateAttribute.zeroPadInt(nanoseconds, 9));</span>
+			}
+<span class="nc" id="L535">			buf.append('S');</span>
+		}
+
+<span class="nc" id="L538">		encodedValue = buf.toString();</span>
+
+<span class="nc" id="L540">		return encodedValue;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

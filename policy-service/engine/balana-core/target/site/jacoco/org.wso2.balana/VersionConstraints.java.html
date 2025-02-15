@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VersionConstraints.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana</a> &gt; <span class="el_source">VersionConstraints.java</span></div><h1>VersionConstraints.java</h1><pre class="source lang-java linenums">/*
+ * @(#)VersionConstraints.java
+ *
+ * Copyright 2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana;
+
+import java.util.StringTokenizer;
+
+/**
+ * Supports the three version constraints that can be included with a policy reference. This class
+ * also provides a simple set of comparison methods for matching against the constraints. Note that
+ * this feature was introduced in XACML 2.0, which means that constraints are never used in pre-2.0
+ * policy references.
+ * 
+ * @since 2.0
+ * @author Seth Proctor
+ */
+public class VersionConstraints {
+
+    // internal identifiers used to specify the kind of match
+    private static final int COMPARE_EQUAL = 0;
+    private static final int COMPARE_LESS = 1;
+    private static final int COMPARE_GREATER = 2;
+
+    // the three constraint strings
+    private String version;
+    private String earliest;
+    private String latest;
+
+    /**
+     * Creates a &lt;code&gt;VersionConstraints&lt;/code&gt; with the three optional constraint strings. Each of
+     * the three strings must conform to the VersionMatchType type defined in the XACML schema. Any
+     * of the strings may be null to specify that the given constraint is not used.
+     * 
+     * @param version a matching constraint on the version or null
+     * @param earliest a lower-bound constraint on the version or null
+     * @param latest an upper-bound constraint on the version or null
+     */
+<span class="nc" id="L70">    public VersionConstraints(String version, String earliest, String latest) {</span>
+<span class="nc" id="L71">        this.version = version;</span>
+<span class="nc" id="L72">        this.earliest = earliest;</span>
+<span class="nc" id="L73">        this.latest = latest;</span>
+<span class="nc" id="L74">    }</span>
+
+    /**
+     * Returns the matching constraint string, which will be null if there is no constraint on
+     * matching the version.
+     * 
+     * @return the version constraint
+     */
+    public String getVersionConstraint() {
+<span class="nc" id="L83">        return version;</span>
+    }
+
+    /**
+     * Returns the lower-bound constraint string, which will be null if there is no lower-bound
+     * constraint on the version.
+     * 
+     * @return the lower-bound constraint
+     */
+    public String getEarliestConstraint() {
+<span class="nc" id="L93">        return earliest;</span>
+    }
+
+    /**
+     * Returns the upper-bound constraint string, which will be null if there is no upper-bound
+     * constraint on the version.
+     * 
+     * @return the upper-bound constraint
+     */
+    public String getLatestConstraint() {
+<span class="nc" id="L103">        return latest;</span>
+    }
+
+    /**
+     * Checks if the given version string meets all three constraints.
+     * 
+     * @param version the version to compare, which is formatted as a VersionType XACML type
+     * 
+     * @return true if the given version meets all the constraints
+     */
+    public boolean meetsConstraint(String version) {
+<span class="nc bnc" id="L114" title="All 6 branches missed.">        return (matches(version, this.version) &amp;&amp; isEarlier(version, latest) &amp;&amp; isLater(version,</span>
+                earliest));
+    }
+
+    /**
+     * Checks if the given version string matches the constraint string.
+     * 
+     * @param version the version string to check
+     * @param constraint a constraint string to use in matching
+     * 
+     * @return true if the version string matches the constraint
+     */
+    public static boolean matches(String version, String constraint) {
+<span class="nc" id="L127">        return compareHelper(version, constraint, COMPARE_EQUAL);</span>
+    }
+
+    /**
+     * Checks if the given version string is less-than or equal-to the constraint string.
+     * 
+     * @param version the version string to check
+     * @param constraint a constraint string to use in matching
+     * 
+     * @return true if the version string is earlier than the constraint
+     */
+    public static boolean isEarlier(String version, String constraint) {
+<span class="nc" id="L139">        return compareHelper(version, constraint, COMPARE_LESS);</span>
+    }
+
+    /**
+     * Checks if the given version string is greater-than or equal-to the constraint string.
+     * 
+     * @param version the version string to check
+     * @param constraint a constraint string to use in matching
+     * 
+     * @return true if the version string is later than the constraint
+     */
+    public static boolean isLater(String version, String constraint) {
+<span class="nc" id="L151">        return compareHelper(version, constraint, COMPARE_GREATER);</span>
+    }
+
+    /**
+     * Private helper that handles all three comparisons.
+     */
+    private static boolean compareHelper(String version, String constraint, int type) {
+        // check that a constraint was provided...
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        if (constraint == null)</span>
+<span class="nc" id="L160">            return true;</span>
+
+        // ...and a version too
+        // FIXME: this originally returned false, but I think it should
+        // return true, since we always match if the contstraint is
+        // unbound (null) ... is that right?
+<span class="nc bnc" id="L166" title="All 2 branches missed.">        if (version == null)</span>
+<span class="nc" id="L167">            return true;</span>
+
+        // setup tokenizers
+<span class="nc" id="L170">        StringTokenizer vtok = new StringTokenizer(version, &quot;.&quot;);</span>
+<span class="nc" id="L171">        StringTokenizer ctok = new StringTokenizer(constraint, &quot;.&quot;);</span>
+
+<span class="nc bnc" id="L173" title="All 2 branches missed.">        while (vtok.hasMoreTokens()) {</span>
+            // if there's nothing left in the constraint, then this means
+            // we didn't match, unless this is the greater-than function
+<span class="nc bnc" id="L176" title="All 2 branches missed.">            if (!ctok.hasMoreTokens()) {</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">                if (type == COMPARE_GREATER)</span>
+<span class="nc" id="L178">                    return true;</span>
+                else
+<span class="nc" id="L180">                    return false;</span>
+            }
+
+            // get the next constraint token...
+<span class="nc" id="L184">            String c = ctok.nextToken();</span>
+
+            // ...and if it's a + then it's done and we match
+<span class="nc bnc" id="L187" title="All 2 branches missed.">            if (c.equals(&quot;+&quot;))</span>
+<span class="nc" id="L188">                return true;</span>
+<span class="nc" id="L189">            String v = vtok.nextToken();</span>
+
+            // if it's a * then we always match, otherwise...
+<span class="nc bnc" id="L192" title="All 2 branches missed.">            if (!c.equals(&quot;*&quot;)) {</span>
+                // if it's a match then we just keep going, otherwise...
+<span class="nc bnc" id="L194" title="All 2 branches missed.">                if (!v.equals(c)) {</span>
+                    // if we're matching on equality, then we failed
+<span class="nc bnc" id="L196" title="All 2 branches missed.">                    if (type == COMPARE_EQUAL)</span>
+<span class="nc" id="L197">                        return false;</span>
+
+                    // convert both tokens to integers...
+<span class="nc" id="L200">                    int cint = Integer.valueOf(c).intValue();</span>
+<span class="nc" id="L201">                    int vint = Integer.valueOf(v).intValue();</span>
+
+                    // ...and do the right kind of comparison
+<span class="nc bnc" id="L204" title="All 2 branches missed.">                    if (type == COMPARE_LESS)</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">                        return vint &lt;= cint;</span>
+                    else
+<span class="nc bnc" id="L207" title="All 2 branches missed.">                        return vint &gt;= cint;</span>
+                }
+            }
+<span class="nc" id="L210">        }</span>
+
+        // if we got here, then we've finished the processing the version,
+        // so see if there's anything more in the constrant, which would
+        // mean we didn't match unless we're doing less-than
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        if (ctok.hasMoreTokens()) {</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">            if (type == COMPARE_LESS)</span>
+<span class="nc" id="L217">                return true;</span>
+            else
+<span class="nc" id="L219">                return false;</span>
+        }
+
+        // we got through everything, so the constraint is met
+<span class="nc" id="L223">        return true;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

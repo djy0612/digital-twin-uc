@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Apply.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.cond</a> &gt; <span class="el_source">Apply.java</span></div><h1>Apply.java</h1><pre class="source lang-java linenums">/*
+ * @(#)Apply.java
+ *
+ * Copyright 2003-2005 Sun Microsystems, Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistribution of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * 
+ *   2. Redistribution in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of Sun Microsystems, Inc. or the names of contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * This software is provided &quot;AS IS,&quot; without a warranty of any kind. ALL
+ * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ * ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+ * OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. SUN MICROSYSTEMS, INC. (&quot;SUN&quot;)
+ * AND ITS LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE
+ * AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+ * DERIVATIVES. IN NO EVENT WILL SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST
+ * REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+ * INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY
+ * OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ *
+ * You acknowledge that this software is not designed or intended for use in
+ * the design, construction, operation or maintenance of any nuclear facility.
+ */
+
+package org.wso2.balana.cond;
+
+import org.wso2.balana.*;
+
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import java.net.URI;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.ctx.EvaluationCtx;
+
+/**
+ * Represents the XACML ApplyType and ConditionType XML types.
+ * &lt;p&gt;
+ * Note well: as of 2.0, there is no longer a notion of a separate higher- order bag function.
+ * Instead, if needed, it is supplied as one of the &lt;code&gt;Expression&lt;/code&gt;s in the parameter list.
+ * As such, when this &lt;code&gt;Apply&lt;/code&gt; is evaluated, it no longer pre-evaluates all the parameters
+ * if a bag function is used. It is now up to the implementor of a higher-order function to do this.
+ * &lt;p&gt;
+ * Also, as of 2.0, the &lt;code&gt;Apply&lt;/code&gt; is no longer used to represent a Condition, since the
+ * XACML 2.0 specification changed how Condition works. Instead, there is now a
+ * &lt;code&gt;Condition&lt;/code&gt; class that represents both 1.x and 2.0 style Conditions.
+ * 
+ * @since 1.0
+ * @author Seth Proctor
+ */
+public class Apply implements Evaluatable {
+
+    // the function used to evaluate the contents of the apply
+    private Function function;
+
+    // the paramaters to the function...ie, the contents of the apply
+    private List xprs;
+
+    /**
+     * Constructs an &lt;code&gt;Apply&lt;/code&gt; instance.
+     * 
+     * @param function the &lt;code&gt;Function&lt;/code&gt; to use in evaluating the elements in the apply
+     * @param xprs the contents of the apply which will be the parameters to the function, each of
+     *            which is an &lt;code&gt;Expression&lt;/code&gt;
+     * 
+     * @throws IllegalArgumentException if the input expressions don't match the signature of the
+     *             function
+     */
+<span class="fc" id="L87">    public Apply(Function function, List xprs) throws IllegalArgumentException {</span>
+        // check that the given inputs work for the function
+<span class="fc" id="L89">        function.checkInputs(xprs);</span>
+
+        // if everything checks out, then store the inputs
+<span class="fc" id="L92">        this.function = function;</span>
+<span class="fc" id="L93">        this.xprs = Collections.unmodifiableList(new ArrayList(xprs));</span>
+<span class="fc" id="L94">    }</span>
+
+    /**
+     * Constructs an &lt;code&gt;Apply&lt;/code&gt; instance.
+     * 
+     * @deprecated As of 2.0 &lt;code&gt;Apply&lt;/code&gt; is no longer used for Conditions, so the
+     *             &lt;code&gt;isCondition&lt;/code&gt; parameter is no longer needed. You should now use the 2
+     *             parameter constructor. This constructor will be removed in a future release.
+     * 
+     * @param function the &lt;code&gt;Function&lt;/code&gt; to use in evaluating the elements in the apply
+     * @param xprs the contents of the apply which will be the parameters to the function, each of
+     *            which is an &lt;code&gt;Expression&lt;/code&gt;
+     * @param isCondition as of 2.0, this must always be false
+     * 
+     * @throws IllegalArgumentException if the input expressions don't match the signature of the
+     *             function or if &lt;code&gt;isCondition&lt;/code&gt; is true
+     */
+<span class="nc" id="L111">    public Apply(Function function, List xprs, boolean isCondition) throws IllegalArgumentException {</span>
+        // make sure that no is using this constructor to create a Condition
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (isCondition)</span>
+<span class="nc" id="L114">            throw new IllegalArgumentException(&quot;As of version 2.0 an Apply&quot;</span>
+                    + &quot; may not represent a&quot; + &quot; Condition&quot;);
+
+        // check that the given inputs work for the function
+<span class="nc" id="L118">        function.checkInputs(xprs);</span>
+
+        // if everything checks out, then store the inputs
+<span class="nc" id="L121">        this.function = function;</span>
+<span class="nc" id="L122">        this.xprs = Collections.unmodifiableList(new ArrayList(xprs));</span>
+<span class="nc" id="L123">    }</span>
+
+    /**
+     * Returns an instance of an &lt;code&gt;Apply&lt;/code&gt; based on the given DOM root node. This will
+     * actually return a special kind of &lt;code&gt;Apply&lt;/code&gt;, namely an XML ConditionType, which is
+     * the root of the condition logic in a RuleType. A ConditionType is the same as an ApplyType
+     * except that it must use a FunctionId that returns a boolean value.
+     * &lt;p&gt;
+     * Note that as of 2.0 there is a separate &lt;code&gt;Condition&lt;/code&gt; class used to support the
+     * different kinds of Conditions in XACML 1.x and 2.0. As such, the system no longer treats a
+     * ConditionType as a special kind of ApplyType. You may still use this method to get a 1.x
+     * style ConditionType, but you will need to convert it into a &lt;code&gt;Condition&lt;/code&gt; to use it
+     * in evaluation. The preferred way to create a Condition is now through the
+     * &lt;code&gt;getInstance&lt;/code&gt; method on &lt;code&gt;Condition&lt;/code&gt;.
+     * 
+     * @param root the DOM root of a ConditionType XML type
+     * @param xpathVersion the XPath version to use in any selectors or XPath functions, or null if
+     *            this is unspecified (ie, not supplied in the defaults section of the policy)
+     * @param manager &lt;code&gt;VariableManager&lt;/code&gt; used to connect references and definitions while
+     *            parsing
+     * 
+     * @throws ParsingException if this is not a valid ConditionType
+     */
+    public static Apply getConditionInstance(Node root, String xpathVersion, VariableManager manager)
+            throws ParsingException {
+<span class="nc" id="L148">        return getInstance(root, FunctionFactory.getConditionInstance(), new PolicyMetaData(</span>
+                XACMLConstants.XACML_1_0_IDENTIFIER, xpathVersion), manager);
+    }
+
+    /**
+     * Returns an instance of an &lt;code&gt;Apply&lt;/code&gt; based on the given DOM root node. This will
+     * actually return a special kind of &lt;code&gt;Apply&lt;/code&gt;, namely an XML ConditionType, which is
+     * the root of the condition logic in a RuleType. A ConditionType is the same as an ApplyType
+     * except that it must use a FunctionId that returns a boolean value.
+     * 
+     * @deprecated As of 2.0 you should avoid using this method, since it does not provide a
+     *             &lt;code&gt;Condition&lt;/code&gt; instance and does not handle XACML 2.0 policies correctly.
+     *             If you need a similar method you can use the new version that accepts a
+     *             &lt;code&gt;VariableManager&lt;/code&gt;. This will return an &lt;code&gt;Apply&lt;/code&gt; instance for
+     *             XACML 1.x policies.
+     * 
+     * @param root the DOM root of a ConditionType XML type
+     * @param xpathVersion the XPath version to use in any selectors or XPath functions, or null if
+     *            this is unspecified (ie, not supplied in the defaults section of the policy)
+     * 
+     * @throws ParsingException if this is not a valid ConditionType
+     */
+    public static Apply getConditionInstance(Node root, String xpathVersion)
+            throws ParsingException {
+<span class="nc" id="L172">        return getInstance(root, FunctionFactory.getConditionInstance(), new PolicyMetaData(</span>
+                XACMLConstants.XACML_1_0_IDENTIFIER, xpathVersion), null);
+    }
+
+    /**
+     * Returns an instance of &lt;code&gt;Apply&lt;/code&gt; based on the given DOM root.
+     * 
+     * @param root the DOM root of an ApplyType XML type
+     * @param metaData the meta-data associated with the containing policy
+     * @param manager &lt;code&gt;VariableManager&lt;/code&gt; used to connect references and definitions while
+     *            parsing
+     * 
+     * @throws ParsingException if this is not a valid ApplyType
+     */
+    public static Apply getInstance(Node root, PolicyMetaData metaData, VariableManager manager)
+            throws ParsingException {
+<span class="fc" id="L188">        return getInstance(root, FunctionFactory.getGeneralInstance(), metaData, manager);</span>
+    }
+
+    /**
+     * Returns an instance of &lt;code&gt;Apply&lt;/code&gt; based on the given DOM root.
+     * 
+     * @deprecated As of 2.0 you should avoid using this method, since it does not handle XACML 2.0
+     *             policies correctly. If you need a similar method you can use the new version that
+     *             accepts a &lt;code&gt;VariableManager&lt;/code&gt;. This will return an &lt;code&gt;Apply&lt;/code&gt;
+     *             instance for XACML 1.x policies.
+     * 
+     * @param root the DOM root of an ApplyType XML type
+     * @param xpathVersion the XPath version to use in any selectors or XPath functions, or null if
+     *            this is unspecified (ie, not supplied in the defaults section of the policy)
+     * 
+     * @throws ParsingException if this is not a valid ApplyType
+     */
+    public static Apply getInstance(Node root, String xpathVersion) throws ParsingException {
+<span class="nc" id="L206">        return getInstance(root, FunctionFactory.getGeneralInstance(), new PolicyMetaData(</span>
+                XACMLConstants.XACML_1_0_IDENTIFIER, xpathVersion), null);
+    }
+
+    /**
+     * This is a helper method that is called by the two getInstance methods. It takes a factory so
+     * we know that we're getting the right kind of function.
+     */
+    private static Apply getInstance(Node root, FunctionFactory factory, PolicyMetaData metaData,
+            VariableManager manager) throws ParsingException {
+<span class="fc" id="L216">        Function function = ExpressionHandler.getFunction(root, metaData, factory);</span>
+<span class="fc" id="L217">        List xprs = new ArrayList();</span>
+
+<span class="fc" id="L219">        NodeList nodes = root.getChildNodes();</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.getLength(); i++) {</span>
+<span class="fc" id="L221">            Expression xpr = ExpressionHandler.parseExpression(nodes.item(i), metaData, manager);</span>
+
+<span class="fc bfc" id="L223" title="All 2 branches covered.">            if (xpr != null)</span>
+<span class="fc" id="L224">                xprs.add(xpr);</span>
+        }
+
+<span class="fc" id="L227">        return new Apply(function, xprs);</span>
+    }
+
+    /**
+     * Returns the &lt;code&gt;Function&lt;/code&gt; used by this &lt;code&gt;Apply&lt;/code&gt;.
+     * 
+     * @return the &lt;code&gt;Function&lt;/code&gt;
+     */
+    public Function getFunction() {
+<span class="nc" id="L236">        return function;</span>
+    }
+
+    /**
+     * Returns the &lt;code&gt;List&lt;/code&gt; of children for this &lt;code&gt;Apply&lt;/code&gt;. The &lt;code&gt;List&lt;/code&gt;
+     * contains &lt;code&gt;Expression&lt;/code&gt;s. The list is unmodifiable, and may be empty.
+     * 
+     * @return a &lt;code&gt;List&lt;/code&gt; of &lt;code&gt;Expression&lt;/code&gt;s
+     */
+    public List getChildren() {
+<span class="nc" id="L246">        return xprs;</span>
+    }
+
+    /**
+     * Returns whether or not this ApplyType is actually a ConditionType. As of 2.0 this always
+     * returns false;
+     * 
+     * @deprecated As of 2.0 this method should not be used, since an &lt;code&gt;Apply&lt;/code&gt; is never a
+     *             Condition.
+     * 
+     * @return false
+     */
+    public boolean isCondition() {
+<span class="nc" id="L259">        return false;</span>
+    }
+
+    /**
+     * Evaluates the apply object using the given function. This will in turn call evaluate on all
+     * the given parameters, some of which may be other &lt;code&gt;Apply&lt;/code&gt; objects.
+     * 
+     * @param context the representation of the request
+     * 
+     * @return the result of trying to evaluate this apply object
+     */
+    public EvaluationResult evaluate(EvaluationCtx context) {
+        // Note that prior to the 2.0 codebase, this method was much more
+        // complex, pre-evaluating the higher-order functions. Because this
+        // was never really the right behavior (there's no reason that a
+        // function can only be at the start of an Apply), we no longer make
+        // assumptions at this point, so the higher order functions are
+        // left to evaluate their own parameters.
+<span class="fc" id="L277">        return function.evaluate(xprs, context);</span>
+    }
+
+    /**
+     * Returns the type of attribute that this object will return on a call to &lt;code&gt;evaluate&lt;/code&gt;
+     * . In practice, this will always be the same as the result of calling
+     * &lt;code&gt;getReturnType&lt;/code&gt; on the function used by this object.
+     * 
+     * @return the type returned by &lt;code&gt;evaluate&lt;/code&gt;
+     */
+    public URI getType() {
+<span class="fc" id="L288">        return function.getReturnType();</span>
+    }
+
+    /**
+     * Returns whether or not the &lt;code&gt;Function&lt;/code&gt; will return a bag of values on evaluation.
+     * 
+     * @return true if evaluation will return a bag of values, false otherwise
+     */
+    public boolean returnsBag() {
+<span class="fc" id="L297">        return function.returnsBag();</span>
+    }
+
+    /**
+     * Returns whether or not the &lt;code&gt;Function&lt;/code&gt; will return a bag of values on evaluation.
+     * 
+     * 
+     * @deprecated As of 2.0, you should use the &lt;code&gt;returnsBag&lt;/code&gt; method from the
+     *             super-interface &lt;code&gt;Expression&lt;/code&gt;.
+     * 
+     * @return true if evaluation will return a bag of values, false otherwise
+     */
+    public boolean evaluatesToBag() {
+<span class="nc" id="L310">        return function.returnsBag();</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;Apply&lt;/code&gt; into its XML form
+     *
+     * @return &lt;code&gt;String&lt;/code&gt;
+     */
+    public String encode() {
+<span class="nc" id="L319">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L320">        encode(builder);</span>
+<span class="nc" id="L321">        return builder.toString();</span>
+    }
+
+
+    /**
+     * Encodes this &lt;code&gt;Apply&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder) {
+
+<span class="nc" id="L333">        builder.append(&quot;&lt;Apply FunctionId=\&quot;&quot;).append(function.getIdentifier()).append(&quot;\&quot;&gt;\n&quot;);</span>
+
+<span class="nc" id="L335">        Iterator it = xprs.iterator();</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">        while (it.hasNext()) {</span>
+<span class="nc" id="L337">            Expression xpr = (Expression) (it.next());</span>
+<span class="nc" id="L338">            xpr.encode(builder);</span>
+<span class="nc" id="L339">        }</span>
+
+<span class="nc" id="L341">        builder.append(&quot;&lt;/Apply&gt;\n&quot;);</span>
+<span class="nc" id="L342">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

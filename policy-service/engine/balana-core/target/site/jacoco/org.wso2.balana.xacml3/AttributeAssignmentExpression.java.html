@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AttributeAssignmentExpression.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">WSO2 Balana Core</a> &gt; <a href="index.source.html" class="el_package">org.wso2.balana.xacml3</a> &gt; <span class="el_source">AttributeAssignmentExpression.java</span></div><h1>AttributeAssignmentExpression.java</h1><pre class="source lang-java linenums">/*
+*  Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*  WSO2 Inc. licenses this file to you under the Apache License,
+*  Version 2.0 (the &quot;License&quot;); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+package org.wso2.balana.xacml3;
+
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.balana.DOMHelper;
+import org.wso2.balana.Indenter;
+import org.wso2.balana.ctx.AttributeAssignment;
+import org.wso2.balana.ctx.EvaluationCtx;
+import org.wso2.balana.ParsingException;
+import org.wso2.balana.PolicyMetaData;
+import org.wso2.balana.attr.AttributeValue;
+import org.wso2.balana.attr.BagAttribute;
+import org.wso2.balana.cond.Evaluatable;
+import org.wso2.balana.cond.EvaluationResult;
+import org.wso2.balana.cond.Expression;
+import org.wso2.balana.cond.ExpressionHandler;
+
+import java.io.OutputStream;
+import java.net.URI;
+import java.util.*;
+
+/**
+ * Represents AttributeAssignmentExpressionType in the XACML 3.0 policy schema..
+ */
+public class AttributeAssignmentExpression {
+
+    /**
+     * attribute id of the AttributeAssignmentExpression element
+     */
+    private URI attributeId;
+
+    /**
+     * category of the AttributeAssignmentExpression element whether it is subject, action and etc
+     */
+    private URI category;
+
+    /**
+     *  issuer of the AttributeAssignment
+     */
+    private String issuer;
+
+    /**
+     *  &lt;code&gt;Expression&lt;/code&gt; that contains in &lt;code&gt;AttributeAssignmentExpression&lt;/code&gt;
+     */
+    private Expression expression;
+
+    /**
+     * Constructor that creates a new &lt;code&gt;AttributeAssignmentExpression&lt;/code&gt; based on
+     * the given elements.
+     * @param attributeId   attribute id of the AttributeAssignmentExpression element
+     * @param category category of the AttributeAssignmentExpression element whether it is subject, action and etc
+     * @param expression  &lt;code&gt;Expression&lt;/code&gt; that contains in &lt;code&gt;AttributeAssignmentExpression&lt;/code&gt;
+     * @param issuer issuer of the AttributeAssignment
+     */
+    public AttributeAssignmentExpression(URI attributeId, URI category, Expression expression,
+<span class="fc" id="L75">                                         String issuer) {</span>
+<span class="fc" id="L76">        this.attributeId = attributeId;</span>
+<span class="fc" id="L77">        this.category = category;</span>
+<span class="fc" id="L78">        this.expression = expression;</span>
+<span class="fc" id="L79">        this.issuer = issuer;</span>
+<span class="fc" id="L80">    }</span>
+
+    /**
+     *  creates a &lt;code&gt;AttributeAssignmentExpression&lt;/code&gt; based on its DOM node.
+     *
+     * @param root  root the node to parse for the AttributeAssignment
+     * @param metaData  meta-date associated with the policy
+     * @return a new &lt;code&gt;AttributeAssignmentExpression&lt;/code&gt; constructed by parsing
+     * @throws ParsingException if the DOM node is invalid
+     */
+    public static AttributeAssignmentExpression getInstance(Node root, PolicyMetaData metaData)
+            throws ParsingException {
+
+        URI attributeId;
+<span class="fc" id="L94">        URI category = null;</span>
+<span class="fc" id="L95">        String issuer= null;</span>
+<span class="fc" id="L96">        Expression expression = null;</span>
+
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (!DOMHelper.getLocalName(root).equals(&quot;AttributeAssignmentExpression&quot;)) {</span>
+<span class="nc" id="L99">            throw new ParsingException(&quot;ObligationExpression object cannot be created &quot;</span>
+<span class="nc" id="L100">                    + &quot;with root node of type: &quot; + DOMHelper.getLocalName(root));</span>
+        }
+
+<span class="fc" id="L103">        NamedNodeMap nodeAttributes = root.getAttributes();</span>
+
+        try {
+<span class="fc" id="L106">            attributeId = new URI(nodeAttributes.getNamedItem(&quot;AttributeId&quot;).getNodeValue());</span>
+<span class="nc" id="L107">        } catch (Exception e) {</span>
+<span class="nc" id="L108">            throw new ParsingException(&quot;Error parsing required AttributeId in &quot; +</span>
+                    &quot;AttributeAssignmentExpressionType&quot;, e);
+<span class="fc" id="L110">        }</span>
+
+        try {
+<span class="fc" id="L113">            Node categoryNode = nodeAttributes.getNamedItem(&quot;Category&quot;);</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">            if(categoryNode != null){</span>
+<span class="nc" id="L115">                category = new URI(categoryNode.getNodeValue());</span>
+            }
+
+<span class="fc" id="L118">            Node issuerNode = nodeAttributes.getNamedItem(&quot;Issuer&quot;);</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">            if(issuerNode != null){</span>
+<span class="nc" id="L120">                issuer = issuerNode.getNodeValue();</span>
+            }
+<span class="nc" id="L122">        } catch (Exception e) {</span>
+<span class="nc" id="L123">            throw new ParsingException(&quot;Error parsing optional attributes in &quot; +</span>
+                    &quot;AttributeAssignmentExpressionType&quot;, e);
+<span class="fc" id="L125">        }</span>
+
+<span class="fc" id="L127">        NodeList children = root.getChildNodes();</span>
+
+        // there can be only one expression  TODO  error when more than one expression
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        for(int i = 0; i &lt; children.getLength(); i ++){</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">            if (children.item(i).getNodeType() == Node.ELEMENT_NODE) {</span>
+<span class="fc" id="L132">                expression = ExpressionHandler.parseExpression(children.item(i), metaData, null);</span>
+<span class="fc" id="L133">                break;</span>
+            }
+        }
+
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        if(expression == null){</span>
+<span class="nc" id="L138">            throw new ParsingException(&quot;AttributeAssignmentExpression must contain at least one &quot; +</span>
+                    &quot;Expression Type&quot;);
+        }
+
+<span class="fc" id="L142">        return new AttributeAssignmentExpression(attributeId, category, expression, issuer);</span>
+    }
+
+    /**
+     * evaluates &lt;code&gt;Expression&lt;/code&gt; element and create new &lt;code&gt;Set&lt;/code&gt; of
+     * &lt;code&gt;AttributeAssignment&lt;/code&gt;
+     *
+     * @param ctx  &lt;code&gt;EvaluationCtx&lt;/code&gt;
+     * @return &lt;code&gt;Set&lt;/code&gt; of &lt;code&gt;AttributeAssignment&lt;/code&gt;
+     */
+    public Set&lt;AttributeAssignment&gt; evaluate(EvaluationCtx ctx) {
+        
+<span class="fc" id="L154">        Set&lt;AttributeAssignment&gt; values = new HashSet&lt;AttributeAssignment&gt;();</span>
+<span class="fc" id="L155">        EvaluationResult result = ((Evaluatable)expression).evaluate(ctx);</span>
+
+<span class="pc bpc" id="L157" title="2 of 4 branches missed.">        if(result == null || result.indeterminate()){</span>
+<span class="nc" id="L158">            return null;</span>
+        }
+        // TODO when indetermine  policy also must be indetermine
+<span class="fc" id="L161">        AttributeValue attributeValue = result.getAttributeValue();</span>
+
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if(attributeValue != null){</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">            if(attributeValue.isBag()) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">                if(((BagAttribute)attributeValue).size() &gt; 0 ){</span>
+<span class="nc" id="L166">                    Iterator iterator = ((BagAttribute)attributeValue).iterator();</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">                    while(iterator.hasNext()){</span>
+<span class="nc" id="L168">                        AttributeValue bagValue = (AttributeValue) iterator.next();</span>
+<span class="nc" id="L169">                        AttributeAssignment assignment =</span>
+<span class="nc" id="L170">                                new AttributeAssignment(attributeId, bagValue.getType(), category,</span>
+<span class="nc" id="L171">                                                                        bagValue.encode(), issuer);</span>
+
+<span class="nc" id="L173">                        values.add(assignment);</span>
+<span class="nc" id="L174">                    }</span>
+<span class="nc" id="L175">                } else {</span>
+<span class="nc" id="L176">                    return null;</span>
+                }
+            } else {
+<span class="fc" id="L179">                AttributeAssignment assignment =</span>
+<span class="fc" id="L180">                        new AttributeAssignment(attributeId, attributeValue.getType(),</span>
+<span class="fc" id="L181">                                                category, attributeValue.encode(), issuer);</span>
+<span class="fc" id="L182">                values.add(assignment);</span>
+            }
+        }
+
+<span class="fc" id="L186">        return values;</span>
+    }
+
+    /**
+     * Encodes this &lt;code&gt;AttributeAssignmentExpression&lt;/code&gt; into its XML form and writes this out to the provided
+     * &lt;code&gt;StringBuilder&lt;code&gt;
+     *
+     * @param builder string stream into which the XML-encoded data is written
+     */
+    public void encode(StringBuilder builder){
+
+<span class="nc" id="L197">        builder.append(&quot;&lt;AttributeAssignmentExpression AttributeId=\&quot;&quot; + attributeId + &quot;\&quot;&quot;);</span>
+
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        if(category != null){</span>
+<span class="nc" id="L200">            builder.append(&quot; Category=\&quot;&quot; + category + &quot;\&quot;&quot;);</span>
+        }
+<span class="nc bnc" id="L202" title="All 2 branches missed.">        if(issuer != null){</span>
+<span class="nc" id="L203">            builder.append(&quot; Issuer=\&quot;&quot; + issuer + &quot;\&quot;&quot;);</span>
+        }
+<span class="nc" id="L205">        builder.append(&quot; &gt;\n&quot;);</span>
+
+<span class="nc" id="L207">        expression.encode(builder);</span>
+
+<span class="nc" id="L209">        builder.append(&quot;&lt;/AttributeAssignmentExpression&gt;\n&quot;);</span>
+<span class="nc" id="L210">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
