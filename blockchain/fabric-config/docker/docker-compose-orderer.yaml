@@ -11,13 +11,13 @@ services:
         hostname: fabric-cli
         tty: true
         extra_hosts:
-            - "orderer0.example.com:192.168.1.4"
-            - "orderer1.example.com:192.168.1.4"
-            - "orderer2.example.com:192.168.1.4"
-            - "peer0.org1.example.com:192.168.1.4"
-            - "peer1.org1.example.com:192.168.1.4"
-            - "peer0.org2.example.com:192.168.1.4"
-            - "peer1.org2.example.com:192.168.1.4"
+            - "orderer0.example.com:192.168.181.129"
+            - "orderer1.example.com:192.168.181.129"
+            - "orderer2.example.com:192.168.181.129"
+            - "peer0.org1.example.com:192.168.181.129"
+            - "peer1.org1.example.com:192.168.181.129"
+            - "peer0.org2.example.com:192.168.181.129"
+            - "peer1.org2.example.com:192.168.181.129"
         environment:
             - CORE_PEER_ID=fabric-cli
             - CORE_PEER_ADDRESS=peer0.org1.example.com:7051 # default to operate on peer0.org1
@@ -50,13 +50,13 @@ services:
             - 7050:7050
             - 8443:8443
         extra_hosts:
-            - "orderer0.example.com:192.168.1.4"
-            - "orderer1.example.com:192.168.1.4"
-            - "orderer2.example.com:192.168.1.4"
-            - "peer0.org1.example.com:192.168.1.4"
-            - "peer1.org1.example.com:192.168.1.4"
-            - "peer0.org2.example.com:192.168.1.4"
-            - "peer1.org2.example.com:192.168.1.4"
+            - "orderer0.example.com:192.168.181.129"
+            - "orderer1.example.com:192.168.181.129"
+            - "orderer2.example.com:192.168.181.129"
+            - "peer0.org1.example.com:192.168.181.129"
+            - "peer1.org1.example.com:192.168.181.129"
+            - "peer0.org2.example.com:192.168.181.129"
+            - "peer1.org2.example.com:192.168.181.129"
         environment:
             - FABRIC_LOGGING_FORMAT="%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"
             - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0 # default: 127.0.0.1
@@ -100,13 +100,13 @@ services:
             - 8050:7050
             - 8444:8443
         extra_hosts:
-            - "orderer0.example.com:192.168.1.4"
-            - "orderer1.example.com:192.168.1.4"
-            - "orderer2.example.com:192.168.1.4"
-            - "peer0.org1.example.com:192.168.1.4"
-            - "peer1.org1.example.com:192.168.1.4"
-            - "peer0.org2.example.com:192.168.1.4"
-            - "peer1.org2.example.com:192.168.1.4"
+            - "orderer0.example.com:192.168.181.129"
+            - "orderer1.example.com:192.168.181.129"
+            - "orderer2.example.com:192.168.181.129"
+            - "peer0.org1.example.com:192.168.181.129"
+            - "peer1.org1.example.com:192.168.181.129"
+            - "peer0.org2.example.com:192.168.181.129"
+            - "peer1.org2.example.com:192.168.181.129"
         environment:
             - FABRIC_LOGGING_SPEC=DEBUG
             - FABRIC_LOGGING_FORMAT="%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"
@@ -149,13 +149,13 @@ services:
             - 9050:7050
             - 8445:8443
         extra_hosts:
-            - "orderer0.example.com:192.168.1.4"
-            - "orderer1.example.com:192.168.1.4"
-            - "orderer2.example.com:192.168.1.4"
-            - "peer0.org1.example.com:192.168.1.4"
-            - "peer1.org1.example.com:192.168.1.4"
-            - "peer0.org2.example.com:192.168.1.4"
-            - "peer1.org2.example.com:192.168.1.4"
+            - "orderer0.example.com:192.168.181.129"
+            - "orderer1.example.com:192.168.181.129"
+            - "orderer2.example.com:192.168.181.129"
+            - "peer0.org1.example.com:192.168.181.129"
+            - "peer1.org1.example.com:192.168.181.129"
+            - "peer0.org2.example.com:192.168.181.129"
+            - "peer1.org2.example.com:192.168.181.129"
         environment:
             - FABRIC_LOGGING_SPEC=DEBUG  # default: INFO
             - FABRIC_LOGGING_FORMAT="%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"

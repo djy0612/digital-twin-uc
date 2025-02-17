@@ -6,10 +6,10 @@
         "description": "Hyperledger Fabric链码"
     },
     "blockchain/chaincode/audit-contract": {
-        "description": "策略管理智能合约"
+        "description": "审计日志合约"
     },
     "blockchain/chaincode/policy-contract": {
-        "description": "审计日志合约"
+        "description": "策略管理智能合约"
     },
     "blockchain/fabric-config": {
         "description": "网络配置"
