@@ -7,8 +7,14 @@ WSO2 Balana Utils
 
 
 From: 'an unknown organization'
-  - xerces.wso2 (http://wso2.org) xerces.wso2:xercesImpl:bundle:2.8.1.wso2v2
+  - xercesImpl  xerces.wso2:xercesImpl:jar:2.8.1.wso2v2
 
+
+From: 'Apache Software Foundation' (http://www.apache.org/)
+  - Xerces2 Java Parser (http://xerces.apache.org/xerces2-j/) xerces:xercesImpl:jar:2.8.1
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - xml-apis (http://xml.apache.org/commons/#external) xml-apis:xml-apis:jar:1.3.03
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'OPS4J - Open Participation Software for Java' (http://www.ops4j.org/)
   - OPS4J Pax Logging - API (http://www.ops4j.org/projects/pax/logging/pax-logging-api) org.ops4j.pax.logging:pax-logging-api:bundle:1.10.1
