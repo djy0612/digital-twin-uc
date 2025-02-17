@@ -13,13 +13,13 @@ services:
             - 9052:7052
             - 9445:9443
         extra_hosts:
-            - "orderer0.example.com:192.168.1.4"
-            - "orderer1.example.com:192.168.1.4"
-            - "orderer2.example.com:192.168.1.4"
-            - "peer0.org1.example.com:192.168.1.4"
-            - "peer1.org1.example.com:192.168.1.4"
-            - "peer0.org2.example.com:192.168.1.4"
-            - "peer1.org2.example.com:192.168.1.4"
+            - "orderer0.example.com:192.168.181.129"
+            - "orderer1.example.com:192.168.181.129"
+            - "orderer2.example.com:192.168.181.129"
+            - "peer0.org1.example.com:192.168.181.129"
+            - "peer1.org1.example.com:192.168.181.129"
+            - "peer0.org2.example.com:192.168.181.129"
+            - "peer1.org2.example.com:192.168.181.129"
         environment:
             - FABRIC_LOGGING_SPEC=INFO
             - FABRIC_LOGGING_FORMAT="%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"
@@ -74,13 +74,13 @@ services:
             - 10052:7052
             - 9446:9443
         extra_hosts:
-            - "orderer0.example.com:192.168.1.4"
-            - "orderer1.example.com:192.168.1.4"
-            - "orderer2.example.com:192.168.1.4"
-            - "peer0.org1.example.com:192.168.1.4"
-            - "peer1.org1.example.com:192.168.1.4"
-            - "peer0.org2.example.com:192.168.1.4"
-            - "peer1.org2.example.com:192.168.1.4"
+            - "orderer0.example.com:192.168.181.129"
+            - "orderer1.example.com:192.168.181.129"
+            - "orderer2.example.com:192.168.181.129"
+            - "peer0.org1.example.com:192.168.181.129"
+            - "peer1.org1.example.com:192.168.181.129"
+            - "peer0.org2.example.com:192.168.181.129"
+            - "peer1.org2.example.com:192.168.181.129"
         environment:
             - FABRIC_LOGGING_SPEC=INFO
             - FABRIC_LOGGING_FORMAT="%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"

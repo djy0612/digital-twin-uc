@@ -13,7 +13,7 @@
 ################################################################################
 General:
     # Listen address: The IP on which to bind to listen.
-    ListenAddress: 127.0.0.1
+    ListenAddress: 192.168.181.129
 
     # Listen port: The port on which to bind to listen.
     ListenPort: 7050
@@ -23,15 +23,15 @@ General:
         # Require server-side TLS
         Enabled: true
         # PrivateKey governs the file location of the private key of the TLS certificate.
-        PrivateKey: tls/server.key
+        PrivateKey: /home/djy/digital-twin-uc/blockchain/fabric-config/crypto-config/ordererOrganizations/example.com/orderers/orderer0.example.com/tls/server.key
         # Certificate governs the file location of the server TLS certificate.
-        Certificate: tls/server.crt
+        Certificate: /home/djy/digital-twin-uc/blockchain/fabric-config/crypto-config/ordererOrganizations/example.com/orderers/orderer0.example.com/tls/server.crt
         # RootCAs contains a list of additional root certificates used for verifying certificates
         # of other orderer nodes during outbound connections.
         # It is not required to be set, but can be used to augment the set of TLS CA certificates
         # available from the MSPs of each channel’s configuration.
         RootCAs:
-          - tls/ca.crt
+          - /home/djy/digital-twin-uc/blockchain/fabric-config/crypto-config/ordererOrganizations/example.com/orderers/orderer0.example.com/tls/ca.crt
         # Require client certificates / mutual TLS for inbound connections.
         ClientAuthRequired: false
         # If mutual TLS is enabled, ClientRootCAs contains a list of additional root certificates
@@ -69,10 +69,10 @@ General:
         # ClientCertificate governs the file location of the client TLS certificate
         # used to establish mutual TLS connections with other ordering service nodes.
         # If not set, the server General.TLS.Certificate is re-used.
-        ClientCertificate:
+        ClientCertificate: /home/djy/digital-twin-uc/blockchain/fabric-config/crypto-config/ordererOrganizations/example.com/orderers/orderer0.example.com/tls/server.crt
         # ClientPrivateKey governs the file location of the private key of the client TLS certificate.
         # If not set, the server General.TLS.PrivateKey is re-used.
-        ClientPrivateKey:
+        ClientPrivateKey: /home/djy/digital-twin-uc/blockchain/fabric-config/crypto-config/ordererOrganizations/example.com/orderers/orderer0.example.com/tls/server.key
 
         # The below 4 properties should be either set together, or be unset together.
         # If they are set, then the orderer node uses a separate listener for intra-cluster
@@ -103,19 +103,19 @@ General:
     # Generate a genesis block by updating $FABRIC_CFG_PATH/configtx.yaml and
     # using configtxgen command with "-outputBlock" option.
     # Defaults to file "genesisblock" (in $FABRIC_CFG_PATH directory) if not specified.
-    BootstrapFile:
+    BootstrapFile: /home/djy/digital-twin-uc/blockchain/fabric-config/channel-artifacts/orderer.genesis.block
 
     # LocalMSPDir is where to find the private crypto material needed by the
     # orderer. It is set relative here as a default for dev environments but
     # should be changed to the real location in production.
-    LocalMSPDir: msp
+    LocalMSPDir: /home/djy/digital-twin-uc/blockchain/fabric-config/crypto-config/ordererOrganizations/example.com/orderers/orderer0.example.com/msp
 
     # LocalMSPID is the identity to register the local MSP material with the MSP
     # manager. IMPORTANT: The local MSP ID of an orderer needs to match the MSP
     # ID of one of the organizations defined in the orderer system channel's
     # /Channel/Orderer configuration. The sample organization defined in the
     # sample configuration provided has an MSP ID of "SampleOrg".
-    LocalMSPID: SampleOrg
+    LocalMSPID: OrdererMSP
 
     # Enable an HTTP service for Go "pprof" profiling as documented at:
     # https://golang.org/pkg/net/http/pprof

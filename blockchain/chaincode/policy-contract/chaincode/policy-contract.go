@@ -151,15 +151,3 @@ func (s *PolicyContract) getPolicyState(ctx contractapi.TransactionContextInterf
 
 	return &state, nil
 }
-
-func main() {
-	chaincode, err := contractapi.NewChaincode(&PolicyContract{})
-	if err != nil {
-		fmt.Printf("Error creating policy chaincode: %v", err)
-		return
-	}
-
-	if err := chaincode.Start(); err != nil {
-		fmt.Printf("Error starting policy chaincode: %v", err)
-	}
-}
