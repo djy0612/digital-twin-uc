@@ -35,7 +35,16 @@ type PolicyDecision struct {
     ResponseContent string    `json:"responseContent"`  // 响应内容
 }
 
-// CreatePolicy 创建新策略
+// 添加获取交易时间戳的辅助函数
+func getTxTimestamp(ctx contractapi.TransactionContextInterface) (time.Time, error) {
+    txTimestamp, err := ctx.GetStub().GetTxTimestamp()
+    if err != nil {
+        return time.Time{}, fmt.Errorf("failed to get transaction timestamp: %v", err)
+    }
+    return time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos)), nil
+}
+
+// CreatePolicy 创建新策略，仅使用交易时间戳
 func (pc *PolicyContract) CreatePolicy(ctx contractapi.TransactionContextInterface, id string, name string, content string, version string) error {
     // 检查策略是否已存在
     exists, err := pc.PolicyExists(ctx, id)
@@ -51,6 +60,12 @@ func (pc *PolicyContract) CreatePolicy(ctx contractapi.TransactionContextInterfa
         return fmt.Errorf("invalid XACML format")
     }
 
+    // 获取交易时间戳
+    txTime, err := getTxTimestamp(ctx)
+    if err != nil {
+        return fmt.Errorf("failed to get transaction timestamp: %v", err)
+    }
+
     // 获取创建者ID
     creatorID, err := ctx.GetClientIdentity().GetID()
     if err != nil {
@@ -64,8 +79,8 @@ func (pc *PolicyContract) CreatePolicy(ctx contractapi.TransactionContextInterfa
         Content:   content,
         Version:   version,
         Status:    "active",
-        CreatedAt: time.Now(),
-        UpdatedAt: time.Now(),
+        CreatedAt: txTime,
+        UpdatedAt: txTime,
         CreatedBy: creatorID,
     }
 
@@ -90,7 +105,7 @@ func (pc *PolicyContract) CreatePolicy(ctx contractapi.TransactionContextInterfa
     return nil
 }
 
-// UpdatePolicy 更新策略
+// UpdatePolicy 更新策略，仅使用交易时间戳
 func (pc *PolicyContract) UpdatePolicy(ctx contractapi.TransactionContextInterface, id string, content string, version string) error {
     // 检查策略是否存在
     policy, err := pc.GetPolicy(ctx, id)
@@ -103,10 +118,16 @@ func (pc *PolicyContract) UpdatePolicy(ctx contractapi.TransactionContextInterfa
         return fmt.Errorf("invalid XACML format")
     }
 
+    // 获取交易时间戳
+    txTime, err := getTxTimestamp(ctx)
+    if err != nil {
+        return fmt.Errorf("failed to get transaction timestamp: %v", err)
+    }
+
     // 更新策略内容
     policy.Content = content
     policy.Version = version
-    policy.UpdatedAt = time.Now()
+    policy.UpdatedAt = txTime
 
     // 序列化并存储
     policyJSON, err := json.Marshal(policy)
@@ -147,7 +168,7 @@ func (pc *PolicyContract) GetPolicy(ctx contractapi.TransactionContextInterface,
     return &policy, nil
 }
 
-// EvaluatePolicy 评估策略
+// EvaluatePolicy 评估策略，修改函数以使用交易时间戳
 func (pc *PolicyContract) EvaluatePolicy(ctx contractapi.TransactionContextInterface, policyId string, requestContent string) (*PolicyDecision, error) {
     // 获取策略
     policy, err := pc.GetPolicy(ctx, policyId)
@@ -161,12 +182,18 @@ func (pc *PolicyContract) EvaluatePolicy(ctx contractapi.TransactionContextInter
         return nil, fmt.Errorf("policy evaluation failed: %v", err)
     }
 
+    // 获取交易时间戳
+    txTime, err := getTxTimestamp(ctx)
+    if err != nil {
+        return nil, fmt.Errorf("failed to get transaction timestamp: %v", err)
+    }
+
     // 创建决策结果
     decision := &PolicyDecision{
-        RequestID:       fmt.Sprintf("req_%d", time.Now().Unix()),
+        RequestID:       fmt.Sprintf("req_%d", txTime.Unix()),
         PolicyID:        policyId,
         Decision:        response.Decision,
-        Timestamp:       time.Now(),
+        Timestamp:       txTime,
         RequestContent:  requestContent,
         ResponseContent: response.ResponseContent,
     }
