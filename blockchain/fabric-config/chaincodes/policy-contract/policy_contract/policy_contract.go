@@ -1,8 +1,9 @@
-package main
+package policy_contract
 
 import (
     "encoding/json"
     "fmt"
+    "log"
     "time"
     "github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
@@ -46,7 +47,7 @@ func (pc *PolicyContract) CreatePolicy(ctx contractapi.TransactionContextInterfa
     }
 
     // 验证XACML格式
-    if !validateXACMLFormat(content) {
+    if (!validateXACMLFormat(content)) {
         return fmt.Errorf("invalid XACML format")
     }
 
@@ -92,7 +93,7 @@ func (pc *PolicyContract) UpdatePolicy(ctx contractapi.TransactionContextInterfa
     }
 
     // 验证XACML格式
-    if !validateXACMLFormat(content) {
+    if (!validateXACMLFormat(content)) {
         return fmt.Errorf("invalid XACML format")
     }
 
@@ -172,13 +173,13 @@ func (pc *PolicyContract) EvaluatePolicy(ctx contractapi.TransactionContextInter
 
     err = ctx.GetStub().PutState(decision.RequestID, decisionJSON)
     if err != nil {
-        return nil, fmt.Errorf("failed to store decision: %v", err)
+        return fmt.Errorf("failed to store decision: %v", err)
     }
 
     // 发出事件
     err = ctx.GetStub().SetEvent("PolicyEvaluated", decisionJSON)
     if err != nil {
-        return nil, fmt.Errorf("failed to emit PolicyEvaluated event: %v", err)
+        return fmt.Errorf("failed to emit PolicyEvaluated event: %v", err)
     }
 
     return decision, nil
@@ -243,13 +244,13 @@ func evaluatePolicyWithEngine(policyContent string, requestContent string) (*str
 }
 
 func main() {
-    chaincode, err := contractapi.NewChaincode(&PolicyContract{})
+    policyContract := new(PolicyContract)
+    chaincode, err := contractapi.NewChaincode(policyContract)
     if err != nil {
-        fmt.Printf("Error creating policy chaincode: %v\n", err)
-        return
+        log.Panicf("Error creating policy chaincode: %v", err)
     }
 
     if err := chaincode.Start(); err != nil {
-        fmt.Printf("Error starting policy chaincode: %v\n", err)
+        log.Panicf("Error starting policy chaincode: %v", err)
     }
 }
