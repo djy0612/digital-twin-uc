@@ -1,4 +1,4 @@
-package policy_contract
+package main
 
 import (
     "encoding/json"
@@ -51,6 +51,12 @@ func (pc *PolicyContract) CreatePolicy(ctx contractapi.TransactionContextInterfa
         return fmt.Errorf("invalid XACML format")
     }
 
+    // 获取创建者ID
+    creatorID, err := ctx.GetClientIdentity().GetID()
+    if err != nil {
+        return fmt.Errorf("failed to get creator ID: %v", err)
+    }
+
     // 创建策略对象
     policy := Policy{
         ID:        id,
@@ -60,7 +66,7 @@ func (pc *PolicyContract) CreatePolicy(ctx contractapi.TransactionContextInterfa
         Status:    "active",
         CreatedAt: time.Now(),
         UpdatedAt: time.Now(),
-        CreatedBy: ctx.GetClientIdentity().GetID(),
+        CreatedBy: creatorID,
     }
 
     // 将策略序列化为JSON
@@ -145,7 +151,7 @@ func (pc *PolicyContract) GetPolicy(ctx contractapi.TransactionContextInterface,
 func (pc *PolicyContract) EvaluatePolicy(ctx contractapi.TransactionContextInterface, policyId string, requestContent string) (*PolicyDecision, error) {
     // 获取策略
     policy, err := pc.GetPolicy(ctx, policyId)
-    if err != nil {
+    if (err != nil) {
         return nil, fmt.Errorf("failed to get policy: %v", err)
     }
 
@@ -173,13 +179,13 @@ func (pc *PolicyContract) EvaluatePolicy(ctx contractapi.TransactionContextInter
 
     err = ctx.GetStub().PutState(decision.RequestID, decisionJSON)
     if err != nil {
-        return fmt.Errorf("failed to store decision: %v", err)
+        return nil, fmt.Errorf("failed to store decision: %v", err)
     }
 
     // 发出事件
     err = ctx.GetStub().SetEvent("PolicyEvaluated", decisionJSON)
     if err != nil {
-        return fmt.Errorf("failed to emit PolicyEvaluated event: %v", err)
+        return nil, fmt.Errorf("failed to emit PolicyEvaluated event: %v", err)
     }
 
     return decision, nil

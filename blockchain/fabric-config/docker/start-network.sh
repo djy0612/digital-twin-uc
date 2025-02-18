@@ -44,8 +44,9 @@ fi
 
 # 将生成的通道文件移动到本地目录
 echo "Moving channel block file to local directory..."
-docker cp fabric-cli:/opt/gopath/src/github.com/hyperledger/fabric/peer/$APP_CHANNEL.block "/tmp/channel-artifacts"
-
+docker exec fabric-cli bash -c "
+mv $APP_CHANNEL.block /tmp/channel-artifacts/
+"
 # 加入通道
 echo "Joining peers to the channel $APP_CHANNEL..."
 
