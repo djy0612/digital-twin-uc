@@ -9,7 +9,7 @@ COMPOSE_FILES=(
 )
 
 # 启动所有 Docker Compose 服务
-echo "Starting all Docker Compose services..."
+echo "🚀 正在启动 all Docker Compose services..."
 for FILE in "${COMPOSE_FILES[@]}"; do
     echo "Starting $FILE..."
     docker-compose -f "$FILE" up -d

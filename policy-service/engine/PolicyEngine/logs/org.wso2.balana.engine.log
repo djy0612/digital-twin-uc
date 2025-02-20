@@ -251,3 +251,5 @@
 10:57:43.691 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND PING: ack=false bytes=1234
 10:57:43.693 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND PING: ack=true bytes=1234
 10:57:43.694 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND HEADERS: streamId=3 headers=GrpcHttp2OutboundHeaders[grpc-status: 0] padding=0 endStream=true
+17:17:44.039 [Thread-0] INFO org.example.policy.service.PolicyServer - Shutting down policy server due to JVM shutdown
+17:17:44.184 [Thread-0] INFO org.example.policy.service.PolicyServer - Server shutdown completed
