@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Policy xmlns="urn:oasis:names:tc:xacml:3.0:core:schema:wd-17" 
+        PolicyId="BasicAccessPolicy" 
+        RuleCombiningAlgId="urn:oasis:names:tc:xacml:1.0:rule-combining-algorithm:permit-overrides" 
+        Version="1.0">
+
+    <!-- 策略目标：匹配请求中的资源、用户和操作 -->
+    <Target>
+        <AnyOf>
+            <AllOf>
+                <!-- 资源匹配 -->
+                <Match MatchId="urn:oasis:names:tc:xacml:1.0:function:string-equal">
+                    <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">resource1</AttributeValue>
+                    <AttributeDesignator 
+                        AttributeId="urn:oasis:names:tc:xacml:1.0:resource:resource-id" 
+                        Category="urn:oasis:names:tc:xacml:3.0:attribute-category:resource" 
+                        DataType="http://www.w3.org/2001/XMLSchema#string" 
+                        MustBePresent="true"/>
+                </Match>
+            </AllOf>
+        </AnyOf>
+    </Target>
+
+    <!-- 规则1：允许 user1 的读取操作 -->
+    <Rule RuleId="permit-read-resource1" Effect="Permit">
+        <Target>
+            <AnyOf>
+                <AllOf>
+                    <!-- 用户匹配 -->
+                    <Match MatchId="urn:oasis:names:tc:xacml:1.0:function:string-equal">
+                        <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">user1</AttributeValue>
+                        <AttributeDesignator 
+                            AttributeId="urn:oasis:names:tc:xacml:1.0:subject:subject-id" 
+                            Category="urn:oasis:names:tc:xacml:1.0:subject-category:access-subject" 
+                            DataType="http://www.w3.org/2001/XMLSchema#string" 
+                            MustBePresent="true"/>
+                    </Match>
+                    <!-- 操作匹配 -->
+                    <Match MatchId="urn:oasis:names:tc:xacml:1.0:function:string-equal">
+                        <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">read</AttributeValue>
+                        <AttributeDesignator 
+                            AttributeId="urn:oasis:names:tc:xacml:1.0:action:action-id" 
+                            Category="urn:oasis:names:tc:xacml:3.0:attribute-category:action" 
+                            DataType="http://www.w3.org/2001/XMLSchema#string" 
+                            MustBePresent="true"/>
+                    </Match>
+                </AllOf>
+            </AnyOf>
+        </Target>
+        <Description>允许 user1 读取 resource1</Description>
+    </Rule>
+
+    <!-- 规则2：默认拒绝其他所有请求 -->
+    <Rule RuleId="deny-other-requests" Effect="Deny">
+        <Description>拒绝未明确允许的请求</Description>
+    </Rule>
+
+</Policy>

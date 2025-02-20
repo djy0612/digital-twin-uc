@@ -1,0 +1,253 @@
+10:57:35.291 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.logging.InternalLoggerFactory - Using SLF4J as the default logging framework
+10:57:35.297 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent0 - -Dio.netty.noUnsafe: false
+10:57:35.298 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent0 - Java version: 17
+10:57:35.299 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent0 - sun.misc.Unsafe.theUnsafe: available
+10:57:35.300 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent0 - sun.misc.Unsafe.copyMemory: available
+10:57:35.301 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent0 - sun.misc.Unsafe.storeFence: available
+10:57:35.301 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent0 - java.nio.Buffer.address: available
+10:57:35.302 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent0 - direct buffer constructor: unavailable: Reflective setAccessible(true) disabled
+10:57:35.302 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent0 - java.nio.Bits.unaligned: available, true
+10:57:35.302 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent0 - jdk.internal.misc.Unsafe.allocateUninitializedArray(int): unavailable: class io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent0$7 cannot access class jdk.internal.misc.Unsafe (in module java.base) because module java.base does not export jdk.internal.misc to unnamed module @26ee6b5e
+10:57:35.303 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent0 - java.nio.DirectByteBuffer.<init>(long, int): unavailable
+10:57:35.303 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent - sun.misc.Unsafe: available
+10:57:35.313 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent - maxDirectMemory: 536870912 bytes (maybe)
+10:57:35.313 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent - -Dio.netty.tmpdir: /tmp (java.io.tmpdir)
+10:57:35.313 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent - -Dio.netty.bitMode: 64 (sun.arch.data.model)
+10:57:35.316 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent - -Dio.netty.maxDirectMemory: -1 bytes
+10:57:35.316 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent - -Dio.netty.uninitializedArrayAllocationThreshold: -1
+10:57:35.317 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.CleanerJava9 - java.nio.ByteBuffer.cleaner(): available
+10:57:35.317 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent - -Dio.netty.noPreferDirect: false
+10:57:35.340 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.NativeLibraryLoader - -Dio.netty.native.workdir: /tmp (io.netty.tmpdir)
+10:57:35.340 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.NativeLibraryLoader - -Dio.netty.native.deleteLibAfterLoading: true
+10:57:35.340 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.NativeLibraryLoader - -Dio.netty.native.tryPatchShadedId: true
+10:57:35.340 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.NativeLibraryLoader - -Dio.netty.native.detectNativeLibraryDuplicates: true
+10:57:35.361 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.NativeLibraryLoader - Successfully loaded the library /tmp/libio_grpc_netty_shaded_netty_transport_native_epoll_x86_648721297605800945568.so
+10:57:35.364 [main] DEBUG io.grpc.netty.shaded.io.netty.util.NetUtil - -Djava.net.preferIPv4Stack: false
+10:57:35.364 [main] DEBUG io.grpc.netty.shaded.io.netty.util.NetUtil - -Djava.net.preferIPv6Addresses: false
+10:57:35.365 [main] DEBUG io.grpc.netty.shaded.io.netty.util.NetUtilInitializations - Loopback interface: lo (lo, 0:0:0:0:0:0:0:1%lo)
+10:57:35.367 [main] DEBUG io.grpc.netty.shaded.io.netty.util.NetUtil - /proc/sys/net/core/somaxconn: 4096
+10:57:35.380 [main] DEBUG io.grpc.netty.shaded.io.netty.channel.MultithreadEventLoopGroup - -Dio.netty.eventLoopThreads: 4
+[org.wso2.balana.attr.StandardAttributeFactory] : Initializing standard datatypes
+[org.wso2.balana.cond.StandardFunctionFactory] : Initializing standard Target functions
+[org.wso2.balana.cond.StandardFunctionFactory] : Initializing standard Condition functions
+[org.wso2.balana.cond.StandardFunctionFactory] : Initializing standard General functions
+[org.wso2.balana.combine.StandardCombiningAlgFactory] : Initializing standard combining algorithms
+[org.wso2.balana.PDP] : creating a PDP
+[org.wso2.balana.finder.PolicyFinder] : Initializing PolicyFinder
+10:57:35.513 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.InternalThreadLocalMap - -Dio.netty.threadLocalMap.stringBuilder.initialSize: 1024
+10:57:35.513 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.InternalThreadLocalMap - -Dio.netty.threadLocalMap.stringBuilder.maxSize: 4096
+10:57:35.519 [main] DEBUG io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent - org.jctools-core.MpscChunkedArrayQueue: available
+10:57:35.532 [main] DEBUG io.grpc.netty.shaded.io.netty.util.ResourceLeakDetector - -Dio.grpc.netty.shaded.io.netty.leakDetection.level: simple
+10:57:35.532 [main] DEBUG io.grpc.netty.shaded.io.netty.util.ResourceLeakDetector - -Dio.grpc.netty.shaded.io.netty.leakDetection.targetRecords: 4
+10:57:35.533 [main] DEBUG io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator - -Dio.netty.allocator.numHeapArenas: 4
+10:57:35.533 [main] DEBUG io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator - -Dio.netty.allocator.numDirectArenas: 4
+10:57:35.533 [main] DEBUG io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator - -Dio.netty.allocator.pageSize: 8192
+10:57:35.533 [main] DEBUG io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator - -Dio.netty.allocator.maxOrder: 9
+10:57:35.533 [main] DEBUG io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator - -Dio.netty.allocator.chunkSize: 4194304
+10:57:35.533 [main] DEBUG io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator - -Dio.netty.allocator.smallCacheSize: 256
+10:57:35.533 [main] DEBUG io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator - -Dio.netty.allocator.normalCacheSize: 64
+10:57:35.533 [main] DEBUG io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator - -Dio.netty.allocator.maxCachedBufferCapacity: 32768
+10:57:35.533 [main] DEBUG io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator - -Dio.netty.allocator.cacheTrimInterval: 8192
+10:57:35.533 [main] DEBUG io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator - -Dio.netty.allocator.cacheTrimIntervalMillis: 0
+10:57:35.533 [main] DEBUG io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator - -Dio.netty.allocator.useCacheForAllThreads: false
+10:57:35.533 [main] DEBUG io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator - -Dio.netty.allocator.maxCachedByteBuffersPerChunk: 1023
+10:57:35.552 [grpc-default-boss-ELG-1-1] DEBUG io.grpc.netty.shaded.io.netty.channel.DefaultChannelId - -Dio.netty.processId: 300502 (auto-detected)
+10:57:35.555 [grpc-default-boss-ELG-1-1] DEBUG io.grpc.netty.shaded.io.netty.channel.DefaultChannelId - -Dio.netty.machineId: 00:0c:29:ff:fe:82:58:e4 (auto-detected)
+10:57:35.566 [grpc-default-boss-ELG-1-1] DEBUG io.grpc.netty.shaded.io.netty.buffer.ByteBufUtil - -Dio.netty.allocator.type: pooled
+10:57:35.567 [grpc-default-boss-ELG-1-1] DEBUG io.grpc.netty.shaded.io.netty.buffer.ByteBufUtil - -Dio.netty.threadLocalDirectBufferSize: 0
+10:57:35.567 [grpc-default-boss-ELG-1-1] DEBUG io.grpc.netty.shaded.io.netty.buffer.ByteBufUtil - -Dio.netty.maxThreadLocalCharBufferSize: 16384
+10:57:35.592 [main] INFO org.example.policy.service.PolicyServer - Policy Server started on port 9090
+10:57:35.593 [main] INFO org.example.policy.service.PolicyServer - Policy Server is running...
+10:57:43.393 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.netty.buffer.AbstractByteBuf - -Dio.grpc.netty.shaded.io.netty.buffer.checkAccessible: true
+10:57:43.393 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.netty.buffer.AbstractByteBuf - -Dio.grpc.netty.shaded.io.netty.buffer.checkBounds: true
+10:57:43.394 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.netty.util.ResourceLeakDetectorFactory - Loaded default ResourceLeakDetector: io.grpc.netty.shaded.io.netty.util.ResourceLeakDetector@2630efd6
+10:57:43.441 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] OUTBOUND SETTINGS: ack=false settings={MAX_CONCURRENT_STREAMS=2147483647, INITIAL_WINDOW_SIZE=1048576, MAX_HEADER_LIST_SIZE=8192}
+10:57:43.443 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.netty.util.Recycler - -Dio.netty.recycler.maxCapacityPerThread: 4096
+10:57:43.443 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.netty.util.Recycler - -Dio.netty.recycler.ratio: 8
+10:57:43.444 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.netty.util.Recycler - -Dio.netty.recycler.chunkSize: 32
+10:57:43.444 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.netty.util.Recycler - -Dio.netty.recycler.blocking: false
+10:57:43.449 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] OUTBOUND WINDOW_UPDATE: streamId=0 windowSizeIncrement=983041
+10:57:43.456 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND SETTINGS: ack=false settings=[id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728]
+10:57:43.456 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] OUTBOUND SETTINGS: ack=true
+10:57:43.458 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND SETTINGS: ack=true
+10:57:43.470 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND HEADERS: streamId=1 headers=GrpcHttp2RequestHeaders[:path: /grpc.reflection.v1.ServerReflection/ServerReflectionInfo, :authority: localhost:9090, :method: POST, :scheme: http, te: trailers, content-type: application/grpc, user-agent: grpcurl/v1.9.2 grpc-go/1.61.0, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.483 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND DATA: streamId=1 padding=0 endStream=false length=47 bytes=000000002a22286f72672e6578616d706c652e706f6c6963792e736572766963652e506f6c69637953657276696365
+10:57:43.484 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] OUTBOUND PING: ack=false bytes=1234
+10:57:43.485 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND PING: ack=true bytes=1234
+10:57:43.488 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] OUTBOUND HEADERS: streamId=1 headers=GrpcHttp2OutboundHeaders[:status: 200, content-type: application/grpc, grpc-status: 12, grpc-message: Method not found: grpc.reflection.v1.ServerReflection/ServerReflectionInfo] padding=0 endStream=true
+10:57:43.493 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND RST_STREAM: streamId=1 errorCode=0
+10:57:43.493 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND HEADERS: streamId=3 headers=GrpcHttp2RequestHeaders[:path: /grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo, :authority: localhost:9090, :method: POST, :scheme: http, te: trailers, content-type: application/grpc, user-agent: grpcurl/v1.9.2 grpc-go/1.61.0, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.494 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND DATA: streamId=3 padding=0 endStream=false length=47 bytes=000000002a22286f72672e6578616d706c652e706f6c6963792e736572766963652e506f6c69637953657276696365
+10:57:43.494 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] OUTBOUND PING: ack=false bytes=1234
+10:57:43.495 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND PING: ack=true bytes=1234
+10:57:43.540 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] OUTBOUND HEADERS: streamId=3 headers=GrpcHttp2OutboundHeaders[:status: 200, content-type: application/grpc, grpc-encoding: identity, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.544 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] OUTBOUND DATA: streamId=3 padding=0 endStream=false length=762 bytes=00000002f5122a22286f72672e6578616d706c652e706f6c6963792e736572766963652e506f6c6963795365727669636522c6050ac3050a0c706f6c6963792e...
+10:57:43.546 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND WINDOW_UPDATE: streamId=0 windowSizeIncrement=762
+10:57:43.546 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND PING: ack=false bytes=145258749040133895
+10:57:43.546 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] OUTBOUND PING: ack=true bytes=145258749040133895
+10:57:43.546 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND DATA: streamId=3 padding=0 endStream=true length=0 bytes=
+10:57:43.546 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] OUTBOUND PING: ack=false bytes=1234
+10:57:43.547 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] INBOUND PING: ack=true bytes=1234
+10:57:43.548 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x2a075677, L:/127.0.0.1:9090 - R:/127.0.0.1:52728] OUTBOUND HEADERS: streamId=3 headers=GrpcHttp2OutboundHeaders[grpc-status: 0] padding=0 endStream=true
+10:57:43.579 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND SETTINGS: ack=false settings={MAX_CONCURRENT_STREAMS=2147483647, INITIAL_WINDOW_SIZE=1048576, MAX_HEADER_LIST_SIZE=8192}
+10:57:43.581 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND WINDOW_UPDATE: streamId=0 windowSizeIncrement=983041
+10:57:43.586 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND SETTINGS: ack=false settings=[id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736]
+10:57:43.586 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND SETTINGS: ack=true
+10:57:43.587 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND SETTINGS: ack=true
+10:57:43.590 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND HEADERS: streamId=1 headers=GrpcHttp2RequestHeaders[:path: /grpc.reflection.v1.ServerReflection/ServerReflectionInfo, :authority: localhost:9090, :method: POST, :scheme: http, te: trailers, content-type: application/grpc, user-agent: grpcurl/v1.9.2 grpc-go/1.61.0, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.594 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND DATA: streamId=1 padding=0 endStream=false length=47 bytes=000000002a22286f72672e6578616d706c652e706f6c6963792e736572766963652e506f6c69637953657276696365
+10:57:43.594 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND PING: ack=false bytes=1234
+10:57:43.594 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND HEADERS: streamId=1 headers=GrpcHttp2OutboundHeaders[:status: 200, content-type: application/grpc, grpc-status: 12, grpc-message: Method not found: grpc.reflection.v1.ServerReflection/ServerReflectionInfo] padding=0 endStream=true
+10:57:43.595 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND PING: ack=true bytes=1234
+10:57:43.595 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND RST_STREAM: streamId=1 errorCode=0
+10:57:43.596 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND HEADERS: streamId=3 headers=GrpcHttp2RequestHeaders[:path: /grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo, :authority: localhost:9090, :method: POST, :scheme: http, te: trailers, content-type: application/grpc, user-agent: grpcurl/v1.9.2 grpc-go/1.61.0, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.597 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND DATA: streamId=3 padding=0 endStream=false length=47 bytes=000000002a22286f72672e6578616d706c652e706f6c6963792e736572766963652e506f6c69637953657276696365
+10:57:43.597 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND PING: ack=false bytes=1234
+10:57:43.597 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND PING: ack=true bytes=1234
+10:57:43.598 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND HEADERS: streamId=3 headers=GrpcHttp2OutboundHeaders[:status: 200, content-type: application/grpc, grpc-encoding: identity, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.600 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND DATA: streamId=3 padding=0 endStream=false length=762 bytes=00000002f5122a22286f72672e6578616d706c652e706f6c6963792e736572766963652e506f6c6963795365727669636522c6050ac3050a0c706f6c6963792e...
+10:57:43.603 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND WINDOW_UPDATE: streamId=0 windowSizeIncrement=762
+10:57:43.603 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND PING: ack=false bytes=145258749040133895
+10:57:43.603 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND PING: ack=true bytes=145258749040133895
+10:57:43.604 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND HEADERS: streamId=5 headers=GrpcHttp2RequestHeaders[:path: /org.example.policy.service.PolicyService/validatePolicy, :authority: localhost:9090, :method: POST, :scheme: http, te: trailers, content-type: application/grpc, user-agent: grpcurl/v1.9.2 grpc-go/1.61.0, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.608 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND DATA: streamId=5 padding=0 endStream=true length=2843 bytes=0000000b161293163c3f786d6c2076657273696f6e3d22312e302220656e636f64696e673d225554462d38223f3e0a3c506f6c69637920786d6c6e733d227572...
+10:57:43.608 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND PING: ack=false bytes=1234
+10:57:43.608 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND PING: ack=true bytes=1234
+10:57:43.610 [pool-1-thread-9] INFO org.example.policy.service.PolicyServiceImpl - validatePolicy 请求 | 策略前50字符: <?xml version="1.0" encoding="UTF-8"?>
+<Policy xml
+10:57:43.610 [pool-1-thread-9] DEBUG org.example.policy.service.PolicyServiceImpl - 完整策略内容:
+<?xml version="1.0" encoding="UTF-8"?>
+<Policy xmlns="urn:oasis:names:tc:xacml:3.0:core:schema:wd-17" 
+        PolicyId="BasicAccessPolicy" 
+        RuleCombiningAlgId="urn:oasis:names:tc:xacml:1.0:rule-combining-algorithm:permit-overrides" 
+        Version="1.0">
+
+    <!-- 策略目标：匹配请求中的资源、用户和操作 -->
+    <Target>
+        <AnyOf>
+            <AllOf>
+                <!-- 资源匹配 -->
+                <Match MatchId="urn:oasis:names:tc:xacml:1.0:function:string-equal">
+                    <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">resource1</AttributeValue>
+                    <AttributeDesignator 
+                        AttributeId="urn:oasis:names:tc:xacml:1.0:resource:resource-id" 
+                        Category="urn:oasis:names:tc:xacml:3.0:attribute-category:resource" 
+                        DataType="http://www.w3.org/2001/XMLSchema#string" 
+                        MustBePresent="true"/>
+                </Match>
+            </AllOf>
+        </AnyOf>
+    </Target>
+
+    <!-- 规则1：允许 user1 的读取操作 -->
+    <Rule RuleId="permit-read-resource1" Effect="Permit">
+        <Target>
+            <AnyOf>
+                <AllOf>
+                    <!-- 用户匹配 -->
+                    <Match MatchId="urn:oasis:names:tc:xacml:1.0:function:string-equal">
+                        <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">user1</AttributeValue>
+                        <AttributeDesignator 
+                            AttributeId="urn:oasis:names:tc:xacml:1.0:subject:subject-id" 
+                            Category="urn:oasis:names:tc:xacml:1.0:subject-category:access-subject" 
+                            DataType="http://www.w3.org/2001/XMLSchema#string" 
+                            MustBePresent="true"/>
+                    </Match>
+                    <!-- 操作匹配 -->
+                    <Match MatchId="urn:oasis:names:tc:xacml:1.0:function:string-equal">
+                        <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">read</AttributeValue>
+                        <AttributeDesignator 
+                            AttributeId="urn:oasis:names:tc:xacml:1.0:action:action-id" 
+                            Category="urn:oasis:names:tc:xacml:3.0:attribute-category:action" 
+                            DataType="http://www.w3.org/2001/XMLSchema#string" 
+                            MustBePresent="true"/>
+                    </Match>
+                </AllOf>
+            </AnyOf>
+        </Target>
+        <Description>允许 user1 读取 resource1</Description>
+    </Rule>
+
+    <!-- 规则2：默认拒绝其他所有请求 -->
+    <Rule RuleId="deny-other-requests" Effect="Deny">
+        <Description>拒绝未明确允许的请求</Description>
+    </Rule>
+
+</Policy>
+
+10:57:43.620 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND HEADERS: streamId=5 headers=GrpcHttp2OutboundHeaders[:status: 200, content-type: application/grpc, grpc-encoding: identity, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.623 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND DATA: streamId=5 padding=0 endStream=false length=24 bytes=000000001320012a0f506f6c6963792069732076616c6964
+10:57:43.623 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND HEADERS: streamId=5 headers=GrpcHttp2OutboundHeaders[grpc-status: 0] padding=0 endStream=true
+10:57:43.624 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND WINDOW_UPDATE: streamId=0 windowSizeIncrement=24
+10:57:43.624 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND PING: ack=false bytes=145258749040133895
+10:57:43.625 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND PING: ack=true bytes=145258749040133895
+10:57:43.625 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND DATA: streamId=3 padding=0 endStream=true length=0 bytes=
+10:57:43.625 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND PING: ack=false bytes=1234
+10:57:43.626 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] INBOUND PING: ack=true bytes=1234
+10:57:43.626 [grpc-default-worker-ELG-3-2] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0xcefdd4bc, L:/127.0.0.1:9090 - R:/127.0.0.1:52736] OUTBOUND HEADERS: streamId=3 headers=GrpcHttp2OutboundHeaders[grpc-status: 0] padding=0 endStream=true
+10:57:43.656 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND SETTINGS: ack=false settings={MAX_CONCURRENT_STREAMS=2147483647, INITIAL_WINDOW_SIZE=1048576, MAX_HEADER_LIST_SIZE=8192}
+10:57:43.656 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND WINDOW_UPDATE: streamId=0 windowSizeIncrement=983041
+10:57:43.657 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND SETTINGS: ack=false settings=[id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746]
+10:57:43.657 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND SETTINGS: ack=true
+10:57:43.658 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND SETTINGS: ack=true
+10:57:43.658 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND HEADERS: streamId=1 headers=GrpcHttp2RequestHeaders[:path: /grpc.reflection.v1.ServerReflection/ServerReflectionInfo, :authority: localhost:9090, :method: POST, :scheme: http, te: trailers, content-type: application/grpc, user-agent: grpcurl/v1.9.2 grpc-go/1.61.0, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.660 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND DATA: streamId=1 padding=0 endStream=false length=47 bytes=000000002a22286f72672e6578616d706c652e706f6c6963792e736572766963652e506f6c69637953657276696365
+10:57:43.661 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND PING: ack=false bytes=1234
+10:57:43.663 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND HEADERS: streamId=1 headers=GrpcHttp2OutboundHeaders[:status: 200, content-type: application/grpc, grpc-status: 12, grpc-message: Method not found: grpc.reflection.v1.ServerReflection/ServerReflectionInfo] padding=0 endStream=true
+10:57:43.665 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND PING: ack=true bytes=1234
+10:57:43.665 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND RST_STREAM: streamId=1 errorCode=0
+10:57:43.666 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND HEADERS: streamId=3 headers=GrpcHttp2RequestHeaders[:path: /grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo, :authority: localhost:9090, :method: POST, :scheme: http, te: trailers, content-type: application/grpc, user-agent: grpcurl/v1.9.2 grpc-go/1.61.0, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.667 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND DATA: streamId=3 padding=0 endStream=false length=47 bytes=000000002a22286f72672e6578616d706c652e706f6c6963792e736572766963652e506f6c69637953657276696365
+10:57:43.667 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND PING: ack=false bytes=1234
+10:57:43.667 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND PING: ack=true bytes=1234
+10:57:43.669 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND HEADERS: streamId=3 headers=GrpcHttp2OutboundHeaders[:status: 200, content-type: application/grpc, grpc-encoding: identity, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.670 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND DATA: streamId=3 padding=0 endStream=false length=762 bytes=00000002f5122a22286f72672e6578616d706c652e706f6c6963792e736572766963652e506f6c6963795365727669636522c6050ac3050a0c706f6c6963792e...
+10:57:43.672 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND WINDOW_UPDATE: streamId=0 windowSizeIncrement=762
+10:57:43.672 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND PING: ack=false bytes=145258749040133895
+10:57:43.672 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND PING: ack=true bytes=145258749040133895
+10:57:43.673 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND HEADERS: streamId=5 headers=GrpcHttp2RequestHeaders[:path: /org.example.policy.service.PolicyService/evaluatePolicy, :authority: localhost:9090, :method: POST, :scheme: http, te: trailers, content-type: application/grpc, user-agent: grpcurl/v1.9.2 grpc-go/1.61.0, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.674 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND DATA: streamId=5 padding=0 endStream=true length=1381 bytes=00000005600add0a3c5265717565737420786d6c6e733d2275726e3a6f617369733a6e616d65733a74633a7861636d6c3a332e303a636f72653a736368656d61...
+10:57:43.674 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND PING: ack=false bytes=1234
+10:57:43.674 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND PING: ack=true bytes=1234
+10:57:43.676 [pool-1-thread-14] INFO org.example.policy.service.PolicyServiceImpl - Received evaluation request: <Request xmlns="urn:oasis:names:tc:xacml:3.0:core:schema:wd-17"
+         CombinedDecision="false"
+         ReturnPolicyIdList="false">
+
+    <!-- 用户属性 -->
+    <Attributes Category="urn:oasis:names:tc:xacml:1.0:subject-category:access-subject">
+        <Attribute 
+            AttributeId="urn:oasis:names:tc:xacml:1.0:subject:subject-id" 
+            IncludeInResult="false">  <!-- 添加此行 -->
+            <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">user1</AttributeValue>
+        </Attribute>
+    </Attributes>
+
+    <!-- 资源属性 -->
+    <Attributes Category="urn:oasis:names:tc:xacml:3.0:attribute-category:resource">
+        <Attribute 
+            AttributeId="urn:oasis:names:tc:xacml:1.0:resource:resource-id"
+            IncludeInResult="false">  <!-- 添加此行 -->
+            <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">resource1</AttributeValue>
+        </Attribute>
+    </Attributes>
+
+    <!-- 操作属性 -->
+    <Attributes Category="urn:oasis:names:tc:xacml:3.0:attribute-category:action">
+        <Attribute 
+            AttributeId="urn:oasis:names:tc:xacml:1.0:action:action-id"
+            IncludeInResult="false">  <!-- 添加此行 -->
+            <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">read</AttributeValue>
+        </Attribute>
+    </Attributes>
+</Request>
+
+10:57:43.686 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND HEADERS: streamId=5 headers=GrpcHttp2OutboundHeaders[:status: 200, content-type: application/grpc, grpc-encoding: identity, grpc-accept-encoding: gzip] padding=0 endStream=false
+10:57:43.689 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND DATA: streamId=5 padding=0 endStream=false length=213 bytes=00000000d00a065065726d697412c5013c526573706f6e736520786d6c6e733d2275726e3a6f617369733a6e616d65733a74633a7861636d6c3a332e303a636f...
+10:57:43.690 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND HEADERS: streamId=5 headers=GrpcHttp2OutboundHeaders[grpc-status: 0] padding=0 endStream=true
+10:57:43.691 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND WINDOW_UPDATE: streamId=0 windowSizeIncrement=213
+10:57:43.691 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND PING: ack=false bytes=145258749040133895
+10:57:43.691 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND PING: ack=true bytes=145258749040133895
+10:57:43.691 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND DATA: streamId=3 padding=0 endStream=true length=0 bytes=
+10:57:43.691 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND PING: ack=false bytes=1234
+10:57:43.693 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] INBOUND PING: ack=true bytes=1234
+10:57:43.694 [grpc-default-worker-ELG-3-1] DEBUG io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler - [id: 0x779e4d2f, L:/127.0.0.1:9090 - R:/127.0.0.1:52746] OUTBOUND HEADERS: streamId=3 headers=GrpcHttp2OutboundHeaders[grpc-status: 0] padding=0 endStream=true

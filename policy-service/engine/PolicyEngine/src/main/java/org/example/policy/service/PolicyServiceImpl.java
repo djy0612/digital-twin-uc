@@ -16,7 +16,8 @@ public class PolicyServiceImpl extends PolicyServiceGrpc.PolicyServiceImplBase {
     @Override
     public void evaluatePolicy(PolicyRequest request, StreamObserver<PolicyResponse> responseObserver) {
         try {
-            String result = policyEngine.evaluate(request.getRequestContent());
+            logger.info("Received evaluation request: {}", request.getRequestContent());
+            String result = policyEngine.evaluate(request.getRequestContent());  // 修改此处
             PolicyResponse response = PolicyResponse.newBuilder()
                 .setResponseContent(result)
                 .setDecision(extractDecision(result))
@@ -45,6 +46,9 @@ public class PolicyServiceImpl extends PolicyServiceGrpc.PolicyServiceImplBase {
     @Override
     public void validatePolicy(PolicyRequest request, StreamObserver<PolicyResponse> responseObserver) {
         try {
+            String policyContent = request.getPolicy();
+            logger.info("validatePolicy 请求 | 策略前50字符: {}", policyContent.substring(0, Math.min(50, policyContent.length())));
+            logger.debug("完整策略内容:\n{}", policyContent);  // 需要启用 DEBUG 级别日志
             boolean isValid = DigitalTwinPolicyEngine.validatePolicy(request.getPolicy());
             PolicyResponse response = PolicyResponse.newBuilder()
                 .setValid(isValid)
