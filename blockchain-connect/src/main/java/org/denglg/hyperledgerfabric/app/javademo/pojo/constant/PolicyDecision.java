@@ -2,8 +2,7 @@ package org.denglg.hyperledgerfabric.app.javademo.pojo.constant;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-import java.time.LocalDateTime;
-
+import java.time.Instant;
 @Data
 public class PolicyDecision {
     // 决策标识
@@ -20,6 +19,6 @@ public class PolicyDecision {
     // 请求上下文
     private String requestContent;    // XACML请求原始内容
     
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-    private LocalDateTime timestamp;  // 决策时间戳
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSX", timezone = "UTC")
+    private Instant timestamp;  // 决策时间戳
 }

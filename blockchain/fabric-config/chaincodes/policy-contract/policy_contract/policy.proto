@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package org.example.policy.service;
+option java_multiple_files = true;
+option java_package = "org.example.policy.service";
+option go_package = "github.com/digital-twin-uc/policy_contract/pb;pb";
+service PolicyService {
+  rpc evaluatePolicy (PolicyRequest) returns (PolicyResponse) {}
+  rpc validatePolicy (PolicyRequest) returns (PolicyResponse) {}
+  rpc validateRequest (ValidateRequest) returns (ValidateResponse) {}
+  rpc uploadPolicy (UploadPolicyRequest) returns (UploadPolicyResponse) {}
+}
+
+message PolicyRequest {
+  string request_content = 1;
+  string policy = 2;
+}
+
+message PolicyResponse {
+  string decision = 1;
+  string response_content = 2;
+  string error_message = 3;
+  bool valid = 4;
+  string message = 5;
+}
+
+message ValidateRequest {
+  string request = 1;
+  string policy = 2;
+}
+
+message ValidateResponse {
+  bool allowed = 1;
+  string message = 2;
+}
+// 新增消息：上传策略请求
+message UploadPolicyRequest {
+  string policy_content = 1; // 策略内容
+}
+
+// 新增消息：上传策略响应
+message UploadPolicyResponse {
+  bool success = 1; // 是否上传成功
+  string message = 2; // 成功或失败的消息
+}

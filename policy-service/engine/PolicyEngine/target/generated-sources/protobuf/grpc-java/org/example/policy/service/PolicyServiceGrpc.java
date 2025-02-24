@@ -1,13 +1,25 @@
 package org.example.policy.service;
 
 import static io.grpc.MethodDescriptor.generateFullMethodName;
+import static io.grpc.stub.ClientCalls.asyncBidiStreamingCall;
+import static io.grpc.stub.ClientCalls.asyncClientStreamingCall;
+import static io.grpc.stub.ClientCalls.asyncServerStreamingCall;
+import static io.grpc.stub.ClientCalls.asyncUnaryCall;
+import static io.grpc.stub.ClientCalls.blockingServerStreamingCall;
+import static io.grpc.stub.ClientCalls.blockingUnaryCall;
+import static io.grpc.stub.ClientCalls.futureUnaryCall;
+import static io.grpc.stub.ServerCalls.asyncBidiStreamingCall;
+import static io.grpc.stub.ServerCalls.asyncClientStreamingCall;
+import static io.grpc.stub.ServerCalls.asyncServerStreamingCall;
+import static io.grpc.stub.ServerCalls.asyncUnaryCall;
+import static io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall;
+import static io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall;
 
 /**
  */
 @javax.annotation.Generated(
-    value = "by gRPC proto compiler (version 1.51.0)",
+    value = "by gRPC proto compiler (version 1.31.0)",
     comments = "Source: policy.proto")
-@io.grpc.stub.annotations.GrpcGenerated
 public final class PolicyServiceGrpc {
 
   private PolicyServiceGrpc() {}
@@ -108,6 +120,37 @@ public final class PolicyServiceGrpc {
     return getValidateRequestMethod;
   }
 
+  private static volatile io.grpc.MethodDescriptor<org.example.policy.service.UploadPolicyRequest,
+      org.example.policy.service.UploadPolicyResponse> getUploadPolicyMethod;
+
+  @io.grpc.stub.annotations.RpcMethod(
+      fullMethodName = SERVICE_NAME + '/' + "uploadPolicy",
+      requestType = org.example.policy.service.UploadPolicyRequest.class,
+      responseType = org.example.policy.service.UploadPolicyResponse.class,
+      methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
+  public static io.grpc.MethodDescriptor<org.example.policy.service.UploadPolicyRequest,
+      org.example.policy.service.UploadPolicyResponse> getUploadPolicyMethod() {
+    io.grpc.MethodDescriptor<org.example.policy.service.UploadPolicyRequest, org.example.policy.service.UploadPolicyResponse> getUploadPolicyMethod;
+    if ((getUploadPolicyMethod = PolicyServiceGrpc.getUploadPolicyMethod) == null) {
+      synchronized (PolicyServiceGrpc.class) {
+        if ((getUploadPolicyMethod = PolicyServiceGrpc.getUploadPolicyMethod) == null) {
+          PolicyServiceGrpc.getUploadPolicyMethod = getUploadPolicyMethod =
+              io.grpc.MethodDescriptor.<org.example.policy.service.UploadPolicyRequest, org.example.policy.service.UploadPolicyResponse>newBuilder()
+              .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+              .setFullMethodName(generateFullMethodName(SERVICE_NAME, "uploadPolicy"))
+              .setSampledToLocalTracing(true)
+              .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  org.example.policy.service.UploadPolicyRequest.getDefaultInstance()))
+              .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  org.example.policy.service.UploadPolicyResponse.getDefaultInstance()))
+              .setSchemaDescriptor(new PolicyServiceMethodDescriptorSupplier("uploadPolicy"))
+              .build();
+        }
+      }
+    }
+    return getUploadPolicyMethod;
+  }
+
   /**
    * Creates a new async stub that supports all call types for the service
    */
@@ -160,46 +203,60 @@ public final class PolicyServiceGrpc {
      */
     public void evaluatePolicy(org.example.policy.service.PolicyRequest request,
         io.grpc.stub.StreamObserver<org.example.policy.service.PolicyResponse> responseObserver) {
-      io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getEvaluatePolicyMethod(), responseObserver);
+      asyncUnimplementedUnaryCall(getEvaluatePolicyMethod(), responseObserver);
     }
 
     /**
      */
     public void validatePolicy(org.example.policy.service.PolicyRequest request,
         io.grpc.stub.StreamObserver<org.example.policy.service.PolicyResponse> responseObserver) {
-      io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getValidatePolicyMethod(), responseObserver);
+      asyncUnimplementedUnaryCall(getValidatePolicyMethod(), responseObserver);
     }
 
     /**
      */
     public void validateRequest(org.example.policy.service.ValidateRequest request,
         io.grpc.stub.StreamObserver<org.example.policy.service.ValidateResponse> responseObserver) {
-      io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getValidateRequestMethod(), responseObserver);
+      asyncUnimplementedUnaryCall(getValidateRequestMethod(), responseObserver);
+    }
+
+    /**
+     */
+    public void uploadPolicy(org.example.policy.service.UploadPolicyRequest request,
+        io.grpc.stub.StreamObserver<org.example.policy.service.UploadPolicyResponse> responseObserver) {
+      asyncUnimplementedUnaryCall(getUploadPolicyMethod(), responseObserver);
     }
 
     @java.lang.Override public final io.grpc.ServerServiceDefinition bindService() {
       return io.grpc.ServerServiceDefinition.builder(getServiceDescriptor())
           .addMethod(
             getEvaluatePolicyMethod(),
-            io.grpc.stub.ServerCalls.asyncUnaryCall(
+            asyncUnaryCall(
               new MethodHandlers<
                 org.example.policy.service.PolicyRequest,
                 org.example.policy.service.PolicyResponse>(
                   this, METHODID_EVALUATE_POLICY)))
           .addMethod(
             getValidatePolicyMethod(),
-            io.grpc.stub.ServerCalls.asyncUnaryCall(
+            asyncUnaryCall(
               new MethodHandlers<
                 org.example.policy.service.PolicyRequest,
                 org.example.policy.service.PolicyResponse>(
                   this, METHODID_VALIDATE_POLICY)))
           .addMethod(
             getValidateRequestMethod(),
-            io.grpc.stub.ServerCalls.asyncUnaryCall(
+            asyncUnaryCall(
               new MethodHandlers<
                 org.example.policy.service.ValidateRequest,
                 org.example.policy.service.ValidateResponse>(
                   this, METHODID_VALIDATE_REQUEST)))
+          .addMethod(
+            getUploadPolicyMethod(),
+            asyncUnaryCall(
+              new MethodHandlers<
+                org.example.policy.service.UploadPolicyRequest,
+                org.example.policy.service.UploadPolicyResponse>(
+                  this, METHODID_UPLOAD_POLICY)))
           .build();
     }
   }
@@ -222,7 +279,7 @@ public final class PolicyServiceGrpc {
      */
     public void evaluatePolicy(org.example.policy.service.PolicyRequest request,
         io.grpc.stub.StreamObserver<org.example.policy.service.PolicyResponse> responseObserver) {
-      io.grpc.stub.ClientCalls.asyncUnaryCall(
+      asyncUnaryCall(
           getChannel().newCall(getEvaluatePolicyMethod(), getCallOptions()), request, responseObserver);
     }
 
@@ -230,7 +287,7 @@ public final class PolicyServiceGrpc {
      */
     public void validatePolicy(org.example.policy.service.PolicyRequest request,
         io.grpc.stub.StreamObserver<org.example.policy.service.PolicyResponse> responseObserver) {
-      io.grpc.stub.ClientCalls.asyncUnaryCall(
+      asyncUnaryCall(
           getChannel().newCall(getValidatePolicyMethod(), getCallOptions()), request, responseObserver);
     }
 
@@ -238,8 +295,16 @@ public final class PolicyServiceGrpc {
      */
     public void validateRequest(org.example.policy.service.ValidateRequest request,
         io.grpc.stub.StreamObserver<org.example.policy.service.ValidateResponse> responseObserver) {
-      io.grpc.stub.ClientCalls.asyncUnaryCall(
+      asyncUnaryCall(
           getChannel().newCall(getValidateRequestMethod(), getCallOptions()), request, responseObserver);
+    }
+
+    /**
+     */
+    public void uploadPolicy(org.example.policy.service.UploadPolicyRequest request,
+        io.grpc.stub.StreamObserver<org.example.policy.service.UploadPolicyResponse> responseObserver) {
+      asyncUnaryCall(
+          getChannel().newCall(getUploadPolicyMethod(), getCallOptions()), request, responseObserver);
     }
   }
 
@@ -260,22 +325,29 @@ public final class PolicyServiceGrpc {
     /**
      */
     public org.example.policy.service.PolicyResponse evaluatePolicy(org.example.policy.service.PolicyRequest request) {
-      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+      return blockingUnaryCall(
           getChannel(), getEvaluatePolicyMethod(), getCallOptions(), request);
     }
 
     /**
      */
     public org.example.policy.service.PolicyResponse validatePolicy(org.example.policy.service.PolicyRequest request) {
-      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+      return blockingUnaryCall(
           getChannel(), getValidatePolicyMethod(), getCallOptions(), request);
     }
 
     /**
      */
     public org.example.policy.service.ValidateResponse validateRequest(org.example.policy.service.ValidateRequest request) {
-      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+      return blockingUnaryCall(
           getChannel(), getValidateRequestMethod(), getCallOptions(), request);
+    }
+
+    /**
+     */
+    public org.example.policy.service.UploadPolicyResponse uploadPolicy(org.example.policy.service.UploadPolicyRequest request) {
+      return blockingUnaryCall(
+          getChannel(), getUploadPolicyMethod(), getCallOptions(), request);
     }
   }
 
@@ -297,7 +369,7 @@ public final class PolicyServiceGrpc {
      */
     public com.google.common.util.concurrent.ListenableFuture<org.example.policy.service.PolicyResponse> evaluatePolicy(
         org.example.policy.service.PolicyRequest request) {
-      return io.grpc.stub.ClientCalls.futureUnaryCall(
+      return futureUnaryCall(
           getChannel().newCall(getEvaluatePolicyMethod(), getCallOptions()), request);
     }
 
@@ -305,7 +377,7 @@ public final class PolicyServiceGrpc {
      */
     public com.google.common.util.concurrent.ListenableFuture<org.example.policy.service.PolicyResponse> validatePolicy(
         org.example.policy.service.PolicyRequest request) {
-      return io.grpc.stub.ClientCalls.futureUnaryCall(
+      return futureUnaryCall(
           getChannel().newCall(getValidatePolicyMethod(), getCallOptions()), request);
     }
 
@@ -313,14 +385,23 @@ public final class PolicyServiceGrpc {
      */
     public com.google.common.util.concurrent.ListenableFuture<org.example.policy.service.ValidateResponse> validateRequest(
         org.example.policy.service.ValidateRequest request) {
-      return io.grpc.stub.ClientCalls.futureUnaryCall(
+      return futureUnaryCall(
           getChannel().newCall(getValidateRequestMethod(), getCallOptions()), request);
+    }
+
+    /**
+     */
+    public com.google.common.util.concurrent.ListenableFuture<org.example.policy.service.UploadPolicyResponse> uploadPolicy(
+        org.example.policy.service.UploadPolicyRequest request) {
+      return futureUnaryCall(
+          getChannel().newCall(getUploadPolicyMethod(), getCallOptions()), request);
     }
   }
 
   private static final int METHODID_EVALUATE_POLICY = 0;
   private static final int METHODID_VALIDATE_POLICY = 1;
   private static final int METHODID_VALIDATE_REQUEST = 2;
+  private static final int METHODID_UPLOAD_POLICY = 3;
 
   private static final class MethodHandlers<Req, Resp> implements
       io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
@@ -350,6 +431,10 @@ public final class PolicyServiceGrpc {
         case METHODID_VALIDATE_REQUEST:
           serviceImpl.validateRequest((org.example.policy.service.ValidateRequest) request,
               (io.grpc.stub.StreamObserver<org.example.policy.service.ValidateResponse>) responseObserver);
+          break;
+        case METHODID_UPLOAD_POLICY:
+          serviceImpl.uploadPolicy((org.example.policy.service.UploadPolicyRequest) request,
+              (io.grpc.stub.StreamObserver<org.example.policy.service.UploadPolicyResponse>) responseObserver);
           break;
         default:
           throw new AssertionError();
@@ -415,6 +500,7 @@ public final class PolicyServiceGrpc {
               .addMethod(getEvaluatePolicyMethod())
               .addMethod(getValidatePolicyMethod())
               .addMethod(getValidateRequestMethod())
+              .addMethod(getUploadPolicyMethod())
               .build();
         }
       }

@@ -15,7 +15,7 @@
   "channels": {
     "businesschannel": {
       "orderers": [
-        "orderer.example.com"
+        "orderer0.example.com"
       ],
       "peers": {
         "peer0.org1.example.com": {
@@ -66,15 +66,15 @@
     }
   },
   "orderers": {
-    "orderer.example.com": {
+    "orderer0.example.com": {
       "url": "grpcs://192.168.181.129:7050",
-      "mspid": "OrdererMSP",
+      "mspid": "Orderer0MSP",
       "grpcOptions": {
-        "ssl-target-name-override": "orderer.example.com",
-        "hostnameOverride": "orderer.example.com"
+        "ssl-target-name-override": "orderer0.example.com",
+        "hostnameOverride": "orderer0.example.com"
       },
       "tlsCACerts": {
-        "path": "src/main/resources/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt"
+        "path": "src/main/resources/crypto-config/ordererOrganizations/example.com/orderers/orderer0.example.com/tls/ca.crt"
       },
       "adminPrivateKeyPEM": {
         "path": "src/main/resources/crypto-config/ordererOrganizations/example.com/users/Admin@example.com/msp/keystore/priv_sk"

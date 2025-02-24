@@ -2,7 +2,7 @@ package org.denglg.hyperledgerfabric.app.javademo.pojo.constant;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 public class Policy {
@@ -15,11 +15,11 @@ public class Policy {
     // 生命周期管理
     private String status;         // 策略状态 (ACTIVE/INACTIVE)
     
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-    private LocalDateTime createdAt;  // 创建时间
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSX", timezone = "UTC")
+    private Instant createdAt;    // 创建时间
     
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-    private LocalDateTime updatedAt;  // 更新时间
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSX", timezone = "UTC")
+    private Instant updatedAt;    // 更新时间，改为 Instant
     
     private String createdBy;      // 创建者身份标识
 }

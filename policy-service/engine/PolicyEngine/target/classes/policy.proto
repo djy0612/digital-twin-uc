@@ -8,6 +8,7 @@ service PolicyService {
   rpc evaluatePolicy (PolicyRequest) returns (PolicyResponse) {}
   rpc validatePolicy (PolicyRequest) returns (PolicyResponse) {}
   rpc validateRequest (ValidateRequest) returns (ValidateResponse) {}
+  rpc uploadPolicy (UploadPolicyRequest) returns (UploadPolicyResponse) {}
 }
 
 message PolicyRequest {
@@ -31,4 +32,14 @@ message ValidateRequest {
 message ValidateResponse {
   bool allowed = 1;
   string message = 2;
+}
+// 新增消息：上传策略请求
+message UploadPolicyRequest {
+  string policy_content = 1; // 策略内容
+}
+
+// 新增消息：上传策略响应
+message UploadPolicyResponse {
+  bool success = 1; // 是否上传成功
+  string message = 2; // 成功或失败的消息
 }

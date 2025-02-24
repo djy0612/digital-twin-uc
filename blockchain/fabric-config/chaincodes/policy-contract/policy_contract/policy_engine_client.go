@@ -1,102 +1,79 @@
 package main
 
 import (
-    "bytes"
-    "encoding/json"
+    "context"
     "fmt"
-    "net/http"
     "time"
+    pb "github.com/digital-twin-uc/policy_contract/pb"
+    "google.golang.org/grpc"
+    "google.golang.org/grpc/credentials/insecure"
 )
 
+// PolicyEngineClient 定义
 type PolicyEngineClient struct {
-    baseURL     string
-    client      *http.Client
+    client      pb.PolicyServiceClient
     retryConfig RetryConfig
 }
 
+// RetryConfig 重试配置
 type RetryConfig struct {
     MaxAttempts int
     Interval    time.Duration
 }
 
+// PolicyResponse 响应结构
 type PolicyResponse struct {
-    Success  bool   `json:"success"`
-    Decision string `json:"decision"`
-    Response string `json:"response"`
+    Decision        string
+    ResponseContent string
 }
 
 func NewPolicyEngineClient(baseURL string, retryConfig RetryConfig) *PolicyEngineClient {
+    conn, err := grpc.Dial(baseURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+    if err != nil {
+        fmt.Printf("Failed to connect to Policy-Engine: %v\n", err)
+        return nil
+    }
+    client := pb.NewPolicyServiceClient(conn)
     return &PolicyEngineClient{
-        baseURL: baseURL,
-        client: &http.Client{
-            Timeout: time.Second * 30,
-        },
+        client:      client,
         retryConfig: retryConfig,
     }
 }
 
 func (c *PolicyEngineClient) ValidatePolicy(content string) (bool, error) {
-    resp, err := c.doWithRetry("POST", "/api/policy/validate", content)
-    if err != nil {
-        return false, err
+    req := &pb.PolicyRequest{
+        Policy: content,
     }
-    defer resp.Body.Close()
 
-    var result struct {
-        Valid   bool   `json:"valid"`
-        Message string `json:"message"`
+    var lastErr error
+    for attempt := 0; attempt < c.retryConfig.MaxAttempts; attempt++ {
+        resp, err := c.client.ValidatePolicy(context.Background(), req)
+        if err == nil {
+            return resp.GetValid(), nil
+        }
+        lastErr = err
+        time.Sleep(c.retryConfig.Interval)
     }
-    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-        return false, err
-    }
-    return result.Valid, nil
+    return false, fmt.Errorf("after %d attempts: %v", c.retryConfig.MaxAttempts, lastErr)
 }
 
 func (c *PolicyEngineClient) EvaluatePolicy(policyContent, requestContent string) (*PolicyResponse, error) {
-    request := map[string]string{
-        "policyContent":  policyContent,
-        "requestContent": requestContent,
+    req := &pb.PolicyRequest{
+        Policy:        policyContent,
+        RequestContent: requestContent,
     }
-    
-    resp, err := c.doWithRetry("POST", "/api/policy/evaluate", request)
-    if err != nil {
-        return nil, err
-    }
-    defer resp.Body.Close()
 
-    var result PolicyResponse
-    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-        return nil, err
-    }
-    return &result, nil
-}
-
-// 添加重试逻辑
-func (c *PolicyEngineClient) doWithRetry(method, path string, body interface{}) (*http.Response, error) {
     var lastErr error
     for attempt := 0; attempt < c.retryConfig.MaxAttempts; attempt++ {
-        resp, err := c.doRequest(method, path, body)
+        resp, err := c.client.EvaluatePolicy(context.Background(), req)
         if err == nil {
-            return resp, nil
+            return &PolicyResponse{
+                Decision:        resp.GetDecision(),
+                ResponseContent: resp.GetResponseContent(),
+            }, nil
         }
         lastErr = err
         time.Sleep(c.retryConfig.Interval)
     }
     return nil, fmt.Errorf("after %d attempts: %v", c.retryConfig.MaxAttempts, lastErr)
-}
-
-// 实际发送请求
-func (c *PolicyEngineClient) doRequest(method, path string, body interface{}) (*http.Response, error) {
-    jsonBody, err := json.Marshal(body)
-    if err != nil {
-        return nil, err
-    }
-
-    req, err := http.NewRequest(method, c.baseURL+path, bytes.NewBuffer(jsonBody))
-    if err != nil {
-        return nil, err
-    }
-    req.Header.Set("Content-Type", "application/json")
-
-    return c.client.Do(req)
 }

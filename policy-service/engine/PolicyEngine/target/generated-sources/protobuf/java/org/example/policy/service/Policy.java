@@ -34,6 +34,16 @@ public final class Policy {
   static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_org_example_policy_service_ValidateResponse_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_org_example_policy_service_UploadPolicyRequest_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_org_example_policy_service_UploadPolicyRequest_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_org_example_policy_service_UploadPolicyResponse_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_org_example_policy_service_UploadPolicyResponse_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -51,16 +61,22 @@ public final class Policy {
       "\022\017\n\007message\030\005 \001(\t\"2\n\017ValidateRequest\022\017\n\007" +
       "request\030\001 \001(\t\022\016\n\006policy\030\002 \001(\t\"4\n\020Validat" +
       "eResponse\022\017\n\007allowed\030\001 \001(\010\022\017\n\007message\030\002 " +
-      "\001(\t2\325\002\n\rPolicyService\022i\n\016evaluatePolicy\022" +
-      ").org.example.policy.service.PolicyReque" +
-      "st\032*.org.example.policy.service.PolicyRe" +
-      "sponse\"\000\022i\n\016validatePolicy\022).org.example" +
-      ".policy.service.PolicyRequest\032*.org.exam" +
-      "ple.policy.service.PolicyResponse\"\000\022n\n\017v" +
-      "alidateRequest\022+.org.example.policy.serv" +
-      "ice.ValidateRequest\032,.org.example.policy" +
-      ".service.ValidateResponse\"\000B\036\n\032org.examp" +
-      "le.policy.serviceP\001b\006proto3"
+      "\001(\t\"-\n\023UploadPolicyRequest\022\026\n\016policy_con" +
+      "tent\030\001 \001(\t\"8\n\024UploadPolicyResponse\022\017\n\007su" +
+      "ccess\030\001 \001(\010\022\017\n\007message\030\002 \001(\t2\312\003\n\rPolicyS" +
+      "ervice\022i\n\016evaluatePolicy\022).org.example.p" +
+      "olicy.service.PolicyRequest\032*.org.exampl" +
+      "e.policy.service.PolicyResponse\"\000\022i\n\016val" +
+      "idatePolicy\022).org.example.policy.service" +
+      ".PolicyRequest\032*.org.example.policy.serv" +
+      "ice.PolicyResponse\"\000\022n\n\017validateRequest\022" +
+      "+.org.example.policy.service.ValidateReq" +
+      "uest\032,.org.example.policy.service.Valida" +
+      "teResponse\"\000\022s\n\014uploadPolicy\022/.org.examp" +
+      "le.policy.service.UploadPolicyRequest\0320." +
+      "org.example.policy.service.UploadPolicyR" +
+      "esponse\"\000B\036\n\032org.example.policy.serviceP" +
+      "\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -90,6 +106,18 @@ public final class Policy {
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_example_policy_service_ValidateResponse_descriptor,
         new java.lang.String[] { "Allowed", "Message", });
+    internal_static_org_example_policy_service_UploadPolicyRequest_descriptor =
+      getDescriptor().getMessageTypes().get(4);
+    internal_static_org_example_policy_service_UploadPolicyRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_org_example_policy_service_UploadPolicyRequest_descriptor,
+        new java.lang.String[] { "PolicyContent", });
+    internal_static_org_example_policy_service_UploadPolicyResponse_descriptor =
+      getDescriptor().getMessageTypes().get(5);
+    internal_static_org_example_policy_service_UploadPolicyResponse_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_org_example_policy_service_UploadPolicyResponse_descriptor,
+        new java.lang.String[] { "Success", "Message", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

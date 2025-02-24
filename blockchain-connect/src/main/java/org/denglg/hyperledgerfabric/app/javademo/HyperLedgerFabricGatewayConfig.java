@@ -59,8 +59,8 @@ public class HyperLedgerFabricGatewayConfig {
     }
 
     @Bean
-    public Contract catContract(Network network) {
-        return network.getContract("identity");
+    public Contract contract(Network network) {
+        return network.getContract("policy_contract"); // 指定链码名称
     }
 
 }

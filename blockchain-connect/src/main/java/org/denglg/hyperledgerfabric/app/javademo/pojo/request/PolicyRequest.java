@@ -1,17 +1,21 @@
 package org.denglg.hyperledgerfabric.app.javademo.pojo.request;
 
 import lombok.Data;
-import javax.validation.constraints.NotBlank;
 
 @Data
 public class PolicyRequest {
-    @NotBlank(message = "策略ID不能为空")
-    private String policyId;
+    private String id;        // 策略 ID
+    private String name;      // 策略名称
+    private String content;   // XACML 内容
+    private String version;   // 版本
     
-    @NotBlank(message = "策略内容不能为空")
-    private String policyContent;
-    
-    private String policyName;
-    private String version;
-    
+    // Lombok 的 @Data 会生成以下 getter 和 setter
+    // public String getId() { return id; }
+    // public String getName() { return name; }
+    // public String getContent() { return content; }
+    // public String getVersion() { return version; }
+    // public void setId(String id) { this.id = id; }
+    // public void setName(String name) { this.name = name; }
+    // public void setContent(String content) { this.content = content; }
+    // public void setVersion(String version) { this.version = version; }
 }

@@ -85,4 +85,28 @@ public class PolicyServiceImpl extends PolicyServiceGrpc.PolicyServiceImplBase {
             responseObserver.onCompleted();
         }
     }
+
+    // 新增 uploadPolicy 方法
+    @Override
+    public void uploadPolicy(UploadPolicyRequest request, StreamObserver<UploadPolicyResponse> responseObserver) {
+        try {
+            logger.info("Received upload policy request, policy length: {}", request.getPolicyContent().length());
+            String policyId = policyEngine.uploadPolicy(request.getPolicyContent());
+            logger.info("Policy uploaded successfully with ID: {}", policyId);
+            UploadPolicyResponse response = UploadPolicyResponse.newBuilder()
+                .setSuccess(true)
+                .setMessage("Policy uploaded successfully with ID: " + policyId)
+                .build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            logger.error("Error uploading policy", e);
+            UploadPolicyResponse response = UploadPolicyResponse.newBuilder()
+                .setSuccess(false)
+                .setMessage("Error: " + e.getMessage())
+                .build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }
+    }
 }

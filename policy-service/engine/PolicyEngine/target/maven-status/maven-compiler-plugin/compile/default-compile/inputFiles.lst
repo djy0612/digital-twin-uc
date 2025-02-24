@@ -3,13 +3,17 @@
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/target/generated-sources/protobuf/java/org/example/policy/service/Policy.java
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/target/generated-sources/protobuf/java/org/example/policy/service/ValidateRequest.java
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/target/generated-sources/protobuf/java/org/example/policy/service/ValidateRequestOrBuilder.java
+/home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/target/generated-sources/protobuf/java/org/example/policy/service/UploadPolicyRequestOrBuilder.java
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/target/generated-sources/protobuf/java/org/example/policy/service/ValidateResponse.java
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/src/main/java/org/example/policy/engine/DigitalTwinAttributeFinder.java
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/target/generated-sources/protobuf/java/org/example/policy/service/PolicyResponseOrBuilder.java
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/target/generated-sources/protobuf/java/org/example/policy/service/ValidateResponseOrBuilder.java
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/target/generated-sources/protobuf/java/org/example/policy/service/PolicyRequestOrBuilder.java
+/home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/target/generated-sources/protobuf/java/org/example/policy/service/UploadPolicyRequest.java
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/target/generated-sources/protobuf/java/org/example/policy/service/PolicyResponse.java
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/src/main/java/org/example/policy/engine/DigitalTwinPolicyEngine.java
+/home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/target/generated-sources/protobuf/java/org/example/policy/service/UploadPolicyResponseOrBuilder.java
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/src/main/java/org/example/policy/service/PolicyServer.java
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/src/main/java/org/example/policy/service/PolicyServiceImpl.java
+/home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/target/generated-sources/protobuf/java/org/example/policy/service/UploadPolicyResponse.java
 /home/djy/digital-twin-uc/policy-service/engine/PolicyEngine/src/main/java/org/example/policy/test/PolicyEngineTest.java
